@@ -1,0 +1,142 @@
+Xen: Graphics API for XNA
+www.codeplex.com/xen
+
+
+
+
+-- Quick Start Steps:
+
+
+Run 'register FX' batch file
+Then run 'prebuild' batch file
+
+Open ./xen/Tutorials.sln
+
+
+Tutorials.sln contains 15 small tutorial applications.
+These show step by step ways to use xen features.
+
+Reading these will make learning xen a lot easier!
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------------------------------------------------------------
+-- Copyright & contact
+
+
+Xen is Copyright (C) 2008 Graham Aldridge
+graham.aldridge@gmail.com
+XboxLive: StatusUnknown
+
+
+-----------------------------------------------------------------------------------------------------
+-- Build notes:
+
+Prebuild will build the xen DEBUG binaries.
+Xen DEBUG builds perform a lot of extra runtime checks, and also provide extra statistics.
+
+Xen RELEASE builds run faster, but provide fewer runtime checks.
+
+
+
+-----------------------------------------------------------------------------------------------------
+-- The CustomTool and registerFX / prebuild:
+
+
+Before trying to use xen, run the 'prebuild' and 'register FX' batch files.
+
+
+The 'register FX' and 'unregister FX' batch files add/remove the Visual Studio shader plugin.
+The 'prebuild' batch file builds the debug xen libraries and model importer.
+
+
+
+
+
+
+
+-----------------------------------------------------------------------------------------------------
+-- Xna Notes:
+
+Xen currently supports XNA Game Studio 2.0, Windows and the Xbox360.
+Zune support for GS3.0 is not planned.
+
+
+
+
+
+
+-----------------------------------------------------------------------------------------------------
+-- Xen Dlls:
+
+There are 5 parts to xen:
+
+
+Xen.dll						-- the main API .dll
+Xen.Ex.dll					-- extensions, helpers and experimental classes
+Xen.Graphics.ShaderSystem.dll			-- shader interfaces
+
+
+Xen.Ex.ModelImporter.dll			-- Content pipeline model importer for Xen.Ex
+Xen.Graphics.ShaderSystem.CustomTool.dll	-- Visual Studio 2005/2008 CustomTool plugin
+
+
+
+Most applications will use all three xen runtime .dlls and the content importer.
+However if you are very brave the ShaderSystem could be used on its own.
+
+
+
+-----------------------------------------------------------------------------------------------------
+-- Visual Studio shader plugin:
+
+Xen includes a Visual Studio custom tool for compiling shaders.
+This is the largest part of the xen API.
+
+A detailed description of how it works and how to use it can be found in Tutorial_03 (custom shader)
+
+
+-----------------------------------------------------------------------------------------------------
+-- Xen on a higher level...
+
+
+Xen is an attempt to make using Xna a more reliable experience.
+It is not a game engine, it is an API.
+
+Because of this, xen replaces large portions of the Xna API.
+This includes the XNA Game class, which makes xen less suitable for converting existing Xna projects.
+
+Design decisions made in xen have larger scale project reliability in mind.
+
+Some of the worst offenders in Xna are:
+
+The Effect system,
+Managing render targets,
+Vertex/Index buffers (Declarations, streams, etc),
+Render state managment
+
+Xen provides complete replacements for all of these, which form the major parts of the API.
+
+
+-----------------------------------------------------------------------------------------------------
+-- Getting started: The Example project
+
+
+The Tutorials project can be loaded by opening ./xen/Tutorials.sln, this uses the 'prebuild' xen build.
+
+The Tutorials project is not flashy. It is a series of very small applications designed to show one
+feature at a time, starting with the base Application class.
+
+
+Take a moment to read them, they demonstrate the fundamentals in xen with a minimum of fuss.
+
+
