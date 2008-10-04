@@ -25,6 +25,10 @@ namespace Xen
 	public interface IState
 	{
 		/// <summary>
+		/// True if the current state is potentially running on multiple threads
+		/// </summary>
+		bool IsAsynchronousState { get;}
+		/// <summary>
 		/// Get the Application instance
 		/// </summary>
 		Application Application { get; }
@@ -75,6 +79,7 @@ namespace Xen
 		private KeyboardState keyboard;
 		private readonly GamePadState[] pads;
 		private UpdateManager manager;
+		private bool async;
 #if !XBOX
 		private MouseState mouse;
 #endif
@@ -121,6 +126,16 @@ namespace Xen
 			this.keyboard = kb;
 		}
 #endif
+
+		/// <summary>
+		/// True if the current state is potentially running on multiple threads
+		/// </summary>
+		public bool IsAsynchronousState
+		{
+			get { return async; }
+			internal set { async = value; }
+		}
+
 		/// <summary>
 		/// Application instance
 		/// </summary>
@@ -272,6 +287,9 @@ namespace Xen
 		private bool protectedState;
 		private int frameIndex;
 		private IShader[] staticShaderCache = new IShader[1024];
+
+		
+		bool IState.IsAsynchronousState { get { return false; } }
 
  		/// <summary>Gets the frame index (incremented every time <see cref="Xen.Application.Draw(DrawState)"/> is called)</summary>
 		public int FrameIndex
@@ -496,15 +514,16 @@ namespace Xen
 		{
 			this.application = game;
 
+			this.playerInputCollection = new PlayerInputCollection(input);
+
 			for (int i = 0; i < input.Length; i++)
-				input[i] = new PlayerInput(i);
+				input[i] = new PlayerInput(i, this.playerInputCollection);
 
 			input[0].ControlInput = ControlInput.GamePad1;
 			input[1].ControlInput = ControlInput.GamePad2;
 			input[2].ControlInput = ControlInput.GamePad3;
 			input[3].ControlInput = ControlInput.GamePad4;
 
-			this.collection = new PlayerInputCollection(input);
 
 #if !XBOX360
 
@@ -516,7 +535,7 @@ namespace Xen
 			this.renderState = new DrawState(this.userValues, this.application);
 			this.protectedRenderState = this.renderState.GetProtectedClone();
 
-			this.updateState = new UpdateState(this.userValues, this.application, this.collection, this.pads);
+			this.updateState = new UpdateState(this.userValues, this.application, this.playerInputCollection, this.pads);
 
 			renderState.InitShaderCommon();
 		}
@@ -529,7 +548,7 @@ namespace Xen
 		private float seconds;
 		private IDictionary userValues = new Hashtable();
 		private readonly PlayerInput[] input = new PlayerInput[4];
-		private readonly PlayerInputCollection collection;
+		private readonly PlayerInputCollection playerInputCollection;
 		private KeyboardState keyboard;
 		private readonly GamePadState[] pads = new GamePadState[4];
 
@@ -547,6 +566,7 @@ namespace Xen
 
 #endif
 
+		bool IState.IsAsynchronousState { get { return false; } }
 
 		internal DrawState GetRenderState(Microsoft.Xna.Framework.Graphics.GraphicsDevice graphics)
 		{

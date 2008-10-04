@@ -159,7 +159,7 @@ namespace Xen.Camera
 				throw new InvalidOperationException("World matrix at the bottom of the stack must stay an Identity Matrix, Please use PushWorldMatrix()");
 			}
 #if TestMatrixEquality
-			if (GameState.MatrixNotEqual(ref this.value, ref matrix))//prevents recalcuating shader constants later if not changed now
+			if (AppState.MatrixNotEqual(ref this.value, ref matrix))//prevents recalcuating shader constants later if not changed now
 #endif
 			{
 				this.value = matrix;
@@ -181,7 +181,7 @@ namespace Xen.Camera
 			if (top == 0)
 			{
 #if TestMatrixEquality
-				if (GameState.MatrixIsNotIdentiy(ref matrix))//prevents recalcuating shader constants later if not changed now
+				if (AppState.MatrixIsNotIdentiy(ref matrix))//prevents recalcuating shader constants later if not changed now
 #endif
 				{
 					this.value = matrix;
@@ -205,7 +205,7 @@ namespace Xen.Camera
 				}
 				
 #if TestMatrixEquality
-				if (GameState.MatrixNotEqual(ref this.value, ref matrix))//prevents recalcuating shader constants later if not changed now
+				if (AppState.MatrixNotEqual(ref this.value, ref matrix))//prevents recalcuating shader constants later if not changed now
 #endif
 				{
 					this.value = matrix;
@@ -414,7 +414,7 @@ namespace Xen.Camera
 			if (top == 0)
 			{
 #if TestMatrixEquality
-				if (GameState.MatrixIsNotIdentiy(ref matrix)) //prevents recalcuating shader constants later if not changed now
+				if (AppState.MatrixIsNotIdentiy(ref matrix)) //prevents recalcuating shader constants later if not changed now
 #endif
 				{
 					this.value = matrix;
@@ -438,7 +438,7 @@ namespace Xen.Camera
 				}
 
 #if TestMatrixEquality
-				if (GameState.MatrixIsNotIdentiy(ref matrix))
+				if (AppState.MatrixIsNotIdentiy(ref matrix))
 #endif
 				{
 					if (isIdentity)

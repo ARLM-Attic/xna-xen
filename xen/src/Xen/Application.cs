@@ -46,14 +46,22 @@ namespace Xen
 			parent.SetWindowSize(graphics);
 			parent.SetupGraphicsDeviceManager(graphics, ref presentation);
 			parent.SetWindowSize(graphics);
-
-			//if (graphics.IsFullScreen)
-			//    for (int i = 0; i < 4; i++)
-			//        this.state.PlayerInput[i].InputMapper.SetFullScreen();
 		}
 
 		void PreparingDeviceSettings(object sender, PreparingDeviceSettingsEventArgs e)
 		{
+#if DEBUG
+#if !XBOX360
+			foreach (GraphicsAdapter adapter in GraphicsAdapter.Adapters)
+			{
+				if (adapter.Description.Contains("PerfHUD"))
+				{
+					e.GraphicsDeviceInformation.DeviceType = DeviceType.Reference;
+					e.GraphicsDeviceInformation.Adapter = adapter;
+				}
+			}
+#endif
+#endif
 			e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage = presentation;
 		}
 
@@ -542,15 +550,30 @@ namespace Xen
 			}
 		}
 
-		/*
+
 		/// <summary>
-		/// Access the XNA base application <see cref="GameComponentCollection"/>.
+		/// Access the XNA base game <see cref="GameComponentCollection"/>. Use with caution, Using Game Components is not tested/supported
 		/// </summary>
 		public GameComponentCollection XnaComponents
 		{
 			get { return xnaGame.Components; }
 		}
-		*/
+
+		/// <summary>
+		/// Access the XNA base game <see cref="GameServiceContainer"/> Services
+		/// </summary>
+		public GameServiceContainer Services
+		{
+			get { return xnaGame.Services; }
+		}
+
+		/// <summary>
+		///  Indicates whether this application is currently the active application.
+		/// </summary>
+		public bool IsActive
+		{
+			get { return xnaGame.IsActive; }
+		}
 
 		/// <summary>
 		/// Get the XNA Application instance

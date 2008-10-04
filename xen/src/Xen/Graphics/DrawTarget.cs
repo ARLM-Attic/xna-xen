@@ -1042,8 +1042,10 @@ namespace Xen.Graphics
 			if (!SupportsFormat(format))
 				throw new ArgumentException("Graphics adapter does not support the specified format");
 #if !XBOX360
+#if XNA_2_0
 			if (mipmap)
 				throw new NotSupportedException("XNA GS2.0 doesn't consistently support mipmapped render textures on the PC for all hardware (Use DrawTargetTexture2D.ForceGenerateMipmap if you want to force using mipmaps)");
+#endif
 #endif
 
 			this.mipmap = mipmap;
@@ -1057,7 +1059,8 @@ namespace Xen.Graphics
 		}
 
 
-
+		
+#if XNA_2_0
 		/// <summary>
 		/// XNA doesn't correctly implement mipmap generation on the PC on some hardware. However this method allows forcing a created draw target to be created with mipmaps (use with caution, as mipmap generation *will* fail on some systems)
 		/// </summary>
@@ -1070,6 +1073,7 @@ namespace Xen.Graphics
 				throw new ArgumentException("Resource already created");
 			texture.mipmap = true;
 		}
+#endif
 
 		/// <summary>
 		/// Creates the draw texture. Note: Rendering resources will not be created until the first time the target is drawn or <see cref="Resource.Warm(DrawState)"/> is called
@@ -1767,8 +1771,10 @@ namespace Xen.Graphics
 			if (!SupportsFormat(format))
 				throw new ArgumentException("Graphics adapter does not support the specified format");
 #if !XBOX360
+#if XNA_2_0
 			if (mipmap)
 				throw new NotSupportedException("XNA GS2.0 doesn't consistently support mipmapped render textures on the PC for all hardware (Use DrawTargetTextureCube.ForceGenerateMipmap if you want to force using mipmaps)");
+#endif
 #endif
 			this.mipmap = mipmap;
 			this.format = format;
@@ -1778,7 +1784,8 @@ namespace Xen.Graphics
 
 			this.sizeAsVector = new Vector2((float)this.resolution, (float)this.resolution);
 		}
-
+		
+#if XNA_2_0
 		/// <summary>
 		/// XNA doesn't correctly implement mipmap generation on the PC on some hardware. However this method allows forcing a created draw target to be created with mipmaps (use with caution, as mipmap generation *will* fail on some systems)
 		/// </summary>
@@ -1791,6 +1798,7 @@ namespace Xen.Graphics
 				throw new ArgumentException("Resource already created");
 			cube.mipmap = true;
 		}
+#endif
 
 		/// <summary>
 		/// Creates the draw target cubemap. Note: Rendering resources will not be created until the first time the target is drawn or <see cref="Resource.Warm(DrawState)"/> is called

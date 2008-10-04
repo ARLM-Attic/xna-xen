@@ -61,7 +61,9 @@ namespace Xen.Input
 #endif
 	public sealed class PlayerInputCollection : IList<PlayerInput>
 	{
-		private PlayerInput[] array;
+		private readonly PlayerInput[] array;
+		internal bool asyncAcess;
+
 		internal PlayerInputCollection(PlayerInput[] array)
 		{
 			this.array = array;
@@ -183,26 +185,32 @@ namespace Xen.Input
 #endif
 	public sealed class PlayerInput
 	{
-		internal PlayerInput(int index)
-		{
-			this.index = index;
-		}
 
 		private bool ronly;
-
-		internal bool ReadOnly
-		{
-			get { return ronly; }
-			set { ronly = value; }
-		}
-	
-
+		private readonly PlayerInputCollection parent;
 		private ControlInput ci;
 		private KeyboardMouseControlMapping kmb = new KeyboardMouseControlMapping();
 		internal InputMapper mapper = new InputMapper();
 		internal InputState istate = new InputState();
 		private int index;
 		
+		internal PlayerInput(int index, PlayerInputCollection parent)
+		{
+			if (parent == null)
+				throw new ArgumentNullException();
+			this.index = index;
+			this.parent = parent;
+
+			kmb.inputParent = parent;
+			mapper.inputParent = parent;
+		}
+
+		internal bool ReadOnly
+		{
+			get { return ronly; }
+			set { ronly = value || parent.asyncAcess; }
+		}
+	
 		/// <summary>
 		/// Gets the player index for this input
 		/// </summary>
@@ -225,7 +233,17 @@ namespace Xen.Input
 		public InputMapper InputMapper
 		{
 			get { return mapper; }
-			set { if (ReadOnly) throw new ArgumentException("readonly"); if (value == null) throw new ArgumentNullException(); mapper = value; }
+			set 
+			{ 
+				if (ReadOnly) 
+					throw new ArgumentException("readonly"); 
+				
+				if (value == null) 
+					throw new ArgumentNullException(); 
+				
+				mapper = value;
+				mapper.inputParent = parent;
+			}
 		}
 
 
@@ -235,7 +253,17 @@ namespace Xen.Input
 		public KeyboardMouseControlMapping KeyboardMouseControlMapping
 		{
 			get { return kmb; }
-			set { if (ReadOnly) throw new ArgumentException("readonly"); if (value == null) throw new ArgumentNullException(); kmb = value; }
+			set
+			{
+				if (ReadOnly) 
+					throw new ArgumentException("readonly"); 
+
+				if (value == null) 
+					throw new ArgumentNullException(); 
+
+				kmb = value;
+				kmb.inputParent = parent;
+			}
 		}
 
 

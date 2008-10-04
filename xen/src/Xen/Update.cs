@@ -511,8 +511,19 @@ namespace Xen
 
 				int count = 0;
 
-				if (this.async && state.Application.ThreadPool.ThreadCount > 0)
-					count = AsyncUpdateEntries(state, moveList);
+				if (this.async)
+				{
+					state.IsAsynchronousState = this.async;
+					state.PlayerInput.asyncAcess = this.async;
+
+					if (this.async && state.Application.ThreadPool.ThreadCount > 0)
+						count = AsyncUpdateEntries(state, moveList);
+					else
+						count = UpdateEntries(state, moveList);
+
+					state.PlayerInput.asyncAcess = false;
+					state.IsAsynchronousState = false;
+				}
 				else
 					count = UpdateEntries(state, moveList);
 

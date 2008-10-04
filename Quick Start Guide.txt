@@ -4,13 +4,14 @@ www.codeplex.com/xen
 
 
 
--- Quick Start Steps:
+
+-- Quick Start:
 
 
-Run 'register FX' batch file
-Then run 'prebuild' batch file
+1.) Run 'register FX' batch file
+2.) Run 'prebuild' batch file
 
-Open ./xen/Tutorials.sln
+3.) Open ./xen/Tutorials.sln
 
 
 Tutorials.sln contains 15 small tutorial applications.
@@ -36,6 +37,7 @@ Reading these will make learning xen a lot easier!
 Xen is Copyright (C) 2008 Graham Aldridge
 graham.aldridge@gmail.com
 XboxLive: StatusUnknown
+
 
 
 -----------------------------------------------------------------------------------------------------

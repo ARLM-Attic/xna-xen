@@ -24,8 +24,14 @@ namespace Xen.Input.Mapping
 #endif
 	public class InputMapper
 	{
+		internal PlayerInputCollection inputParent;
 		private KeyboardMouseState kms = new KeyboardMouseState();
-		//private bool kmsSet = false;
+
+		internal void ValidateAsync()
+		{
+			if (inputParent != null && inputParent.asyncAcess)
+				throw new InvalidOperationException("This value is readonly in an Asynchronous State");
+		}
 
 		/// <summary>
 		/// Current state of the keyboard and mouse
@@ -36,7 +42,7 @@ namespace Xen.Input.Mapping
 			internal set { kms = value; }
 		}
 
-		private bool lockMouse;
+		private bool lockMouse, mouseVisible;
 
 		//internal void SetFullScreen()
 		//{
@@ -56,7 +62,22 @@ namespace Xen.Input.Mapping
 		public bool CentreMouseToWindow
 		{
 			get { return lockMouse; }
-			set { lockMouse = value; }
+			set { ValidateAsync();  lockMouse = value; }
+		}
+		
+#if !XBOX360
+		/// <summary>
+		/// [Windows Only] When using <see cref="ControlInput.KeyboardMouse">KeyboardMouse</see> as the player <see cref="PlayerInput.ControlInput">ControlInput</see>, Sets the visibility state of the mouse.
+		/// </summary>
+#else
+		/// <summary>
+		/// [Windows Only]
+		/// </summary>
+#endif
+		public bool MouseVisible
+		{
+			get { return mouseVisible; }
+			set { ValidateAsync(); mouseVisible = value; }
 		}
 
 
@@ -70,6 +91,7 @@ namespace Xen.Input.Mapping
 			if (inputType == ControlInput.KeyboardMouse)
 			{
 				gameState.DesireMouseCentred |= lockMouse;
+				((Game)gameState.Application).IsMouseVisible = mouseVisible;
 
 				if (lockMouse && gameState.MouseCentred)
 				{
@@ -477,6 +499,7 @@ namespace Xen.Input.Mapping
 #endif
 	public sealed class KeyboardMouseControlMapping
 	{
+		internal PlayerInputCollection inputParent;
 		private KeyboardMouseControlMap ls_f, rs_f, ls_b, rs_b, rs_l, ls_l, ls_r, rs_r, leftTrigger, rightTrigger, a, b, x, y, back, start, DpadF, DpadB, DpadL, DpadR, leftClick, rightClick, shoulderL, shoulderR;
 
 
@@ -569,6 +592,12 @@ namespace Xen.Input.Mapping
 
 		#region properties
 
+		internal void ValidateAsync()
+		{
+			if (inputParent != null && inputParent.asyncAcess)
+				throw new InvalidOperationException("This value is readonly in an Asynchronous State");
+		}
+
 #if !XBOX360
 		/// <summary>
 		/// Gets/Sets the <see cref="Keys"/> or <see cref="Mouse"/> mapping for the right trigger (default is <see cref="MouseInput.RightButton"/>)
@@ -581,7 +610,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap RightTrigger
 		{
 			get { return rightTrigger; }
-			set { rightTrigger = value; }
+			set { ValidateAsync(); rightTrigger = value; }
 		}
 		
 #if !XBOX360
@@ -596,7 +625,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap LeftTrigger
 		{
 			get { return leftTrigger; }
-			set { leftTrigger = value; }
+			set{ ValidateAsync(); leftTrigger = value; }
 		}
 
 		/// <summary>
@@ -605,7 +634,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap RightStickClick
 		{
 			get { return rightClick; }
-			set { if (value.IsAnalog) throw new ArgumentException(); rightClick = value; }
+			set{ ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); rightClick = value; }
 		}
 
 		/// <summary>
@@ -614,7 +643,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap LeftStickClick
 		{
 			get { return leftClick; }
-			set { if (value.IsAnalog) throw new ArgumentException(); leftClick = value; }
+			set{ ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); leftClick = value; }
 		}
 
 		/// <summary>
@@ -623,7 +652,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap RightShoulder
 		{
 			get { return shoulderR; }
-			set { if (value.IsAnalog) throw new ArgumentException(); shoulderR = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); shoulderR = value; }
 		}
 
 		/// <summary>
@@ -632,7 +661,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap LeftShoulder
 		{
 			get { return shoulderL; }
-			set { if (value.IsAnalog) throw new ArgumentException(); shoulderL = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); shoulderL = value; }
 		}
 
 		/// <summary>
@@ -641,7 +670,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap DpadRight
 		{
 			get { return DpadR; }
-			set { if (value.IsAnalog) throw new ArgumentException(); DpadR = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); DpadR = value; }
 		}
 
 		/// <summary>
@@ -650,7 +679,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap DpadLeft
 		{
 			get { return DpadL; }
-			set { if (value.IsAnalog) throw new ArgumentException(); DpadL = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); DpadL = value; }
 		}
 
 		/// <summary>
@@ -659,7 +688,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap DpadDown
 		{
 			get { return DpadB; }
-			set { if (value.IsAnalog) throw new ArgumentException(); DpadB = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); DpadB = value; }
 		}
 
 		/// <summary>
@@ -668,7 +697,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap DpadUp
 		{
 			get { return DpadF; }
-			set { if (value.IsAnalog) throw new ArgumentException(); DpadF = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); DpadF = value; }
 		}
 
 		/// <summary>
@@ -677,7 +706,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap Start
 		{
 			get { return start; }
-			set { if (value.IsAnalog) throw new ArgumentException(); start = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); start = value; }
 		}
 
 		/// <summary>
@@ -686,7 +715,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap Back
 		{
 			get { return back; }
-			set { if (value.IsAnalog) throw new ArgumentException(); back = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); back = value; }
 		}
 
 		/// <summary>
@@ -695,7 +724,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap X
 		{
 			get { return x; }
-			set { if (value.IsAnalog) throw new ArgumentException(); x = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); x = value; }
 		}
 
 		/// <summary>
@@ -704,7 +733,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap Y
 		{
 			get { return y; }
-			set { if (value.IsAnalog) throw new ArgumentException(); y = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); y = value; }
 		}
 
 		/// <summary>
@@ -713,7 +742,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap B
 		{
 			get { return b; }
-			set { if (value.IsAnalog) throw new ArgumentException(); b = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); b = value; }
 		}
 
 		/// <summary>
@@ -722,7 +751,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap A
 		{
 			get { return a; }
-			set { if (value.IsAnalog) throw new ArgumentException(); a = value; }
+			set { ValidateAsync(); if (value.IsAnalog) throw new ArgumentException(); a = value; }
 		}
 		
 #if !XBOX360
@@ -737,7 +766,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap LeftStickRight
 		{
 			get { return ls_r; }
-			set { ls_r = value; }
+			set { ValidateAsync(); ls_r = value; }
 		}
 #if !XBOX360
 		/// <summary>
@@ -751,7 +780,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap LeftStickLeft
 		{
 			get { return ls_l; }
-			set { ls_l = value; }
+			set { ValidateAsync(); ls_l = value; }
 		}
 		
 #if !XBOX360
@@ -766,7 +795,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap LeftStickBackward
 		{
 			get { return ls_b; }
-			set { ls_b = value; }
+			set { ValidateAsync(); ls_b = value; }
 		}
 		
 #if !XBOX360
@@ -781,7 +810,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap LeftStickForward
 		{
 			get { return ls_f; }
-			set { ls_f = value; }
+			set { ValidateAsync(); ls_f = value; }
 		}
 #if !XBOX360
 		/// <summary>
@@ -795,7 +824,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap RightStickRight
 		{
 			get { return rs_r; }
-			set { rs_r = value; }
+			set { ValidateAsync(); rs_r = value; }
 		}
 #if !XBOX360
 		/// <summary>
@@ -809,7 +838,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap RightStickLeft
 		{
 			get { return rs_l; }
-			set { rs_l = value; }
+			set { ValidateAsync(); rs_l = value; }
 		}
 		
 #if !XBOX360
@@ -824,7 +853,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap RightStickBackward
 		{
 			get { return rs_b; }
-			set { rs_b = value; }
+			set { ValidateAsync(); rs_b = value; }
 		}
 		
 #if !XBOX360
@@ -839,7 +868,7 @@ namespace Xen.Input.Mapping
 		public KeyboardMouseControlMap RightStickForward
 		{
 			get { return rs_f; }
-			set { rs_f = value; }
+			set { ValidateAsync(); rs_f = value; }
 		}
 		#endregion
 
