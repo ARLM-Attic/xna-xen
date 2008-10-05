@@ -46,7 +46,7 @@ namespace Tutorials.Tutorial_08
 	//directly after the call to Initialise().
 	//
 	//IContentOwner has two methods, LoadContent and UnloadContent. Both of these methods
-	//can be overriden by Application implementations. The LoadContent method is the only
+	//can be overridden by Application implementations. The LoadContent method is the only
 	//place where access to an XNA ContentManager is given. This is to enforce
 	//that loading content only happens in LoadContent. 
 	//(So content is always correctly reloaded)
@@ -56,7 +56,7 @@ namespace Tutorials.Tutorial_08
 	//instance, this.Content. IContentOwners can be registered by calling Content.Add(),
 	//instances need not be unregistered, due to weak referencing.
 	//
-	//Registering an IContentLoader with a ContentRegister guarentees that LoadContent
+	//Registering an IContentLoader with a ContentRegister guarantees that LoadContent
 	//will be called at least once - where possible it gets called immediately.
 	//
 	//Forcing all content loading to happen in one way simplifies larger projects.
@@ -88,7 +88,7 @@ namespace Tutorials.Tutorial_08
 
 
 			//create the draw target texture
-			//actual graphics resouces are not created yet...
+			//actual graphics resources are not created yet...
 			drawToTexture = new DrawTargetTexture2D(camera, 128, 128, SurfaceFormat.Color, DepthFormat.Depth24Stencil8);
 
 			//make the texture clear colour different from the screen, so it's more obvious

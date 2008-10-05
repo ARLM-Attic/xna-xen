@@ -22,7 +22,7 @@ using Microsoft.Xna.Framework.Graphics;
  * using a world matrix
  * creating and binding a prebuilt shader
  * using a culler to do on-screen culling
- * using an prebuilt geometry class to draw sphecial geometry
+ * using an prebuilt geometry class to draw spherical geometry
  * 
  */
 namespace Tutorials.Tutorial_02
@@ -79,7 +79,7 @@ namespace Tutorials.Tutorial_02
 			//The DrawState object maintains a world matrix stack. Pushing and Popping this stack is very fast.
 			state.PushWorldMatrixMultiply(ref this.worldMatrix);
 
-			//FrustumCull test the sphere (the cull test uses the current world matrix)
+			//Frustum cull test the sphere (the cull test uses the current world matrix)
 			//Culltest will return false if the test fails (in this tutorial false would mean the sphere is off screen)
 			//The CullTest method requirs an ICuller to be passed in. Here the state object is used because the 
 			//DrawState object implements the ICuller interface (DrawState's culler performs screen culling)

@@ -34,7 +34,7 @@ namespace Tutorials.Tutorial_12
 	//In this tutorial, the bounding boxes of the model will be extracted, and drawn
 	//This is an advanced technique
 	//
-	//The boxes will be drawn in wireframe mode. Wireframe isn't exposed by Xen as a
+	//The boxes will be drawn in wireframe mode. Wireframe isn't exposed by xen as a
 	//render state, so the GraphicsDevice will need to be used.
 
 	class Actor : IDraw, IContentOwner
@@ -100,7 +100,7 @@ namespace Tutorials.Tutorial_12
 			//StateFlag.None tells xen that it does not need to dirty any of it's
 			//internal state tracking buffers
 			//
-			//Future versions of Xen are may render on multiple threads, 
+			//Future versions of xen are may render on multiple threads, 
 			//Using BeginGetGraphicsDevice() and EndGetGraphicsDevice() will 
 			//stay compatible in future versions
 			GraphicsDevice device = state.BeginGetGraphicsDevice(StateFlag.None);

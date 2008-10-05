@@ -347,9 +347,6 @@ namespace Tutorials.Tutorial_20
 			graphics.PreferredBackBufferWidth = 1280;
 			graphics.PreferredBackBufferHeight = 768;
 			graphics.SynchronizeWithVerticalRetrace = false;
-#if !DEBUG
-			graphics.IsFullScreen = true;
-#endif
 		}
 
 		//set the font for the statistics overlay

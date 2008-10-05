@@ -185,9 +185,9 @@ namespace Tutorials.Tutorial_14
 				//create the point light
 				light = lights.AddPointLight(perPixel, lightPositions[i], lightHalfFalloffDistance, lightColor, lightSpecularColour);
 
-				//adjust the lighting atteuation model, the constant defaults to 1, which prevents the light being brighter than 1.0 in the falloff equation
+				//adjust the lighting attenuation model, the constant defaults to 1, which prevents the light being brighter than 1.0 in the falloff equation
 				//set to 0.25, the light will get really bright in close (up to 4)
-				//(see light.QuadraticAttenuation remarks for an explaination of the falloff model)
+				//(see light.QuadraticAttenuation remarks for an explanation of the falloff model)
 				light.ConstantAttenuation = 0.25f;
 
 				//create the light geometry (a sphere)
@@ -247,7 +247,7 @@ namespace Tutorials.Tutorial_14
 	}
 
 
-	//this class simply draws the sphere represnting the lights
+	//this class simply draws the sphere representing the lights
 	class LightSourceDrawer : IDraw
 	{
 		private IDraw geometry;

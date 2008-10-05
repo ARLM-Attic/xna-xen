@@ -59,6 +59,18 @@ namespace Xen
 		private readonly Dictionary<IUpdate, UpdateEntry> updateList = new Dictionary<IUpdate, UpdateEntry>();
 		private readonly object syncMinor = new object();
 		private long updateTimer, totalTime;
+		private bool pauseIfAppInactive;
+
+		/// <summary>
+		/// <para>If true, the update manager will pause all updating when <see cref="Application.IsActive"/> is false</para>
+		/// <para>(Items updating at <see cref="UpdateFrequency.OncePerFrame"/> will still update as normal)</para>
+		/// </summary>
+		public bool PauseUpdatesWhenApplicationIsInactive
+		{
+			get { return pauseIfAppInactive; }
+			set { pauseIfAppInactive = value; }
+		}
+
 
 		/// <summary>
 		/// Construct the update manager
@@ -166,7 +178,9 @@ namespace Xen
 			updating = true;
 
 			//update at exactly 60hz
-			updateTimer += state.DeltaTimeTicks;
+			if (!pauseIfAppInactive || state.Application.IsActive)
+				updateTimer += state.DeltaTimeTicks;
+
 			long delta = UpdateState.TicksInOneSecond / 60;
 			bool resetUpdate = false;
 

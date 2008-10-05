@@ -36,6 +36,7 @@ xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tut
 @echo -
 @echo - .NET Framework 2.0
 @echo - .NET Framework 3.5
+@echo - XNA Game Studio 2.0
 @echo - XNA Game Studio 3.0 BETA
 @echo - DirectX SDK
 @echo -----------------------------------

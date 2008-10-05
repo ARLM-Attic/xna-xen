@@ -63,7 +63,7 @@ namespace Tutorials.Tutorial_11
 			//animation.Weighting = ...;
 			//Combined weightings usually should add up to 1.
 			//A weighting of 0 means the animation has no effect, 1 has normal effect.
-			//Values outside the 0-1 range usually produce undesireable results.
+			//Values outside the 0-1 range usually produces undesirable results.
 
 			//Note:
 			//Animations in xen are lossy compressed.

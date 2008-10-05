@@ -64,13 +64,12 @@ namespace Tutorials.Tutorial_13
 		//
 		//There is a special value, UpdateFrequency.Terminate which
 		//can be returned. When used, the UpdateManager will remove
-		//the object from it's internal list.
+		//the object from its internal list.
 		public UpdateFrequency Update(UpdateState state)
 		{
-			//Here, q reference to the state of the first players input is retrieved
+			//Here, a reference to the state of the first players input is retrieved
 			InputState playerInput = state.PlayerInput[PlayerIndex.One].InputState;
 
-			//This is where things need some explaining.
 			//The InputState object stores the state of a virtual gamepad.
 			//It stores all the values of a gamepad, such as
 			//playerInput.ThumbSticks.LeftStick. However, under the hood
@@ -99,7 +98,7 @@ namespace Tutorials.Tutorial_13
 			//With a lot of mouse driven games, it is desirable to keep the mouse
 			//in the centre of the window, allowing greater freedom of movement.
 			//This allows the player to rotate as much as they want, without the mouse
-			//stopping at the egde of the screen:
+			//stopping at the edge of the screen:
 
 			//state.PlayerInput[PlayerIndex.One].InputMapper.CentreMouseToWindow = true;
 			

@@ -148,7 +148,7 @@ namespace Tutorials.Tutorial_04
 
 	//this class hasn't changed...
 
-	//a application that draws geometry in the middle of the screen
+	//an application that draws geometry in the middle of the screen
 	[DisplayName(Name = "Tutorial 04: Custom Geometry")]
 	public class Tutorial : Application
 	{

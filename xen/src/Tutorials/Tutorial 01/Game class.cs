@@ -16,7 +16,7 @@ using Microsoft.Xna.Framework.Graphics;
  * Welcome to xen!
  * 
  * 
- * This tutorial is here to show implemetning the Application class.
+ * This tutorial is here to show implementing the Application class.
  * It's quite similar to the XNA Game class.
  * 
  * 
@@ -42,7 +42,7 @@ namespace Tutorials.Tutorial_01
 		//This goes from high to low level. So drawing to a surface (such as the screen) is
 		//handled by a DrawTarget object.
 		//A DrawTarget runs all the logic needed to complete the draw operation.
-		//Drawing in xen is very explict, the call to Draw() will perform the entire draw operation.
+		//Drawing in xen is very explicit, the call to Draw() will perform the entire draw operation.
 		//A DrawTarget stores a list of IDraw objects, these objects are drawn to the target.
 		//
 		//A DrawTargetScreen is a draw target that draws items directly to the screen.

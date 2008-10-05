@@ -106,7 +106,7 @@ namespace Tutorials.Tutorial_05
 			OffsetVertices(state.TotalTimeSeconds);
 
 			//NEW CODE
-			//tell the vertices that the entire source buffer is has changed and needs updating
+			//tell the vertices that the entire source buffer has changed and needs updating
 			this.vertices.SetDirty();
 
 			//draw as usual

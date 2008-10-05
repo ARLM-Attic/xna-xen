@@ -138,7 +138,7 @@ namespace Tutorials.Tutorial_15
 			//The DrawStatisticsDisplay displays some of the more important statistics. It will also
 			//display thread activity on the xbox.
 
-			//DrawStatistics is only availiable in DEBUG xen builds
+			//DrawStatistics is only available in DEBUG xen builds
 			//It can be accessed at runtime with DrawState GetPreviousFrameStatistics()
 
 			//at runtime, pressing 'F12' will toggle the overlay (or holding both thumsticks on x360)
@@ -196,7 +196,7 @@ namespace Tutorials.Tutorial_15
 
 
 		//Override this method to setup the graphics device before the application starts.
-		//This method is called before Initalise()
+		//This method is called before Initialise()
 		protected override void SetupGraphicsDeviceManager(GraphicsDeviceManager graphics, ref RenderTargetUsage presentation)
 		{
 			graphics.PreferredBackBufferWidth = 1280;

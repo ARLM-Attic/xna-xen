@@ -97,7 +97,7 @@ namespace Tutorials.Tutorial_09
 
 
 	//This application class simply creates the image displayer and draws it to the screen
-	//The Application class stores it's own ContentRegister (this.Content)
+	//The Application class stores its own ContentRegister (this.Content)
 	//Extra content registers can be created as well
 	[DisplayName(Name = "Tutorial 09: Content 02")]
 	public class Tutorial : Application
