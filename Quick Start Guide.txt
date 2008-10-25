@@ -1,24 +1,23 @@
 Xen: Graphics API for XNA
 www.codeplex.com/xen
 
+version 1.1
 
 
 
 
 -- Quick Start:
 
-
-1.) Run 'register FX' batch file
-2.) Run 'prebuild' batch file
-
-3.) Open ./xen/Tutorials.sln
+1.) Run 'xen prebuild' batch file
+2.) Open ./xen/Tutorials.sln
 
 
-Tutorials.sln contains 15 small tutorial applications.
+Tutorials.sln contains 16 small tutorial applications.
 These show step by step ways to use xen features.
 
 Reading these will make learning xen a lot easier!
 
+Remember to run the prebuild anytime you update to a new version of xen!
 
 
 
@@ -31,7 +30,7 @@ Reading these will make learning xen a lot easier!
 
 
 -----------------------------------------------------------------------------------------------------
--- Copyright & contact
+-- Copyright & Contact
 
 
 Xen is Copyright (C) 2008 Graham Aldridge
@@ -39,6 +38,37 @@ graham.aldridge@gmail.com
 XboxLive: StatusUnknown
 
 
+
+
+-----------------------------------------------------------------------------------------------------
+-- Change Log
+
+25/OCT/08
+Version 1.1
+XBOX hardware instancing support added.
+A number of bug fixes and tweaks, only one breaking change:
+
+[BREAKING CHANGE] Changed IDrawBatch to correctly include the instance count
+
+[Added] DrawFlags
+[Added] StaticBinaryTreePartition and supporting classes
+[Added] Tutorial 16
+[Added] Projection cull pause
+[Added] VFetch support on the xbox (see tutorial 16)
+[Added] Hardware instacing emulation on the Xbox360
+[Added] Hardware instacing support added to MaterialShader (xbox and PC)
+[Fixed] DrawState.PushWorldTranslateMultiply now works correctly
+[Fixed] Unregister FX actually works now
+[Improved] MaterialShader is now more space efficient
+[Improved] Shader Custom Tool updated
+[Improved] Register FX is now part of the prebuild
+[Improved] The prebuild is now much smarter, faster and has some bug fixes
+
+
+04/OCT/08
+Version 1.0
+
+Initial Release
 
 -----------------------------------------------------------------------------------------------------
 -- Build notes:
@@ -54,11 +84,11 @@ Xen RELEASE builds run faster, but provide fewer runtime checks.
 -- The CustomTool and registerFX / prebuild:
 
 
-Before trying to use xen, run the 'prebuild' and 'register FX' batch files.
+Before trying to use xen, run the 'prebuild' batch file.
 
 
-The 'register FX' and 'unregister FX' batch files add/remove the Visual Studio shader plugin.
-The 'prebuild' batch file builds the debug xen libraries and model importer.
+The 'unregister FX' batch file removes the Visual Studio shader plugin used by xen.
+The 'prebuild' batch file registers the plugin and builds the debug xen libraries and model importer.
 
 
 

@@ -514,6 +514,9 @@
         <member name="M:Xen.Graphics.ShaderSystem.IShaderSystem.SetWindowSizeVector2(Xen.Graphics.ShaderSystem.Constants.IValue{Microsoft.Xna.Framework.Vector2},System.Int32@)">
             <summary>Method used by a generated shader</summary><param name="value"></param><param name="changeIndex"></param>
         </member>
+        <member name="M:Xen.Graphics.ShaderSystem.IShaderSystem.SetVertexCountSingle(Xen.Graphics.ShaderSystem.Constants.IValue{System.Single},System.Int32@)">
+            <summary>Method used by a generated shader</summary><param name="value"></param><param name="changeIndex"></param>
+        </member>
         <member name="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetGlobalUniqueID``1(System.String)">
             <summary>
             Get the unique id for the name of a global type
