@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;DEBUG_API;WINDOWS;XNA_2_0</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;WINDOWS;XNA_2_0</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
@@ -68,6 +68,7 @@
     <Compile Include="Camera\ICamera.cs" />
     <Compile Include="Content.cs" />
     <Compile Include="Application.cs" />
+    <Compile Include="Graphics\DrawFlags.cs" />
     <Compile Include="State.cs" />
     <Compile Include="Graphics\Buffer.cs" />
     <Compile Include="Graphics\VertexDeclaration.cs" />

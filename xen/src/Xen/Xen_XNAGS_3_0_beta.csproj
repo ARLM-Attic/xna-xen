@@ -94,6 +94,7 @@
     <Compile Include="Camera\Projection.cs" />
     <Compile Include="Content.cs" />
     <Compile Include="Graphics\Buffer.cs" />
+    <Compile Include="Graphics\DrawFlags.cs" />
     <Compile Include="Graphics\DrawStateGeometry.cs" />
     <Compile Include="Graphics\DrawStateRender.cs" />
     <Compile Include="Graphics\DrawTarget.cs" />

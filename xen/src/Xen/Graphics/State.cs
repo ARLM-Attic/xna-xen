@@ -158,7 +158,7 @@ namespace Xen.Graphics.State
 			{
 #if DEBUG
 				if (StencilTest.ApplyState(ref current.StencilTest, device))
-					state.Application.currentFrame.RenderStateStencilTestChangedCount++;
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.RenderStateStencilTestChangedCount);
 #else
 				StencilTest.ApplyState(ref current.StencilTest, device);
 #endif
@@ -168,7 +168,7 @@ namespace Xen.Graphics.State
 			{				
 #if DEBUG
 				if (AlphaBlend.ApplyState(ref current.AlphaBlend, device))
-					state.Application.currentFrame.RenderStateAlphaBlendChangedCount++;
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.RenderStateAlphaBlendChangedCount);
 #else
 				AlphaBlend.ApplyState(ref current.AlphaBlend, device);
 #endif
@@ -178,7 +178,7 @@ namespace Xen.Graphics.State
 			{
 #if DEBUG
 				if (AlphaTest.ApplyState(ref current.AlphaTest, device))
-					state.Application.currentFrame.RenderStateAlphaTestChangedCount++;
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.RenderStateAlphaTestChangedCount);
 #else
 				AlphaTest.ApplyState(ref current.AlphaTest, device);
 #endif
@@ -188,7 +188,7 @@ namespace Xen.Graphics.State
 			{
 #if DEBUG
 				if (DepthColourCull.ApplyState(ref current.DepthColourCull, device, reverseCull))
-					state.Application.currentFrame.RenderStateDepthColourCullChangedCount++;
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.RenderStateDepthColourCullChangedCount);
 #else
 				DepthColourCull.ApplyState(ref current.DepthColourCull, device, reverseCull);
 #endif
@@ -1402,7 +1402,7 @@ namespace Xen.Graphics.State
 					sampler.MipFilter = state.MipFilter;
 
 #if DEBUG
-				dstate.Application.currentFrame.TextureSamplerFilterStateChanged++;
+				System.Threading.Interlocked.Increment(ref dstate.Application.currentFrame.TextureSamplerFilterStateChanged);
 #endif
 			}
 

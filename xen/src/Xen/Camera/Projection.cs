@@ -30,6 +30,8 @@ namespace Xen.Camera
 		private static int changeBaseIndex = 2;
 		private bool isExtendedClass;
 		private bool leftHandedProjection;
+		private bool debugPauseCullPlaneUpdates;
+
 
 		/// <summary>
 		/// XNA projection matrices are right handed whereas DirectX is left handed, which can sometimes cause unexpected projection with rendered cubemaps. Set to true to use left handed projection.
@@ -38,6 +40,17 @@ namespace Xen.Camera
 		{
 			get { return leftHandedProjection; }
 			set { if (leftHandedProjection != value) { leftHandedProjection = value; set = false; changeIndex = System.Threading.Interlocked.Increment(ref changeBaseIndex); } }
+		}
+
+		/// <summary>
+		/// <para>(Use for scene Debugging)</para>
+		/// <para>When true, this Projections frustum cull planes will not be updated.</para>
+		/// <para>This can be used to 'pause' frustum culling, while still allowing the camera to move. This allows visual debugging of off screen culling.</para>
+		/// </summary>
+		public bool PauseFrustumCullPlaneUpdates
+		{
+			get { return debugPauseCullPlaneUpdates; }
+			set { if (value != debugPauseCullPlaneUpdates) { debugPauseCullPlaneUpdates = value; set = false; changeIndex = System.Threading.Interlocked.Increment(ref changeBaseIndex); } }
 		}
 
 		/// <summary>
@@ -111,18 +124,21 @@ namespace Xen.Camera
 					SetProjection();
 				}
 
-				Matrix m;
-				Matrix.Multiply(ref viewMatrix, ref mat, out m);
-				frustum.Matrix = m;
+				if (!debugPauseCullPlaneUpdates)
+				{
+					Matrix m;
+					Matrix.Multiply(ref viewMatrix, ref mat, out m);
+					frustum.Matrix = m;
 
-				frustumPlanes[0] = frustum.Near;
-				frustumPlanes[1] = frustum.Far;
-				frustumPlanes[2] = frustum.Left;
-				frustumPlanes[3] = frustum.Right;
-				frustumPlanes[4] = frustum.Bottom;
-				frustumPlanes[5] = frustum.Top;
+					frustumPlanes[0] = frustum.Near;
+					frustumPlanes[1] = frustum.Far;
+					frustumPlanes[2] = frustum.Left;
+					frustumPlanes[3] = frustum.Right;
+					frustumPlanes[4] = frustum.Bottom;
+					frustumPlanes[5] = frustum.Top;
 
-				frustumDirty = false;
+					frustumDirty = false;
+				}
 			}
 
 			return frustum; 
@@ -137,18 +153,21 @@ namespace Xen.Camera
 					SetProjection();
 				}
 
-				Matrix m;
-				Matrix.Multiply(ref viewMatrix, ref mat, out m);
-				frustum.Matrix = m;
+				if (!debugPauseCullPlaneUpdates)
+				{
+					Matrix m;
+					Matrix.Multiply(ref viewMatrix, ref mat, out m);
+					frustum.Matrix = m;
 
-				frustumPlanes[0] = frustum.Far;
-				frustumPlanes[1] = frustum.Left;
-				frustumPlanes[2] = frustum.Right;
-				frustumPlanes[3] = frustum.Bottom;
-				frustumPlanes[4] = frustum.Top;
-				frustumPlanes[5] = frustum.Near;
+					frustumPlanes[0] = frustum.Far;
+					frustumPlanes[1] = frustum.Left;
+					frustumPlanes[2] = frustum.Right;
+					frustumPlanes[3] = frustum.Bottom;
+					frustumPlanes[4] = frustum.Top;
+					frustumPlanes[5] = frustum.Near;
 
-				frustumDirty = false;
+					frustumDirty = false;
+				}
 			}
 
 			return frustumPlanes;

@@ -257,6 +257,20 @@ namespace Xen.Input.Mapping
 #endif
 		}
 
+		/// <summary>Returns the name of the key or mouse selected</summary>
+		/// <returns></returns>
+		public override string ToString()
+		{
+#if !XBOX360
+			if (this.usemouse)
+				return this.mouse.ToString();
+			else
+				return this.key.ToString();
+#else
+			return this.key.ToString();
+#endif
+		}
+
 #if !XBOX360
 
 		/// <summary>

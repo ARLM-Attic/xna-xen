@@ -46,6 +46,7 @@ namespace Xen.Graphics
 					ValidateType(f.FieldType);
 		}
 
+
 #if !DEBUG_API
 		[System.Diagnostics.DebuggerStepThrough]
 #endif
@@ -135,6 +136,11 @@ namespace Xen.Graphics
 		public void ClearBuffer()
 		{
 			data = null;
+		}
+
+		public IEnumerable<DataType> Data
+		{
+			get { return data; }
 		}
 
 		public bool Disposed

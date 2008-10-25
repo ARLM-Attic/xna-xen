@@ -29,7 +29,12 @@ namespace Xen.Graphics
 			clone.activeModifiers = new List<IBeginEndDraw>();
 			clone.camera = this.camera;
 			clone.drawList = cloneDrawList ? new List<IDraw>(this.drawList) : new List<IDraw>();
-			clone.modifiers = cloneModifiers ? new List<IBeginEndDraw>(this.modifiers) : new List<IBeginEndDraw>();
+			if (this.modifiers != null)
+			{
+				clone.modifiers = cloneModifiers ? new List<IBeginEndDraw>(this.modifiers) : null;
+				if (clone.modifiers != null)
+					clone.activeModifiers = new List<IBeginEndDraw>(clone.modifiers.Capacity);
+			}
 			clone.rendering = false;
 			clone.enabled = true;
 		}
@@ -281,7 +286,7 @@ namespace Xen.Graphics
 				state.DrawTarget = this;
 
 #if DEBUG
-				state.Application.currentFrame.DrawTargetsDrawCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawTargetsDrawCount);
 #endif
 				Begin(state);
 
@@ -295,12 +300,12 @@ namespace Xen.Graphics
 						if (!BeginRepeat(state, repeat, ref cam))
 							continue;
 #if DEBUG
-						state.Application.currentFrame.DrawTargetsPassCount++;
+						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawTargetsPassCount);
 #endif
 					}
 #if DEBUG
 					else
-						state.Application.currentFrame.DrawTargetsPassCount++;
+						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawTargetsPassCount);
 #endif
 
 					if (bufferClear.Enabled)

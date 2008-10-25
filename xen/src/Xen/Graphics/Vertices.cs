@@ -487,7 +487,6 @@ namespace Xen.Graphics
 		/// <remarks></remarks>
 		public void Draw(DrawState state, IIndices indices, PrimitiveType primitiveType)
 		{
-			state.ApplyRenderStateChanges();
 			GraphicsDevice device = state.graphics;
 
 			if (state.DrawTarget == null)
@@ -539,6 +538,31 @@ namespace Xen.Graphics
 					break;
 			}
 
+			int vertexCount = 0;
+			if (indices != null)
+				vertexCount = indices.MaxIndex + 1;
+			else
+			{
+				switch (primitiveType)
+				{
+					case PrimitiveType.LineStrip:
+						vertexCount = primitives * 2;
+						break;
+					case PrimitiveType.PointList:
+					case PrimitiveType.LineList:
+					case PrimitiveType.TriangleList:
+						vertexCount = vertices;
+						break;
+					case PrimitiveType.TriangleFan:
+					case PrimitiveType.TriangleStrip:
+						vertexCount = primitives * 3;
+						break;
+				}
+			}
+
+			state.ApplyRenderStateChanges(vertexCount);
+
+
 #if DEBUG
 			state.CalcBoundTextures();
 #endif
@@ -546,15 +570,15 @@ namespace Xen.Graphics
 			if (indices != null)
 			{
 #if DEBUG
-				state.Application.currentFrame.DrawIndexedPrimitiveCallCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawIndexedPrimitiveCallCount);
 #endif
 
-				device.DrawIndexedPrimitives(primitiveType, 0, indices.MinIndex, indices.MaxIndex - indices.MinIndex, 0, primitives);
+				device.DrawIndexedPrimitives(primitiveType, 0, indices.MinIndex, (indices.MaxIndex - indices.MinIndex) + 1, 0, primitives);
 			}
 			else
 			{
 #if DEBUG
-				state.Application.currentFrame.DrawPrimitivesCallCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawPrimitivesCallCount);
 #endif
 
 				device.DrawPrimitives(primitiveType, 0, primitives);
@@ -591,7 +615,6 @@ namespace Xen.Graphics
 		/// <param name="vertexOffset">Starting offset into the vertex buffer (defaults to the first vertex - 0)</param>
 		public void Draw(DrawState state, IIndices indices, PrimitiveType primitiveType, int primitveCount, int startIndex, int vertexOffset)
 		{
-			state.ApplyRenderStateChanges();
 			GraphicsDevice device = state.graphics;
 
 			if (state.DrawTarget == null)
@@ -611,7 +634,7 @@ namespace Xen.Graphics
 			VertexDeclaration vd = this.decl;
 			
 #if DEBUG
-			state.ValidateVertexDeclarationForShader(vd, null);
+			state.ValidateVertexDeclarationForShader(vd, typeof(VertexType));
 #endif
 
 			state.VertexDeclaration = vd;
@@ -643,6 +666,30 @@ namespace Xen.Graphics
 					break;
 			}
 
+			int vertexCount = 0;
+			if (indices != null)
+				vertexCount = indices.MaxIndex + 1;
+			else
+			{
+				switch (primitiveType)
+				{
+					case PrimitiveType.LineStrip:
+						vertexCount = primitives * 2;
+						break;
+					case PrimitiveType.PointList:
+					case PrimitiveType.LineList:
+					case PrimitiveType.TriangleList:
+						vertexCount = vertices;
+						break;
+					case PrimitiveType.TriangleFan:
+					case PrimitiveType.TriangleStrip:
+						vertexCount = primitives * 3;
+						break;
+				}
+			}
+
+			state.ApplyRenderStateChanges(vertexCount);
+
 			if (primitveCount > primitives ||
 				primitveCount <= 0)
 				throw new ArgumentException("primitiveCount");
@@ -654,15 +701,15 @@ namespace Xen.Graphics
 			if (indices != null)
 			{
 #if DEBUG
-				state.Application.currentFrame.DrawIndexedPrimitiveCallCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawIndexedPrimitiveCallCount);
 #endif
 
-				device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, indices.MaxIndex - indices.MinIndex, startIndex, primitveCount);
+				device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, (indices.MaxIndex - indices.MinIndex) + 1, startIndex, primitveCount);
 			}
 			else
 			{
 #if DEBUG
-				state.Application.currentFrame.DrawPrimitivesCallCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawPrimitivesCallCount);
 #endif
 
 				device.DrawPrimitives(primitiveType, vertexOffset, primitveCount);

@@ -74,6 +74,10 @@ namespace Xen.Graphics
 	interface IDeviceIndexBuffer
 	{
 		IndexBuffer GetIndexBuffer(DrawState state);
+#if XBOX360
+		bool AllocateForInstancing(DrawState state);
+		int MaxInstances { get; }
+#endif
 	}
 
 
@@ -199,6 +203,107 @@ namespace Xen.Graphics
 				ib.max = Math.Max(values[i], ib.max);
 			}
 		}
+
+#if XBOX360
+
+		//instancing support
+
+		static short[] copyBufferS;
+		static ushort[] copyBufferUS;
+		static int[] copyBufferI;
+		static uint[] copyBufferUI;
+
+		static object Length<T>(ref T[] array, int length)
+		{
+			int l = array == null ? 32 : array.Length;
+			while (length > l)
+				l *= 2;
+			array = new T[l];
+			return array;
+		}
+
+		static T[] Switch<T>(int length)
+		{
+			if (typeof(T) == typeof(ushort))
+				return (T[])Length(ref copyBufferUS, length);
+			if (typeof(T) == typeof(short))
+				return (T[])Length(ref copyBufferS, length);
+			if (typeof(T) == typeof(uint))
+				return (T[])Length(ref copyBufferUI, length);
+			if (typeof(T) == typeof(int))
+				return (T[])Length(ref copyBufferI, length);
+			throw new ArgumentException();
+		}
+
+		public static T[] BeginLock<T>(int length)
+		{
+			T[] array = Switch<T>(length);
+			System.Threading.Monitor.Enter(array);
+			return array;
+		}
+		public static void EndLock<T>(T[] array)
+		{
+			System.Threading.Monitor.Exit(array);
+		}
+
+		public static void CopyIncrement<T>(T[] array, T[] destination, int length, uint increment) where T : struct
+		{
+			CopyIncrement<T>((object)array, (object)destination, length, increment);
+		}
+
+		public static void CopyIncrementToInt<T>(T[] array, uint[] destination, int length, uint increment)
+		{
+			if (typeof(T) == typeof(ushort))
+				CopyIncrementToIntType(array as ushort[], destination, length, increment);
+			if (typeof(T) == typeof(short))
+				CopyIncrementToIntType(array as short[], destination, length, increment);
+		}
+		static void CopyIncrementToIntType(ushort[] src, uint[] dst, int length, uint increment)
+		{
+			for (int i = 0; i < length; i++)
+				dst[i] = (src[i] + increment);
+		}
+		static void CopyIncrementToIntType(short[] src, uint[] dst, int length, uint increment)
+		{
+			for (int i = 0; i < length; i++)
+				dst[i] = (uint)(src[i] + increment);
+		}
+
+		static void CopyIncrement<T>(object array, object destination, int length, uint increment)
+		{
+			if (typeof(T) == typeof(ushort))
+				CopyIncrementType((ushort[])array, (ushort[])destination, length, increment);
+			if (typeof(T) == typeof(short))
+				CopyIncrementType((short[])array, (short[])destination, length, increment);
+			if (typeof(T) == typeof(uint))
+				CopyIncrementType((uint[])array, (uint[])destination, length, increment);
+			if (typeof(T) == typeof(int))
+				CopyIncrementType((int[])array, (int[])destination, length, increment);
+		}
+
+		static void CopyIncrementType(ushort[] src, ushort[] dst, int length, uint increment)
+		{
+			for (int i = 0; i < length; i++)
+				dst[i] = (ushort)(src[i] + increment);
+		}
+		static void CopyIncrementType(short[] src, short[] dst, int length, uint increment)
+		{
+			for (int i = 0; i < length; i++)
+				dst[i] = (short)(src[i] + increment);
+		}
+		static void CopyIncrementType(uint[] src, uint[] dst, int length, uint increment)
+		{
+			for (int i = 0; i < length; i++)
+				dst[i] = (src[i] + increment);
+		}
+		static void CopyIncrementType(int[] src, int[] dst, int length, uint increment)
+		{
+			for (int i = 0; i < length; i++)
+				dst[i] = (int)(src[i] + increment);
+		}
+
+
+#endif
 	}
 
 	/// <summary>
@@ -227,6 +332,12 @@ namespace Xen.Graphics
 			public IndexType min = default(IndexType), max = default(IndexType);
 			public int i_min, i_max;
 			public bool complete;
+
+#if XBOX360
+			public int instancingCount = 0;
+			public bool convertToInt = false;
+#endif
+
 #if DEBUG
 #if !XBOX360
 			private int previousCopyEnd;
@@ -248,15 +359,14 @@ namespace Xen.Graphics
 				}
 
 				processor(data, length, this);
-
+#if !XBOX360
 				if (target is DynamicIndexBuffer)
 				{
 #if DEBUG
 					state.Application.currentFrame.DynamicIndexBufferByesCopied += Stride * length;
 #endif
 					SetDataOptions setOp = SetDataOptions.None;
-					
-#if !XBOX360
+				
 					if (sequentialWriteFlag)
 					{
 						if (start == 0)
@@ -277,16 +387,95 @@ namespace Xen.Graphics
 					else
 						if (start == 0 && length * Stride == ((DynamicIndexBuffer)target).SizeInBytes)
 							setOp = SetDataOptions.Discard;
-#endif
 
 					((DynamicIndexBuffer)target).SetData(start, data, startIndex, length, setOp);
 				}
 				else
+#endif
 				{
 #if DEBUG
-					state.Application.currentFrame.IndexBufferByesCopied += Stride * length;
+#if XBOX360
+					if (target is DynamicIndexBuffer)
+						state.Application.currentFrame.DynamicIndexBufferByesCopied += Stride * length;
+					else
 #endif
+						state.Application.currentFrame.IndexBufferByesCopied += Stride * length;
+#endif
+#if XBOX360
+					int instancingCount = Math.Max(this.instancingCount, 1);
+
+					//instancing requires data is duplicated over the index buffer multiple times, with an offset
+					//added to each duplication
+					if (instancingCount >= 1 && !convertToInt)
+						((IndexBuffer)target).SetData(start, data, startIndex, length);
+
+					if (instancingCount > 1)
+					{
+						int max = this.i_max;
+						IndexBufferProcessor.Update(this, out i_min, out i_max);
+
+						if (max == 0)
+						{
+							if (start != 0 || length * Stride != ((IndexBuffer)target).SizeInBytes / instancingCount / (convertToInt ? 2 : 1))
+								throw new ArgumentException("XBOX Instancing error: Instancing requires the first index buffer write to copy the entire buffer");
+						}
+						else
+						{
+							if (this.i_max > max)
+								throw new ArgumentException("XBOX Instancing error: Max index in the index buffer has increased from the first write");
+						}
+
+						//copy in multiple versions of the same indices
+						if (convertToInt)
+						{
+							uint[] buffer = null;
+							try
+							{
+								uint increment = (uint)(this.i_max+1);
+								buffer = IndexBufferProcessor.BeginLock<uint>(length);
+
+								//foreach instance copy, make a copy of the data.
+								for (int i = 0; i < instancingCount; i++)
+								{
+									IndexBufferProcessor.CopyIncrementToInt(data, buffer, length, (uint)(increment * i));
+									((IndexBuffer)target).SetData(start + length * 4 * i, buffer, startIndex, length);
+								}
+							}
+							finally
+							{
+								IndexBufferProcessor.EndLock<uint>(buffer);
+							}
+						}
+						else
+						{
+							IndexType[] buffer = null;
+							try
+							{
+								uint increment = (uint)(this.i_max+1);
+								buffer = IndexBufferProcessor.BeginLock<IndexType>(length);
+
+								//foreach instance copy, make a copy of the data.
+								for (int i = 1; i < instancingCount; i++)
+								{
+									IndexBufferProcessor.CopyIncrement(data, buffer, length, (uint)(increment * i));
+									((IndexBuffer)target).SetData(start + length * Stride * i, buffer, startIndex, length);
+								}
+							}
+							finally
+							{
+								IndexBufferProcessor.EndLock<IndexType>(buffer);
+							}
+						}
+
+						IndexType[] da = new IndexType[((IndexBuffer)target).SizeInBytes / Stride];
+						((IndexBuffer)target).GetData(da);
+
+						da = null;
+					}
+#else
 					((IndexBuffer)target).SetData(start, data, startIndex, length);
+#endif
+
 				}
 			}
 			protected override void WriteComplete()
@@ -338,6 +527,104 @@ namespace Xen.Graphics
 		{
 			Dispose();
 		}
+
+#if XBOX360
+
+		int IDeviceIndexBuffer.MaxInstances
+		{
+			get { return buffer.instancingCount; }
+		}
+
+		bool IDeviceIndexBuffer.AllocateForInstancing(DrawState state)
+		{
+			if (buffer.instancingCount > 0)
+				return buffer.instancingCount > 1;
+
+			int instances = 128;
+			if (this.buffer.Count > 100)
+				instances = 64;
+			if (this.buffer.Count > 2000)
+				instances = 32;
+			if (this.buffer.Count > 20000)
+				instances = 16;
+			if (this.buffer.Count > 175000)
+				instances = 8;
+			if (this.buffer.Count > 250000)
+				instances = 4;
+			if (this.buffer.Count > 300000)
+				instances = 2;
+			if (this.buffer.Count > 400000)
+				instances = 1;
+
+			if ((this.ResourceUsage & ResourceUsage.Dynamic) == ResourceUsage.Dynamic)
+				instances = 1;
+
+			bool convertToInt = false;
+
+			if (instances > 1)
+			{
+				if (this.buffer.Stride == 2)
+				{
+					if (typeof(IndexType) == typeof(ushort))
+					{
+						if ((this.buffer.i_max+1) * instances > ushort.MaxValue)
+						{
+							if ((int)ushort.MaxValue / (this.buffer.i_max+1) >= 16)
+								instances = (int)ushort.MaxValue / (this.buffer.i_max+1);
+							else
+								convertToInt = true;
+						}
+					}
+					else
+					{
+						if (this.buffer.i_max * instances > short.MaxValue)
+						{
+							if ((int)short.MaxValue / (this.buffer.i_max+1) >= 16)
+								instances = (int)short.MaxValue / (this.buffer.i_max+1);
+							else
+								convertToInt = true;
+						}
+					}
+				}
+				else
+				{
+					if ((this.buffer.i_max+1) * 64 > state.graphics.GraphicsDeviceCapabilities.MaxVertexIndex)
+						instances = Math.Max(1, state.graphics.GraphicsDeviceCapabilities.MaxVertexIndex / (this.buffer.i_max+1));
+				}
+			}
+
+			buffer.instancingCount = 1;
+
+			if (instances > 1)
+			{
+				IEnumerable<IndexType> data = buffer.Data;
+				
+				if (ib != null)
+				{
+					if (data == null)
+					{
+						data = new IndexType[buffer.Count];
+						ib.GetData<IndexType>((IndexType[])data);
+					}
+					ib.Dispose();
+					ib = null;
+				}
+				if (data == null)
+				{
+					buffer.instancingCount = 1;
+					return false;
+				}
+
+				buffer.Dispose();
+
+				buffer = new Implementation(data);
+				buffer.instancingCount = instances;
+				buffer.convertToInt = convertToInt;
+			}
+			return buffer.instancingCount > 1;
+		}
+
+#endif
 
 		internal override int GetAllocatedDeviceBytes()
 		{
@@ -481,10 +768,14 @@ namespace Xen.Graphics
 		{
 			get
 			{
-				BufferUsage b = BufferUsage.WriteOnly;
+#if XBOX360
+				BufferUsage bufferUsage = BufferUsage.None;
+#else
+				BufferUsage bufferUsage = BufferUsage.WriteOnly;
+#endif
 				if ((usage & ResourceUsage.Points) == ResourceUsage.Points)
-					b |= BufferUsage.Points;
-				return b;
+					bufferUsage |= BufferUsage.Points;
+				return bufferUsage;
 			}
 		}
 
@@ -504,6 +795,18 @@ namespace Xen.Graphics
 			}
 		}
 
+		Type BufferIndexType
+		{
+			get 
+			{ 
+#if XBOX360
+				if (buffer.convertToInt)
+					return typeof(uint);
+#endif
+				return typeof(IndexType); 
+			}
+		}
+
 		IndexBuffer IDeviceIndexBuffer.GetIndexBuffer(DrawState state)
 		{
 			GraphicsDevice device = state.graphics;
@@ -514,12 +817,20 @@ namespace Xen.Graphics
 				int size = 32;
 				if (buffer.CountKnown)
 					size = buffer.Count;
+
+				Type indexType = BufferIndexType;
+				int instanceCount = 1;
+
+#if XBOX360
+				instanceCount = Math.Max(1, this.buffer.instancingCount);
+#endif
+
 				if (size == 0)
 					throw new ArgumentException(string.Format("Indices<{0}> data size is zero", typeof(IndexType).Name));
 				if ((usage & ResourceUsage.Dynamic) == ResourceUsage.Dynamic)
-					ib = new DynamicIndexBuffer(device, typeof(IndexType), size, Usage);
+					ib = new DynamicIndexBuffer(device, indexType, size * instanceCount, Usage);
 				else
-					ib = new IndexBuffer(device, typeof(IndexType), size, Usage);
+					ib = new IndexBuffer(device, indexType, size * instanceCount, Usage);
 
 				if ((ResourceUsage & ResourceUsage.DynamicSequential) != ResourceUsage.DynamicSequential)
 				{
@@ -528,9 +839,9 @@ namespace Xen.Graphics
 					{
 						ib.Dispose();
 						if ((usage & ResourceUsage.Dynamic) == ResourceUsage.Dynamic)
-							ib = new DynamicIndexBuffer(device, typeof(IndexType), buffer.Count, Usage);
+							ib = new DynamicIndexBuffer(device, indexType, buffer.Count * instanceCount, Usage);
 						else
-							ib = new IndexBuffer(device, typeof(IndexType), buffer.Count, Usage);
+							ib = new IndexBuffer(device, indexType, buffer.Count * instanceCount, Usage);
 						buffer.WriteBuffer(state, 0, buffer.Count * buffer.Stride, ib, this);
 					}
 					this.buffer.ClearDirtyRange();
@@ -545,9 +856,7 @@ namespace Xen.Graphics
 				SetDirty();
 
 			if (this.buffer.IsDirty)
-			{
 				this.buffer.UpdateDirtyRegions(state, this.ib, this);
-			}
 
 			return ib;
 		}

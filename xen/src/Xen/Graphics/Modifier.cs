@@ -636,21 +636,21 @@ namespace Xen.Graphics.Modifier
 			{
 				op |= ClearOptions.Target;
 #if DEBUG
-				state.Application.currentFrame.BufferClearTargetCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.BufferClearTargetCount);
 #endif
 			}
 			if (clearDepth)
 			{
 				op |= ClearOptions.DepthBuffer;
 #if DEBUG
-				state.Application.currentFrame.BufferClearDepthCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.BufferClearDepthCount);
 #endif
 			}
 			if (clearStencil)
 			{
 				op |= ClearOptions.Stencil;
 #if DEBUG
-				state.Application.currentFrame.BufferClearStencilCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.BufferClearStencilCount);
 #endif
 			}
 

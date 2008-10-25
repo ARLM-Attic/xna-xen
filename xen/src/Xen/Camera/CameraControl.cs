@@ -63,7 +63,7 @@ namespace Xen.Camera
 		public void SetConstant(IValue<Matrix> constant, int frame)
 		{
 #if DEBUG
-			state.Application.currentFrame.ShaderConstantMatrixValueSetCount++;
+			System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixValueSetCount);
 #endif
 			constant.Set(ref value);
 		}
@@ -79,7 +79,7 @@ namespace Xen.Camera
 				if (cam.GetProjectionMatrix(ref this.value,ref drawTargetSize, ref this.camIndex))
 				{
 #if DEBUG
-					state.Application.currentFrame.ShaderConstantMatrixProjectionChangedCount++;
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixProjectionChangedCount);
 #endif
 					index++;
 				}
@@ -97,7 +97,7 @@ namespace Xen.Camera
 				if (cam.GetViewMatrix(ref this.value, ref this.camIndex))
 				{
 #if DEBUG
-					state.Application.currentFrame.ShaderConstantMatrixViewChangedCount++;
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixViewChangedCount);
 #endif
 					index++;
 				}
@@ -112,18 +112,18 @@ namespace Xen.Camera
 	{
 		private const bool TestMatrixEquality = false;
 
-		readonly Matrix[] stack;
-		readonly int[] stackIndex;
-		readonly bool[] stackIdentity;
-		readonly float[] stackApproxSize;
-		int highpoint = 1;
-		uint top;
+		private readonly Matrix[] stack;
+		private readonly int[] stackIndex;
+		private readonly bool[] stackIdentity;
+		private readonly float[] stackApproxSize;
+		private int highpoint = 1;
+		private uint top;
 		internal float approxScale = 1;
 		internal bool isApproxNorm = true;
 		internal bool detectScale = false;
 		private bool isIdentity = true;
 #if DEBUG
-		DrawState state;
+		private DrawState state;
 #endif
 
 		public WorldStackProvider(int stackSize, DrawState state)
@@ -142,17 +142,18 @@ namespace Xen.Camera
 		public void SetConstant(IValue<Matrix> constant, int frame)
 		{
 #if DEBUG
-			state.Application.currentFrame.ShaderConstantMatrixValueSetCount++;
+			System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixValueSetCount);
 #endif
 			constant.Set(ref value);
 		}
 
 		public uint MatrixStackTop { get { return top; } }
+		public bool IsIdentity { get { return isIdentity; } }
 
 		public void Set(ref Matrix matrix)
 		{
 #if DEBUG
-			state.Application.currentFrame.ShaderConstantMatrixSetWorldMatrixCount++;
+			System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixSetWorldMatrixCount);
 #endif
 			if (top == 0)
 			{
@@ -176,7 +177,7 @@ namespace Xen.Camera
 		public void Push(ref Matrix matrix)
 		{
 #if DEBUG
-			state.Application.currentFrame.ShaderConstantMatrixPushWorldMatrixCount++;
+			System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixPushWorldMatrixCount);
 #endif
 			if (top == 0)
 			{
@@ -225,7 +226,7 @@ namespace Xen.Camera
 		public void PushTrans(ref Vector3 translate)
 		{
 #if DEBUG
-			state.Application.currentFrame.ShaderConstantMatrixPushTranslateWorldMatrixCount++;
+			System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixPushTranslateWorldMatrixCount);
 #endif
 			if (top == 0)
 			{
@@ -311,7 +312,7 @@ namespace Xen.Camera
 		public void PushMultTrans(ref Vector3 translate)
 		{
 #if DEBUG
-			state.Application.currentFrame.ShaderConstantMatrixPushMultiplyTranslateWorldMatrixCount++;
+			System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixPushMultiplyTranslateWorldMatrixCount);
 #endif
 			if (top == 0)
 			{
@@ -386,17 +387,16 @@ namespace Xen.Camera
 					}
 					else
 					{
-						//todo validate this.
 						this.value.M41 += translate.X * this.value.M11 +
-											translate.Y * this.value.M12 +
-											translate.Z * this.value.M13;
+											translate.Y * this.value.M21 +
+											translate.Z * this.value.M31;
 
-						this.value.M42 += translate.X * this.value.M21 +
+						this.value.M42 += translate.X * this.value.M12 +
 											translate.Y * this.value.M22 +
-											translate.Z * this.value.M23;
+											translate.Z * this.value.M32;
 
-						this.value.M43 += translate.X * this.value.M31 +
-											translate.Y * this.value.M32 +
+						this.value.M43 += translate.X * this.value.M13 +
+											translate.Y * this.value.M23 +
 											translate.Z * this.value.M33;
 					}
 					isIdentity = false;
@@ -409,7 +409,7 @@ namespace Xen.Camera
 		public void PushMult(ref Matrix matrix)
 		{
 #if DEBUG
-			state.Application.currentFrame.ShaderConstantMatrixPushMultiplyWorldMatrixCount++;
+			System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixPushMultiplyWorldMatrixCount);
 #endif
 			if (top == 0)
 			{
@@ -446,7 +446,7 @@ namespace Xen.Camera
 					else
 					{
 #if DEBUG
-						state.Application.currentFrame.ShaderConstantMatrixMultiplyCalculateCount++;
+						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixMultiplyCalculateCount);
 #endif
 						Matrix.Multiply(ref matrix, ref this.value, out this.value);
 					}
@@ -547,7 +547,7 @@ namespace Xen.Camera
 						source.Changed(ref sourceIndex))
 					{
 #if DEBUG
-						state.Application.currentFrame.ShaderConstantMatrixMultiplyCalculateCount++;
+						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixMultiplyCalculateCount);
 #endif
 						Matrix.Multiply(ref provider.value, ref source.value, out value);
 						index++;
@@ -560,7 +560,7 @@ namespace Xen.Camera
 						if (op == MatrixOp.Transpose)
 						{
 #if DEBUG
-							state.Application.currentFrame.ShaderConstantMatrixTransposeCalculateCount++;
+							System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixTransposeCalculateCount);
 #endif
 							Matrix.Transpose(ref provider.value, out this.value);
 							index++;
@@ -569,7 +569,7 @@ namespace Xen.Camera
 						{
 							//invert
 #if DEBUG
-							state.Application.currentFrame.ShaderConstantMatrixInverseCalculateCount++;
+							System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixInverseCalculateCount);
 #endif
 							Matrix.Invert(ref provider.value, out this.value);
 							index++;
@@ -585,7 +585,7 @@ namespace Xen.Camera
 			if (changeId != index)
 			{
 #if DEBUG
-				state.Application.currentFrame.ShaderConstantMatrixValueSetCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixValueSetCount);
 #endif
 				constant.Set(ref value);
 				changeId = index;
@@ -629,8 +629,20 @@ namespace Xen
 		/// </summary>
 		public bool WorldMatrixDetectScale
 		{
-			get { ValidateProtected(); return worldMatrix.detectScale; }
-			set { ValidateProtected(); worldMatrix.detectScale = value; }
+			get 
+			{ 	
+#if DEBUG
+				ValidateProtected(); 
+#endif
+				return worldMatrix.detectScale; 
+			}
+			set 
+			{
+#if DEBUG
+				ValidateProtected(); 
+#endif
+				worldMatrix.detectScale = value; 
+			}
 		}
 
 
@@ -683,8 +695,10 @@ namespace Xen
 
 		bool ICuller.TestBox(Vector3 min, Vector3 max)
 		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).TestWorldBox(ref min, ref max);
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -695,7 +709,7 @@ namespace Xen
 				if (!preCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return false;
 				}
@@ -704,7 +718,7 @@ namespace Xen
 			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref worldMatrix.value, worldMatrix.approxScale))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return false;
 			}
@@ -714,7 +728,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return false;
 				}
@@ -723,8 +737,10 @@ namespace Xen
 		}
 		bool ICuller.TestBox(ref Vector3 min, ref Vector3 max)
 		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).TestWorldBox(ref min, ref max);
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -736,7 +752,7 @@ namespace Xen
 				if (!preCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return false;
 				}
@@ -745,7 +761,7 @@ namespace Xen
 			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref worldMatrix.value, worldMatrix.approxScale))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return false;
 			}
@@ -755,7 +771,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return false;
 				}
@@ -766,7 +782,7 @@ namespace Xen
 		bool ICuller.TestSphere(float radius)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -785,7 +801,7 @@ namespace Xen
 				if (!preCullers[i].TestWorldSphere(radius, ref pos))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return false;
 				}
@@ -794,7 +810,7 @@ namespace Xen
 			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius * worldMatrix.approxScale, ref pos))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return false;
 			}
@@ -804,7 +820,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldSphere(radius, ref pos))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return false;
 				}
@@ -819,7 +835,7 @@ namespace Xen
 		bool ICuller.TestSphere(float radius, ref Vector3 position)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -833,7 +849,7 @@ namespace Xen
 				if (!preCullers[i].TestWorldSphere(radius, ref pos))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return false;
 				}
@@ -842,7 +858,7 @@ namespace Xen
 			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius * worldMatrix.approxScale, ref pos))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return false;
 			}
@@ -852,7 +868,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldSphere(radius, ref pos))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return false;
 				}
@@ -864,9 +880,12 @@ namespace Xen
 
 		ContainmentType ICuller.IntersectBox(Vector3 min, Vector3 max)
 		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).IntersectWorldBox(ref min, ref max);
+
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -878,7 +897,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return type;
 				}
@@ -890,7 +909,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return type;
 			}
@@ -903,7 +922,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return type;
 				}
@@ -914,9 +933,12 @@ namespace Xen
 		}
 		ContainmentType ICuller.IntersectBox(ref Vector3 min, ref Vector3 max)
 		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).IntersectWorldBox(ref min, ref max);
+
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -929,7 +951,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return type;
 				}
@@ -941,7 +963,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return type;
 			}
@@ -954,7 +976,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return type;
 				}
@@ -968,7 +990,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -988,7 +1010,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return type;
 				}
@@ -1000,7 +1022,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return type;
 			}
@@ -1013,7 +1035,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return type;
 				}
@@ -1031,7 +1053,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 #if DEBUG
 			if (camera == null)
@@ -1046,7 +1068,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return type;
 				}
@@ -1058,7 +1080,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return type;
 			}
@@ -1071,7 +1093,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return type;
 				}
@@ -1090,14 +1112,30 @@ namespace Xen
 		/// </summary>
 		public float WorldMatrixApproximateScale
 		{
-			get { ValidateProtected(); if (!worldMatrix.detectScale) throw new InvalidOperationException("WorldMatrixDetectScale must be true"); return worldMatrix.approxScale; }
+			get 
+			{	
+#if DEBUG
+				ValidateProtected(); 
+#endif
+				if (!worldMatrix.detectScale) 
+					throw new InvalidOperationException("WorldMatrixDetectScale must be true"); 
+				return worldMatrix.approxScale; 
+			}
 		}
 		/// <summary>
 		/// Returns true if the current world matrix scale is approximately 1. Requires that <see cref="WorldMatrixDetectScale"/> is set to true
 		/// </summary>
 		public bool WorldMatrixApproximateIsNormalised
 		{
-			get { ValidateProtected(); if (!worldMatrix.detectScale) throw new InvalidOperationException("WorldMatrixDetectScale must be true"); return worldMatrix.isApproxNorm; }
+			get 
+			{ 
+#if DEBUG
+				ValidateProtected(); 
+#endif
+				if (!worldMatrix.detectScale) 
+					throw new InvalidOperationException("WorldMatrixDetectScale must be true"); 
+				return worldMatrix.isApproxNorm; 
+			}
 		}
 
 		/// <summary>
@@ -1105,7 +1143,13 @@ namespace Xen
 		/// </summary>
 		public ICuller Culler
 		{
-			get { ValidateProtected(); return this; }
+			get 
+			{ 
+#if DEBUG 
+				ValidateProtected(); 
+#endif
+				return this; 
+			}
 		}
 
 		#region cull primitives
@@ -1113,14 +1157,14 @@ namespace Xen
 		bool ICullPrimitive.TestWorldBox(Vector3 min, Vector3 max, ref Matrix world)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
 				if (!preCullers[i].TestWorldBox(ref min, ref max, ref world))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return false;
 				}
@@ -1129,7 +1173,7 @@ namespace Xen
 			if (!camera.TestWorldBox(ref min, ref max, ref world))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return false;
 			}
@@ -1139,7 +1183,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldBox(ref min, ref max, ref world))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return false;
 				}
@@ -1149,14 +1193,14 @@ namespace Xen
 		bool ICullPrimitive.TestWorldBox(ref Vector3 min, ref Vector3 max, ref Matrix world)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
 				if (!preCullers[i].TestWorldBox(ref min, ref max, ref world))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return false;
 				}
@@ -1165,7 +1209,7 @@ namespace Xen
 			if (!camera.TestWorldBox(ref min, ref max, ref world))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return false;
 			}
@@ -1175,7 +1219,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldBox(ref min, ref max, ref world))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return false;
 				}
@@ -1186,14 +1230,14 @@ namespace Xen
 		bool ICullPrimitive.TestWorldBox(Vector3 min, Vector3 max)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
 				if (!preCullers[i].TestWorldBox(ref min, ref max))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return false;
 				}
@@ -1202,7 +1246,7 @@ namespace Xen
 			if (!camera.TestWorldBox(ref min, ref max))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return false;
 			}
@@ -1212,7 +1256,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldBox(ref min, ref max))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return false;
 				}
@@ -1222,14 +1266,14 @@ namespace Xen
 		bool ICullPrimitive.TestWorldBox(ref Vector3 min, ref Vector3 max)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
 				if (!preCullers[i].TestWorldBox(ref min, ref max))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return false;
 				}
@@ -1238,7 +1282,7 @@ namespace Xen
 			if (!camera.TestWorldBox(ref min, ref max))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return false;
 			}
@@ -1248,7 +1292,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldBox(ref min, ref max))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return false;
 				}
@@ -1259,7 +1303,7 @@ namespace Xen
 		bool ICullPrimitive.TestWorldSphere(float radius, Vector3 position)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
@@ -1267,7 +1311,7 @@ namespace Xen
 				if (!preCullers[i].TestWorldSphere(radius, ref position))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return false;
 				}
@@ -1276,7 +1320,7 @@ namespace Xen
 			if (!camera.TestWorldSphere(radius, ref position))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return false;
 			}
@@ -1286,7 +1330,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldSphere(radius, ref position))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return false;
 				}
@@ -1296,14 +1340,14 @@ namespace Xen
 		bool ICullPrimitive.TestWorldSphere(float radius, ref Vector3 position)
 		{
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
 				if (!preCullers[i].TestWorldSphere(radius, ref position))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return false;
 				}
@@ -1312,7 +1356,7 @@ namespace Xen
 			if (!camera.TestWorldSphere(radius, ref position))
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return false;
 			}
@@ -1322,7 +1366,7 @@ namespace Xen
 				if (!postCullers[i].TestWorldSphere(radius, ref position))
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return false;
 				}
@@ -1335,7 +1379,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1343,7 +1387,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return type;
 				}
@@ -1355,7 +1399,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return type;
 			}
@@ -1368,7 +1412,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return type;
 				}
@@ -1381,7 +1425,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1389,7 +1433,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return type;
 				}
@@ -1401,7 +1445,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return type;
 			}
@@ -1414,7 +1458,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return type;
 				}
@@ -1428,7 +1472,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1436,7 +1480,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return type;
 				}
@@ -1448,7 +1492,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return type;
 			}
@@ -1461,7 +1505,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return type;
 				}
@@ -1474,7 +1518,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestBoxCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1482,7 +1526,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
 #endif
 					return type;
 				}
@@ -1494,7 +1538,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestBoxCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
 #endif
 				return type;
 			}
@@ -1507,7 +1551,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestBoxPostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
 #endif
 					return type;
 				}
@@ -1521,7 +1565,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
@@ -1530,7 +1574,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return type;
 				}
@@ -1542,7 +1586,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return type;
 			}
@@ -1555,7 +1599,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return type;
 				}
@@ -1568,7 +1612,7 @@ namespace Xen
 		{
 			ContainmentType type; bool intersect = false;
 #if DEBUG
-			application.currentFrame.DefaultCullerTestSphereCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCount);
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1576,7 +1620,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePreCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePreCulledCount);
 #endif
 					return type;
 				}
@@ -1588,7 +1632,7 @@ namespace Xen
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
-				application.currentFrame.DefaultCullerTestSphereCulledCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
 #endif
 				return type;
 			}
@@ -1601,7 +1645,7 @@ namespace Xen
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
-					application.currentFrame.DefaultCullerTestSpherePostCulledCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSpherePostCulledCount);
 #endif
 					return type;
 				}
@@ -2128,7 +2172,7 @@ namespace Xen
 		void IShaderSystem.SetGlobal(IValue<Matrix> value, int uid, ref int changeId)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantMatrixGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantMatrixGlobalAssignCount);
 #endif
 
 			ShaderGlobal<Matrix> global = matrixGlobals[uid];
@@ -2146,7 +2190,7 @@ namespace Xen
 		void IShaderSystem.SetGlobal(IValue<Vector4> value, int uid, ref int changeId)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantVectorGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantVectorGlobalAssignCount);
 #endif
 
 			ShaderGlobal<Vector4> global = v4Globals[uid];
@@ -2164,7 +2208,7 @@ namespace Xen
 		void IShaderSystem.SetGlobal(IValue<Vector3> value, int uid, ref int changeId)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantVectorGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantVectorGlobalAssignCount);
 #endif
 
 			ShaderGlobal<Vector3> global = v3Globals[uid];
@@ -2182,7 +2226,7 @@ namespace Xen
 		void IShaderSystem.SetGlobal(IValue<Vector2> value, int uid, ref int changeId)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantVectorGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantVectorGlobalAssignCount);
 #endif
 
 			ShaderGlobal<Vector2> global = v2Globals[uid];
@@ -2200,7 +2244,7 @@ namespace Xen
 		void IShaderSystem.SetGlobal(IValue<float> value, int uid, ref int changeId)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantSingleGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantSingleGlobalAssignCount);
 #endif
 
 			ShaderGlobal<float> global = singleGlobals[uid];
@@ -2226,7 +2270,7 @@ namespace Xen
 			ShaderGlobal<Matrix[]> global = matrixArrayGlobals[uid];
 
 #if DEBUG
-			application.currentFrame.ShaderConstantArrayGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantArrayGlobalAssignCount);
 			application.currentFrame.ShaderConstantArrayGlobalAssignTotalBytes += global.value.Length * 64;
 #endif
 
@@ -2246,7 +2290,7 @@ namespace Xen
 			ShaderGlobal<Vector4[]> global = v4ArrayGlobals[uid];
 
 #if DEBUG
-			application.currentFrame.ShaderConstantArrayGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantArrayGlobalAssignCount);
 			application.currentFrame.ShaderConstantArrayGlobalAssignTotalBytes += global.value.Length * 16;
 #endif
 			global.frame = frame;
@@ -2265,7 +2309,7 @@ namespace Xen
 			ShaderGlobal<Vector3[]> global = v3ArrayGlobals[uid];
 
 #if DEBUG
-			application.currentFrame.ShaderConstantArrayGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantArrayGlobalAssignCount);
 			application.currentFrame.ShaderConstantArrayGlobalAssignTotalBytes += global.value.Length * 12;
 #endif
 			global.frame = frame;
@@ -2284,7 +2328,7 @@ namespace Xen
 			ShaderGlobal<Vector2[]> global = v2ArrayGlobals[uid];
 
 #if DEBUG
-			application.currentFrame.ShaderConstantArrayGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantArrayGlobalAssignCount);
 			application.currentFrame.ShaderConstantArrayGlobalAssignTotalBytes += global.value.Length * 8;
 #endif
 			global.frame = frame;
@@ -2303,7 +2347,7 @@ namespace Xen
 			ShaderGlobal<float[]> global = singleArrayGlobals[uid];
 
 #if DEBUG
-			application.currentFrame.ShaderConstantArrayGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantArrayGlobalAssignCount);
 			application.currentFrame.ShaderConstantArrayGlobalAssignTotalBytes += global.value.Length * 4;
 #endif
 			global.frame = frame;
@@ -2324,7 +2368,7 @@ namespace Xen
 		Microsoft.Xna.Framework.Graphics.Texture IShaderSystem.GetGlobalTexture(int uid)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantTextureGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantTextureGlobalAssignCount);
 
 			if (textureGlobals[uid] == null)
 				ValidateGlobalTextureAccess<Microsoft.Xna.Framework.Graphics.Texture>(uid, textureGlobalLookup);
@@ -2335,7 +2379,7 @@ namespace Xen
 		Microsoft.Xna.Framework.Graphics.Texture2D IShaderSystem.GetGlobalTexture2D(int uid)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantTextureGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantTextureGlobalAssignCount);
 
 			if (texture2DGlobals[uid] == null)
 				ValidateGlobalTextureAccess<Microsoft.Xna.Framework.Graphics.Texture2D>(uid, texture2DGlobalLookup);
@@ -2346,7 +2390,7 @@ namespace Xen
 		Microsoft.Xna.Framework.Graphics.Texture3D IShaderSystem.GetGlobalTexture3D(int uid)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantTextureGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantTextureGlobalAssignCount);
 
 			if (texture3DGlobals[uid] == null)
 				ValidateGlobalTextureAccess<Microsoft.Xna.Framework.Graphics.Texture3D>(uid, texture3DGlobalLookup);
@@ -2357,7 +2401,7 @@ namespace Xen
 		Microsoft.Xna.Framework.Graphics.TextureCube IShaderSystem.GetGlobalTextureCube(int uid)
 		{
 #if DEBUG
-			application.currentFrame.ShaderConstantTextureGlobalAssignCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderConstantTextureGlobalAssignCount);
 
 			if (textureCubeGlobals[uid] == null)
 				ValidateGlobalTextureAccess<Microsoft.Xna.Framework.Graphics.TextureCube>(uid, textureCubeGlobalLookup);
@@ -2410,7 +2454,7 @@ namespace Xen
 			if (value == null)
 				throw new ArgumentNullException();
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalSetCount);
 			application.currentFrame.ShaderArrayGlobalSetBytesTotal += value.Length * 64;
 #endif
 			
@@ -2431,7 +2475,7 @@ namespace Xen
 			if (value == null)
 				throw new ArgumentNullException();
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalSetCount);
 			application.currentFrame.ShaderArrayGlobalSetBytesTotal += value.Length * 16;
 #endif
 
@@ -2452,7 +2496,7 @@ namespace Xen
 			if (value == null)
 				throw new ArgumentNullException();
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalSetCount);
 			application.currentFrame.ShaderArrayGlobalSetBytesTotal += value.Length * 12;
 #endif
 
@@ -2473,7 +2517,7 @@ namespace Xen
 			if (value == null)
 				throw new ArgumentNullException();
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalSetCount);
 			application.currentFrame.ShaderArrayGlobalSetBytesTotal += value.Length * 8;
 #endif
 
@@ -2494,7 +2538,7 @@ namespace Xen
 			if (value == null)
 				throw new ArgumentNullException();
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalSetCount);
 			application.currentFrame.ShaderArrayGlobalSetBytesTotal += value.Length * 4;
 #endif
 
@@ -2517,7 +2561,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, ref Matrix value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderMatrixGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderMatrixGlobalSetCount);
 #endif
 
 			ShaderGlobal<Matrix> global = matrixGlobals[GetIndex(ref matrixGlobals, name, matrixGlobalLookup)];
@@ -2541,7 +2585,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Matrix[] value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalGetCount);
 #endif
 			value = null;
 			int index;
@@ -2561,7 +2605,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Vector4[] value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalGetCount);
 #endif
 			value = null;
 			int index;
@@ -2581,7 +2625,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Vector3[] value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalGetCount);
 #endif
 			value = null;
 			int index;
@@ -2601,7 +2645,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Vector2[] value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalGetCount);
 #endif
 			value = null;
 			int index;
@@ -2621,7 +2665,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out float[] value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderArrayGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderArrayGlobalGetCount);
 #endif
 			value = null;
 			int index;
@@ -2644,7 +2688,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Matrix value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderMatrixGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderMatrixGlobalGetCount);
 #endif
 			int index;
 			if (matrixGlobalLookup.TryGetValue(name, out index))
@@ -2664,7 +2708,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, ref Vector4 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalSetCount);
 #endif
 			ShaderGlobal<Vector4> global = v4Globals[GetIndex(ref v4Globals, name, v4GlobalLookup)];
 			if (global.id == 0 || 
@@ -2689,7 +2733,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Vector4 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalGetCount);
 #endif
 			int index;
 			if (v4GlobalLookup.TryGetValue(name, out index))
@@ -2709,7 +2753,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, ref Vector3 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalSetCount);
 #endif
 			ShaderGlobal<Vector3> global = v3Globals[GetIndex(ref v3Globals, name, v3GlobalLookup)];
 			if (global.id == 0 ||
@@ -2733,7 +2777,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Vector3 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalGetCount);
 #endif
 			int index;
 			if (v3GlobalLookup.TryGetValue(name, out index))
@@ -2753,7 +2797,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, ref Vector2 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalSetCount);
 #endif
 			ShaderGlobal<Vector2> global = v2Globals[GetIndex(ref v2Globals, name, v2GlobalLookup)];
 			if (global.id == 0 ||
@@ -2776,7 +2820,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Vector2 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalGetCount);
 #endif
 			int index;
 			if (v2GlobalLookup.TryGetValue(name, out index))
@@ -2805,7 +2849,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, Vector4 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalSetCount);
 #endif
 			SetShaderGlobal(name,ref value);
 		}
@@ -2817,7 +2861,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, Vector3 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalSetCount);
 #endif
 			SetShaderGlobal(name,ref value);
 		}
@@ -2829,7 +2873,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, Vector2 value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderVectorGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderVectorGlobalSetCount);
 #endif
 			SetShaderGlobal(name, ref value);
 		}
@@ -2842,7 +2886,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, float value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderSingleGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderSingleGlobalSetCount);
 #endif
 			ShaderGlobal<float> global = singleGlobals[GetIndex(ref singleGlobals, name, singleGlobalLookup)];
 			if (global.id == 0 ||
@@ -2864,7 +2908,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out float value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderSingleGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderSingleGlobalGetCount);
 #endif
 			int index;
 			if (singleGlobalLookup.TryGetValue(name, out index))
@@ -2885,7 +2929,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, Microsoft.Xna.Framework.Graphics.Texture value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalSetCount);
 #endif
 			int i = GetIndexTexture(ref textureGlobals, ref textureGlobalsFrame, name, textureGlobalLookup);
 			textureGlobals[i] = value;
@@ -2902,7 +2946,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Microsoft.Xna.Framework.Graphics.Texture value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalGetCount);
 #endif
 			int index;
 			if (textureGlobalLookup.TryGetValue(name, out index))
@@ -2922,7 +2966,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, Microsoft.Xna.Framework.Graphics.Texture2D value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalSetCount);
 #endif
 			int i = GetIndexTexture(ref texture2DGlobals, ref texture2DGlobalsFrame, name, texture2DGlobalLookup);
 			texture2DGlobals[i] = value;
@@ -2939,7 +2983,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Microsoft.Xna.Framework.Graphics.Texture2D value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalGetCount);
 #endif
 			int index;
 			if (texture2DGlobalLookup.TryGetValue(name, out index))
@@ -2959,7 +3003,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, Microsoft.Xna.Framework.Graphics.Texture3D value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalSetCount);
 #endif
 			int i = GetIndexTexture(ref texture3DGlobals, ref texture3DGlobalsFrame, name, texture3DGlobalLookup);
 			texture3DGlobals[i] = value;
@@ -2976,7 +3020,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Microsoft.Xna.Framework.Graphics.Texture3D value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalGetCount);
 #endif
 			int index;
 			if (texture3DGlobalLookup.TryGetValue(name, out index))
@@ -2996,7 +3040,7 @@ namespace Xen
 		public void SetShaderGlobal(string name, Microsoft.Xna.Framework.Graphics.TextureCube value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalSetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalSetCount);
 #endif
 			int i = GetIndexTexture(ref textureCubeGlobals, ref textureCubeGlobalsFrame, name, textureCubeGlobalLookup);
 			textureCubeGlobals[i] = value;
@@ -3013,7 +3057,7 @@ namespace Xen
 		public bool GetShaderGlobal(string name, out Microsoft.Xna.Framework.Graphics.TextureCube value)
 		{
 #if DEBUG
-			application.currentFrame.ShaderTextureGlobalGetCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderTextureGlobalGetCount);
 #endif
 			int index;
 			if (textureCubeGlobalLookup.TryGetValue(name, out index))
@@ -3105,7 +3149,7 @@ namespace Xen
 					graphics.Textures[index] = texture;
 					psTextures[index] = texture;
 #if DEBUG
-					application.currentFrame.TextureUnitTextureChanged++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.TextureUnitTextureChanged);
 #endif
 				}
 			}
@@ -3146,7 +3190,7 @@ namespace Xen
 					graphics.VertexTextures[index] = texture;
 					vsTextures[index] = texture;
 #if DEBUG
-					application.currentFrame.VertexTextureUnitTextureChanged++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.VertexTextureUnitTextureChanged);
 #endif
 				}
 			}
@@ -3158,17 +3202,17 @@ namespace Xen
 #if DEBUG
 		internal void CalcBoundTextures()
 		{
-			application.currentFrame.BoundTextureCountTotalSamples++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.BoundTextureCountTotalSamples);
 
 			for (int i = 0; i < psTexturesDEBUG.Length; i++)
 			{
 				if (psTexturesDEBUG[i] != null)
-					application.currentFrame.BoundTextureCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.BoundTextureCount);
 			}
 			for (int i = 0; i < vsTexturesDEBUG.Length; i++)
 			{
 				if (vsTexturesDEBUG[i] != null)
-					application.currentFrame.BoundVertexTextureCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.BoundVertexTextureCount);
 			}
 		}
 #endif
@@ -3176,7 +3220,7 @@ namespace Xen
 		internal void BeginCamera(ICamera camera, ref Vector2 targetSize)
 		{
 #if DEBUG
-			application.currentFrame.SetCameraCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.SetCameraCount);
 #endif
 			targetSize = target != null ? target.Size : targetSize;
 
@@ -3216,7 +3260,7 @@ namespace Xen
 		int IShaderSystem.Begin(Xen.Graphics.IShader shader, int psSamplerMax, int vsSamplerMax, out bool typeChanged, out bool instanceChanged)
 		{
 #if DEBUG
-			application.currentFrame.ShaderBindCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderBindCount);
 
 			if (camera == null)
 			{
@@ -3224,7 +3268,9 @@ namespace Xen
 			}
 #endif
 
+#if DEBUG
 			ValidateProtected();
+#endif
 
 			unchecked { frame++; }
 
@@ -3237,6 +3283,7 @@ namespace Xen
 			boundShaderUsesWorldMatrix = false;
 			boundShaderUsesProjectionMatrix = false;
 			boundShaderUsesViewMatrix = false;
+			boundShaderUsesVertexCount = false;
 
 
 			if (this.boundShader == shader)
@@ -3266,6 +3313,9 @@ namespace Xen
 			return application.graphicsId;
 		}
 
+		private Dictionary<byte[], Microsoft.Xna.Framework.Graphics.VertexShader> cachedVShaders = new Dictionary<byte[], Microsoft.Xna.Framework.Graphics.VertexShader>();
+		private Dictionary<byte[], Microsoft.Xna.Framework.Graphics.PixelShader> cachedPShaders = new Dictionary<byte[], Microsoft.Xna.Framework.Graphics.PixelShader>();
+
 		void IShaderSystem.CreateShaders(
 			out Microsoft.Xna.Framework.Graphics.VertexShader vertexShader, 
 			out Microsoft.Xna.Framework.Graphics.PixelShader pixelShader, 
@@ -3274,11 +3324,19 @@ namespace Xen
 			int vsCount,int psCount,
 			int vsPreCount, int psPreCount)
 		{
-			vertexShader = new Microsoft.Xna.Framework.Graphics.VertexShader(graphics, vShaderBytes);
-			pixelShader = new Microsoft.Xna.Framework.Graphics.PixelShader(graphics, pShaderBytes);
+			if (!cachedVShaders.TryGetValue(vShaderBytes, out vertexShader))
+			{
+				vertexShader = new Microsoft.Xna.Framework.Graphics.VertexShader(graphics, vShaderBytes);
+				cachedVShaders.Add(vShaderBytes, vertexShader);
+			}
+			if (!cachedPShaders.TryGetValue(pShaderBytes, out pixelShader))
+			{
+				pixelShader = new Microsoft.Xna.Framework.Graphics.PixelShader(graphics, pShaderBytes);
+				cachedPShaders.Add(pShaderBytes, pixelShader);
+			}
 		
 #if DEBUG
-			this.application.currentFrame.BinaryShadersCreated++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.BinaryShadersCreated);
 			vertexShader.Tag = new int[] { vsCount, vsPreCount };
 			pixelShader.Tag = new int[] { psCount, psPreCount };
 #endif
@@ -3288,17 +3346,17 @@ namespace Xen
 			Microsoft.Xna.Framework.Graphics.PixelShader pixelShader)
 		{
 #if DEBUG
-			this.application.currentFrame.BinaryShadersSet++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.BinaryShadersSet);
 
 
 			int[] arr = vertexShader.Tag as int[];
 			if (arr != null && arr.Length == 2)
 			{
-				this.application.currentFrame.VertexShaderBoundWithKnownInstructionsCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.VertexShaderBoundWithKnownInstructionsCount);
 				this.application.currentFrame.VertexShaderApproximateInstructionsTotal += arr[0];
 				if (arr[1] > 0)
 				{
-					this.application.currentFrame.PixelShaderBoundWithPreShaderCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.PixelShaderBoundWithPreShaderCount);
 					this.application.currentFrame.VertexShaderApproximatePreshaderInstructionsTotal += arr[1];
 				}
 			}
@@ -3306,11 +3364,11 @@ namespace Xen
 			arr = pixelShader.Tag as int[];
 			if (arr != null && arr.Length == 2)
 			{
-				this.application.currentFrame.PixelShaderBoundWithKnownInstructionsCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.PixelShaderBoundWithKnownInstructionsCount);
 				this.application.currentFrame.PixelShaderApproximateInstructionsTotal += arr[0];
 				if (arr[1] > 0)
 				{
-					this.application.currentFrame.PixelShaderBoundWithPreShaderCount++;
+					System.Threading.Interlocked.Increment(ref application.currentFrame.PixelShaderBoundWithPreShaderCount);
 					this.application.currentFrame.PixelShaderApproximatePreshaderInstructionsTotal += arr[1];
 				}
 			}
@@ -3345,12 +3403,12 @@ namespace Xen
 			if (vertexShaderConstants != null)
 			{
 				this.application.currentFrame.VertexShaderConstantBytesSetTotalCount += vertexShaderConstants.Length * 16;
-				this.application.currentFrame.VertexShaderConstantBytesSetCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.VertexShaderConstantBytesSetCount);
 			}
 			if (pixelShaderConstants != null)
 			{
 				this.application.currentFrame.PixelShaderConstantBytesSetTotalCount += pixelShaderConstants.Length * 16;
-				this.application.currentFrame.PixelShaderConstantBytesSetCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.PixelShaderConstantBytesSetCount);
 			}
 #endif
 #if XBOX360
@@ -3411,9 +3469,11 @@ namespace Xen
 		public void DeferDrawCall(IDraw call)
 		{
 #if DEBUG
-			application.currentFrame.DeferredDrawCallsMade++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DeferredDrawCallsMade);
 #endif
+#if DEBUG
 			ValidateProtected();
+#endif
 
 			if (call.CullTest(this))
 			{
@@ -3429,7 +3489,7 @@ namespace Xen
 			}
 #if DEBUG
 			else
-				application.currentFrame.DeferredDrawCallsCulled++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DeferredDrawCallsCulled);
 #endif
 		}
 
@@ -3446,7 +3506,9 @@ namespace Xen
 		/// <seealso cref="DeferDrawCall"/>
 		public void RunDeferredDrawCalls()
 		{
+#if DEBUG
 			ValidateProtected();
+#endif
 
 			DeviceRenderState state = visibleState.state;
 			int count = deferredDrawListCount;
@@ -3482,7 +3544,9 @@ namespace Xen
 		/// <seealso cref="DeferDrawCall"/>
 		public void RunDeferredDrawCalls(IComparer<IDraw> sorter)
 		{
+#if DEBUG
 			ValidateProtected();
+#endif
 
 			if (deferredDrawListCount == 0)
 				return;
@@ -3761,6 +3825,17 @@ namespace Xen
 			boundShaderUsesViewMatrix = true;
 			boundShaderUsesWorldMatrix = true;
 			ms_WorldView_Transpose.SetConstant(value, frame, ref ci);
+		}
+
+		void IShaderSystem.SetVertexCountSingle(IValue<float> value, ref int ci)
+		{
+			if (ci != bufferVertexCountChangeIndex)
+			{
+				float count = (float)(bufferVertexCount);
+				value.Set(ref count);
+				ci = bufferVertexCountChangeIndex;
+			}
+			boundShaderUsesVertexCount = true;
 		}
 
 		#endregion

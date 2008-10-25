@@ -322,7 +322,7 @@ namespace Xen
 			if (shader == null)
 			{
 #if DEBUG
-				if (typeof(T).BaseType != typeof(Xen.Graphics.ShaderSystem.BaseShader))
+				if (!typeof(Xen.Graphics.ShaderSystem.BaseShader).IsAssignableFrom(typeof(T)))
 					throw new ArgumentException(string.Format("Shader {0} does not derive from BaseShader",typeof(T)));
 #endif
 				shader = new T();
@@ -376,6 +376,8 @@ namespace Xen
 			worldMatrix = new WorldStackProvider(renderStackSize,this);
 			viewMatrix = new ViewProjectionProvider(false, this);
 			projectionMatrix = new ViewProjectionProvider(true, this);
+
+			InitDrawFlagCollection();
 		}
 
 		internal void Update(float dt, float hz, long deltaTime, long totalTime, long realTime, float seconds, Microsoft.Xna.Framework.Graphics.GraphicsDevice device)
@@ -423,7 +425,7 @@ namespace Xen
 		}
 
 		/// <summary>
-		/// Hardware supports Shader Model 3 hardware instancing
+		/// Hardware supports Shader Model 3 hardware instancing, or is running on the xbox360
 		/// </summary>
 		public bool SupportsHardwareInstancing
 		{

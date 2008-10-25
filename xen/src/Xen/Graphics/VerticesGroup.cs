@@ -11,10 +11,11 @@ using System.Runtime.InteropServices;
 namespace Xen.Graphics
 {
 	/// <summary>
-	/// Sets parametres for hardware instancing when drawing with a VerticesGroup object (Supported on windows with vertex shader 3 or greater)
+	/// Sets parametres for hardware instancing when drawing with a VerticesGroup object (Supported on windows with vertex shader 3 or greater, emulated on Xbox360 when using <see cref="DataLayout.Stream0Geometry_Stream1InstanceData"/>)
 	/// </summary>
 	/// <remarks>
-	/// <para>Hardware instancing is not currently supported on the xbox 360, only PCs with vertex shader model 3.0 are supported.</para>
+	/// <para>Hardware instancing is not supported on the xbox 360, only PCs with vertex shader model 3.0 are supported.</para>
+	/// <para>However, when using <see cref="DataLayout.Stream0Geometry_Stream1InstanceData"/>, support is emulated on the Xbox by repeating index data.</para>
 	/// <para>Hardware instancing uses two or more vertex buffers, with each buffer being repeated.</para>
 	/// <para>Common usage, would be to have the first buffer store the model geometry, repeated X number of times.
 	/// With the second buffer storing per-instance data, such as the world matrix.
@@ -196,6 +197,7 @@ namespace Xen.Graphics
 		}
 
 		internal readonly int[] frequency, indexFrequency, dataFrequency;
+		internal DataLayout layout = DataLayout.Custom;
 
 		/// <summary>
 		/// Setup the frequency data and source vertex buffer
@@ -204,6 +206,8 @@ namespace Xen.Graphics
 		/// <param name="repeatCount">Number of times the vertex data should be repeated</param>
 		public StreamFrequency(IVertices vertices, int repeatCount)
 		{
+			layout = DataLayout.Stream0Geometry_Stream1InstanceData;
+
 			if (vertices is VerticesGroup)
 			{
 				this.frequency = new int[(vertices as VerticesGroup).ChildCount];
@@ -229,12 +233,15 @@ namespace Xen.Graphics
 		/// <param name="layout"></param>
 		public StreamFrequency(VerticesGroup vertices, DataLayout layout)
 		{
+			this.layout = layout;
 			this.frequency = new int[vertices.ChildCount];
 			this.indexFrequency = new int[vertices.ChildCount];
 			this.dataFrequency = new int[vertices.ChildCount];
 			
 			if (layout == DataLayout.Stream0Geometry_Stream1InstanceData)
 			{
+				if (vertices.Count < 2)
+					throw new ArgumentException("vertices.Count");
 				RepeatCount = vertices.GetChild(1).Count;
 			}
 		}
@@ -262,6 +269,7 @@ namespace Xen.Graphics
 		/// <param name="instanceDataFrequency">Not valid for the first stream (stream zero), repeat count for the actual data. Best kept at 1.</param>
 		public void SetData(int index, int frequency, int indexFrequency, int instanceDataFrequency)
 		{
+			layout = DataLayout.Custom;
 			this.frequency[index] = frequency;
 			this.indexFrequency[index] = indexFrequency;
 			this.dataFrequency[index] = instanceDataFrequency;
@@ -480,11 +488,27 @@ namespace Xen.Graphics
 		public void Draw(DrawState state, IIndices indices, PrimitiveType primitiveType, StreamFrequency frequency, int primitveCount, int startIndex, int vertexOffset)
 		{
 			if (frequency != null && !state.SupportsHardwareInstancing)
-			{
 				throw new InvalidOperationException("Only windows devices supporting Shader Model 3.0 or better to can use hardware instancing. Check DrawState.SupportsHardwareInstancing");
-			}
 
-			state.ApplyRenderStateChanges();
+#if XBOX360
+			if (frequency != null)
+			{
+#if DEBUG
+				if (frequency.layout != StreamFrequency.DataLayout.Stream0Geometry_Stream1InstanceData)
+					throw new InvalidOperationException("Only StreamFrequency DataLayout of Stream0Geometry_Stream1InstanceData is emulated on the xbox360");
+
+				if (primitveCount != int.MaxValue ||
+					startIndex != 0 || vertexOffset != 0)
+					throw new ArgumentException("Only default values for primitiveCount, startIndex and vertexOffset may be used when emulating instancing on the xbox");
+				if (primitiveType == PrimitiveType.TriangleFan ||
+					primitiveType == PrimitiveType.TriangleStrip ||
+					primitiveType == PrimitiveType.LineStrip)
+					throw new ArgumentException("Only Primitive List Types (eg TriangleList) are supported as a primitiveType when emulating instancing on the xbox");
+#endif
+				if (indices != null)
+					((IDeviceIndexBuffer)indices).AllocateForInstancing(state);
+			}
+#endif
 
 			GraphicsDevice device = state.graphics;
 
@@ -498,6 +522,10 @@ namespace Xen.Graphics
 
 			state.VertexDeclaration = decl;
 
+#if DEBUG
+			state.ValidateVertexDeclarationForShader(decl, null);
+#endif
+			
 			int vertices = 0;
 			for (int i = 0; i < buffers.Length; i++)
 			{
@@ -505,14 +533,15 @@ namespace Xen.Graphics
 				if (dev != null)
 					state.SetStream(i, dev.GetVertexBuffer(state), offsets[i], buffers[i].Stride);
 				else
-					state.SetStream(i,null, 0, 0);
-
+					state.SetStream(i, null, 0, 0);
+				
 				if (i == 0)
 					vertices = buffers[i].Count;
 				else
 					if (frequency == null)
 						vertices = Math.Min(buffers[i].Count, vertices);
 			}
+
 
 			state.IndexBuffer = ib;
 
@@ -539,6 +568,31 @@ namespace Xen.Graphics
 					primitives = vertices - 2;
 					break;
 			}
+
+
+			int vertexCount = 0;
+			if (indices != null)
+				vertexCount = indices.MaxIndex + 1;
+			else
+			{
+				switch (primitiveType)
+				{
+					case PrimitiveType.LineStrip:
+						vertexCount = primitives * 2;
+						break;
+					case PrimitiveType.PointList:
+					case PrimitiveType.LineList:
+					case PrimitiveType.TriangleList:
+						vertexCount = vertices;
+						break;
+					case PrimitiveType.TriangleFan:
+					case PrimitiveType.TriangleStrip:
+						vertexCount = primitives * 3;
+						break;
+				}
+			}
+
+			state.ApplyRenderStateChanges(vertexCount);
 			
 #if DEBUG
 			int instances = 1;
@@ -550,7 +604,7 @@ namespace Xen.Graphics
 #if DEBUG
 				if (frequency.indexFrequency.Length > 0)
 				{
-					state.Application.currentFrame.InstancesDrawBatchCount++;
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.InstancesDrawBatchCount);
 					state.Application.currentFrame.InstancesDrawn += frequency.indexFrequency[0];
 					instances = frequency.indexFrequency[0];
 				}
@@ -590,16 +644,68 @@ namespace Xen.Graphics
 			if (ib != null)
 			{
 #if DEBUG
-				state.Application.currentFrame.DrawIndexedPrimitiveCallCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawIndexedPrimitiveCallCount);
 #endif
-				device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, indices.MaxIndex - indices.MinIndex, startIndex, primitveCount);
+#if XBOX360
+				if (frequency != null)
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.InstancesDrawBatchCount);
+					state.Application.currentFrame.InstancesDrawn += frequency.indexFrequency[0];
+#endif
+					int repeats = frequency.RepeatCount;
+					int maxInstances = ((IDeviceIndexBuffer)indices).MaxInstances;
+					int offset = 0;
+					VertexBuffer vb = ((IDeviceVertexBuffer)buffers[1]).GetVertexBuffer(state);
+
+					while (repeats - offset > 0)
+					{
+						if (offset != 0)
+						{
+							//read the next set of instances
+							state.SetStream(1, vb, offsets[1] + 64 * offset, buffers[1].Stride);
+						}
+
+						int count = Math.Min(repeats - offset, maxInstances);
+						device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, ((indices.MaxIndex) + 1) - indices.MinIndex, startIndex, primitveCount * count);
+
+						offset += count;
+					}
+				}
+				else
+#endif
+					device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, (indices.MaxIndex - indices.MinIndex) + 1, startIndex, primitveCount);
 			}
 			else
 			{
 #if DEBUG
-				state.Application.currentFrame.DrawPrimitivesCallCount++;
+				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawPrimitivesCallCount);
 #endif
-				device.DrawPrimitives(primitiveType, vertexOffset, primitveCount);
+#if XBOX360
+				if (frequency != null)
+				{
+					int repeats = frequency.RepeatCount;
+					int maxInstances = ((IDeviceIndexBuffer)indices).MaxInstances;
+					int offset = 0;
+					VertexBuffer vb = ((IDeviceVertexBuffer)buffers[1]).GetVertexBuffer(state);
+
+					while (repeats - offset > 0)
+					{
+						if (offset != 0)
+						{
+							//read the next set of instances
+							state.SetStream(1, vb, offsets[1] + 64 * offset, buffers[1].Stride);
+						}
+
+						int count = Math.Min(repeats - offset, maxInstances);
+						device.DrawPrimitives(primitiveType, vertexOffset, primitveCount * count);
+
+						offset += count;
+					}
+				}
+				else
+#endif
+					device.DrawPrimitives(primitiveType, vertexOffset, primitveCount);
 			}
 
 

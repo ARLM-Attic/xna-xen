@@ -16,6 +16,12 @@ namespace Xen
 		//stream buffers are cleared every frame
 		sealed class StreamBuffer
 		{
+			private readonly Graphics.StreamFrequency.InstanceMatrix[] instanceMatricesData;
+			private readonly Graphics.IVertices instanceMatrices;
+			private Graphics.VerticesGroup instanceBuffer;
+			private int index;
+			private static int InstanceSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Graphics.StreamFrequency.InstanceMatrix));
+
 			public StreamBuffer(Graphics.IVertices baseVertices, int count)
 			{
 				int createSize = 256;
@@ -28,15 +34,12 @@ namespace Xen
 				this.instanceBuffer = new Graphics.VerticesGroup(baseVertices,this.instanceMatrices);
 				this.index = 0;
 			}
-			readonly Graphics.StreamFrequency.InstanceMatrix[] instanceMatricesData;
-			readonly Graphics.IVertices instanceMatrices;
-			Graphics.VerticesGroup instanceBuffer;
-			int index;
-			static int InstanceSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Graphics.StreamFrequency.InstanceMatrix));
+
 			public int FreeIndices
 			{
 				get { return this.instanceMatricesData.Length - index; }
 			}
+
 			public Graphics.StreamFrequency.InstanceMatrix[] Prepare(Graphics.IVertices vertices, int maxPossibleCount, out int startIndex)
 			{
 				instanceBuffer.SetChild(0, vertices);
@@ -44,6 +47,7 @@ namespace Xen
 				startIndex = index;
 				return instanceMatricesData;
 			}
+
 			public Graphics.VerticesGroup Fill(int count)
 			{
 				instanceBuffer.SetIndexOffset(1, index);
@@ -233,9 +237,9 @@ namespace Xen
 		/// <param name="vertexStride"></param>
 		public void DrawVertexBuffer(VertexBuffer vertices, IndexBuffer indices, VertexDeclaration declaration, PrimitiveType primitiveType, int baseVertex, int numVertices, int primitiveCount, int startIndex, int streamOffset, int vertexStride)
 		{
-			ApplyRenderStateChanges();
+			ApplyRenderStateChanges(numVertices);
 #if DEBUG
-			application.currentFrame.DrawXnaVerticesCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DrawXnaVerticesCount);
 
 			CalcBoundTextures();
 #endif
@@ -246,7 +250,7 @@ namespace Xen
 			if (indices != null)
 			{
 #if DEBUG
-				Application.currentFrame.DrawIndexedPrimitiveCallCount++;
+				System.Threading.Interlocked.Increment(ref Application.currentFrame.DrawIndexedPrimitiveCallCount);
 #endif
 
 				this.graphics.DrawIndexedPrimitives(primitiveType, baseVertex, 0, numVertices, startIndex, primitiveCount);
@@ -254,7 +258,7 @@ namespace Xen
 			else
 			{
 #if DEBUG
-				Application.currentFrame.DrawPrimitivesCallCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DrawPrimitivesCallCount);
 #endif
 
 				this.graphics.DrawPrimitives(primitiveType, baseVertex, primitiveCount);

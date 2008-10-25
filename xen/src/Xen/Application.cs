@@ -93,7 +93,7 @@ namespace Xen
 		{
 			parent.SetGraphicsDevice(GraphicsDevice);
 
-			parent.SupportsHardwareInstancing = false;
+			parent.SupportsHardwareInstancing = true;
 #if !XBOX360
 			parent.SupportsHardwareInstancing = graphics.GraphicsDevice.GraphicsDeviceCapabilities.VertexShaderVersion.Major >= 3;
 #endif
@@ -379,12 +379,14 @@ namespace Xen
 	public interface IDrawBatch : IDraw
 	{
 		/// <summary>
-		/// Draw multiple instances of the object
+		/// <para>Draw multiple instances of the object</para>
+		/// <para>NOTE: Calling this method assumes that hardware instancing is supported <i>and</i> that a hardware instancing compatible shader is bound</para>
 		/// </summary>
 		/// <param name="state">Current state of the application</param>
 		/// <param name="CanDrawItemIndex">An optional callback to indicate if an instance index should be drawn (may be null)</param>
 		/// <param name="instances">World matrix of the instances to be drawn</param>
-		void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItemIndex, Matrix[] instances);
+		/// <param name="instanceCount">The number of instances to draw</param>
+		void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItemIndex, Matrix[] instances, int instanceCount);
 	}
 	/// <summary>
 	/// Interface to an object that modifies draw state and must be setup/shutdown. Usually used by internal classes only

@@ -20,10 +20,12 @@ namespace Xen
 		private Type boundShaderType;
 		private bool boundShaderStateDirty = true;
 		private int boundShaderWorldIndex = -1, boundShaderProjectionIndex = -1, boundShaderViewIndex = -1;
-		private bool boundShaderUsesWorldMatrix = false, boundShaderUsesProjectionMatrix = false, boundShaderUsesViewMatrix = false;
+		private bool boundShaderUsesVertexCount = false, boundShaderUsesWorldMatrix = false, boundShaderUsesProjectionMatrix = false, boundShaderUsesViewMatrix = false;
 		private VStream[] vertexStreams;
 		private VertexDeclaration vertexDecl;
 		private IndexBuffer indexBuffer;
+		private int bufferVertexCount, bufferVertexCountChangeIndex = 1;
+
 #if XBOX360
 		
 		/// <summary>
@@ -196,6 +198,17 @@ namespace Xen
 		/// </remarks>
 		public void ApplyRenderStateChanges()
 		{
+			ApplyRenderStateChanges(0);
+		}
+
+		internal void ApplyRenderStateChanges(int vertexCount)
+		{
+			if (this.bufferVertexCount != vertexCount)
+			{
+				this.bufferVertexCountChangeIndex++;
+				this.bufferVertexCount = vertexCount;
+			}
+
 #if DEBUG
 			ValidateProtected();
 #endif
@@ -213,13 +226,14 @@ namespace Xen
 
 			if (boundShader != null &&
 				(boundShaderStateDirty ||
+				(boundShaderUsesVertexCount) ||
 				(boundShaderUsesWorldMatrix && boundShaderWorldIndex != worldMatrix.index) ||
 				(boundShaderUsesProjectionMatrix && boundShaderProjectionIndex != projectionMatrix.index) ||
 				(boundShaderUsesViewMatrix && boundShaderViewIndex != viewMatrix.index) ||
 				(boundShader.HasChanged)))
 			{
 #if DEBUG
-				application.currentFrame.ShaderRebindCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.ShaderRebindCount);
 #endif
 				boundShader.Bind(this);
 			}
@@ -256,7 +270,7 @@ namespace Xen
 		public Microsoft.Xna.Framework.Graphics.GraphicsDevice BeginGetGraphicsDevice(StateFlag dirtyDeviceState)
 		{
 #if DEBUG
-			application.currentFrame.BeginGetGraphicsDeviceCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.BeginGetGraphicsDeviceCount);
 #endif
 			//may do state tracking reset in the future, if optimizations require it, hence internal method above
 			if (dirtyDeviceState != StateFlag.None)
@@ -297,14 +311,14 @@ namespace Xen
 		public void DirtyInternalRenderState(StateFlag dirtyState)
 		{
 #if DEBUG
-			application.currentFrame.DirtyRenderStateCount++;
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DirtyRenderStateCount);
 #endif
 			ValidateProtected();
 
 			if ((dirtyState & StateFlag.Shaders) != 0)
 			{
 #if DEBUG
-				application.currentFrame.DirtyRenderShadersStateCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DirtyRenderShadersStateCount);
 #endif
 				boundShader = null;
 				boundShaderType = null;
@@ -314,7 +328,7 @@ namespace Xen
 			if ((dirtyState & StateFlag.VerticesAndIndices) != 0)
 			{
 #if DEBUG
-				application.currentFrame.DirtyRenderVerticesAndIndicesStateCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DirtyRenderVerticesAndIndicesStateCount);
 #endif
 				for (int i = 0; i < vertexStreams.Length; i++)
 				{
@@ -329,7 +343,7 @@ namespace Xen
 			if ((dirtyState & StateFlag.Textures) != 0)
 			{
 #if DEBUG
-				application.currentFrame.DirtyRenderTexturesStateCount++;
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DirtyRenderTexturesStateCount);
 #endif
 				boundShaderStateDirty = true;
 				boundShader = null;
