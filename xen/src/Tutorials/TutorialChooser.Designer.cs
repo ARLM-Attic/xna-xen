@@ -43,7 +43,7 @@ namespace Tutorials
 			button1.Location = new System.Drawing.Point(246, 19);
 			button1.Name = "button1";
 			button1.Size = new System.Drawing.Size(75, 23);
-			button1.TabIndex = 1;
+			button1.TabIndex = 0;
 			button1.Text = "&OK";
 			button1.UseVisualStyleBackColor = true;
 			button1.Click += new System.EventHandler(this.OK);
@@ -64,7 +64,7 @@ namespace Tutorials
 			this.tutorialList.Location = new System.Drawing.Point(22, 19);
 			this.tutorialList.Name = "tutorialList";
 			this.tutorialList.Size = new System.Drawing.Size(218, 21);
-			this.tutorialList.TabIndex = 0;
+			this.tutorialList.TabIndex = 1;
 			// 
 			// groupBox1
 			// 
@@ -74,7 +74,7 @@ namespace Tutorials
 			this.groupBox1.Location = new System.Drawing.Point(12, 12);
 			this.groupBox1.Name = "groupBox1";
 			this.groupBox1.Size = new System.Drawing.Size(340, 87);
-			this.groupBox1.TabIndex = 1;
+			this.groupBox1.TabIndex = 0;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Select a tutorial to run:";
 			// 

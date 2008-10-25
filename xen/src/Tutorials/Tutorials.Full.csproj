@@ -62,12 +62,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Tutorial 16\Instances.cs" />
     <Compile Include="Tutorial 15\Text and Stats.cs" />
     <Compile Include="Tutorial 14\Materials and Lights.cs" />
     <Compile Include="Tutorial 12\Advanced Model Use.cs" />
     <Compile Include="Tutorial 11\Model Animation.cs" />
     <Compile Include="Tutorial 10\ModelInstance.cs" />
     <Compile Include="Tutorial 13\Updates and Input.cs" />
+    <Compile Include="Tutorial 16\shader.fx.cs">
+      <DependentUpon>shader.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="Tutorial 20\Animation Stress Test.cs" />
     <Compile Include="Tutorial 09\Content 02.cs" />
     <Compile Include="Tutorial 08\Content 01.cs" />
@@ -104,6 +110,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Tutorial 03\shader.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>shader.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 16\shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>

@@ -5,7 +5,7 @@ using System;
 //On XBOX, set this using statement to the tutorial you would like to run:
 
 //Modify the next lines to set the example that will run
-//Tutorial_01 to Tutorial_15
+//Tutorial_01 to Tutorial_16
 
 //this next line can be commented out:
 #warning Please select a default tutorial for the xbox project (set on the next line):
