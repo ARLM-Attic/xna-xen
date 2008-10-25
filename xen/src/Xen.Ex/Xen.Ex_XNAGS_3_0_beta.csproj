@@ -115,6 +115,16 @@
     <Compile Include="Graphics2D\TextElement.cs" />
     <Compile Include="Graphics\Model.cs" />
     <Compile Include="Graphics\ModelContent.cs" />
+    <Compile Include="Material\BlendMaterial.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BlendMaterial.fx</DependentUpon>
+    </Compile>
+    <Compile Include="Material\InstanceMaterial.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>InstanceMaterial.fx</DependentUpon>
+    </Compile>
     <Compile Include="Material\Material.fx.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -122,6 +132,8 @@
     </Compile>
     <Compile Include="Material\MaterialShader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scene\StaticBinaryTreePartition.cs" />
+    <Compile Include="Scene\StaticPartition.cs" />
     <Compile Include="Shaders\Simple.fx.cs">
       <SubType>Code</SubType>
       <AutoGen>True</AutoGen>
@@ -175,6 +187,14 @@
     <None Include="Graphics2D\Shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>Shader.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Material\BlendMaterial.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>BlendMaterial.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Material\InstanceMaterial.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>InstanceMaterial.fx.cs</LastGenOutput>
     </None>
     <None Include="Material\Material.fx">
       <Generator>XenFX</Generator>

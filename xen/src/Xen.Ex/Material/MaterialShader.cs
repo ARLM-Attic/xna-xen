@@ -16,11 +16,17 @@ namespace Xen.Ex.Material
 	}
 	sealed class ShaderMerge
 	{
-		public const int MaxBones = 71;
+		public static readonly int MaxBones = ComputeMaxBones();
 
-		static int GetSourceId(int vs, int ps, bool tex, bool vertexColours, bool normalMapped, bool pixelSpecular, bool vertexBlending)
+		private static int ComputeMaxBones()
 		{
-			return (vs << 8) | (ps << 16) | ((tex | normalMapped) ? 1 : 0) | (vertexColours ? 2 : 0) | (normalMapped ? 4 : 0) | (pixelSpecular ? 8 : 0) | (vertexBlending ? 16 : 0);
+			//yes, it creates some garbage, but only once.
+			return new Material.vs0tcb().BlendMatrices.Length / 3;
+		}
+
+		static int GetSourceId(int vs, int ps, bool tex, bool vertexColours, bool normalMapped, bool pixelSpecular, bool vertexBlending, bool instancing)
+		{
+			return (vs << 8) | (ps << 16) | ((tex | normalMapped) ? 1 : 0) | (vertexColours ? 2 : 0) | (normalMapped ? 4 : 0) | (pixelSpecular ? 8 : 0) | (vertexBlending ? 16 : 0) | (instancing ? 32 : 0);
 		}
 		readonly Dictionary<int, IShader> shaderCombinations = new Dictionary<int, IShader>();
 		readonly Dictionary<int, ShaderBoundBones> shaderBoundBones = new Dictionary<int, ShaderBoundBones>();
@@ -169,6 +175,72 @@ namespace Xen.Ex.Material
 			};
 
 		/////////////////////////////////////////////////////////////
+		//hardware instancing
+
+
+		static readonly string[] vsSourceInstance = new string[]
+			{
+				"Xen.Ex.Material.vs0i",
+				"Xen.Ex.Material.vs1i",
+				null,
+				"Xen.Ex.Material.vs3i",
+				null,
+				null,
+				"Xen.Ex.Material.vs6i"
+			};
+		static readonly string[] vsSourceTexInstance = new string[]
+			{
+				"Xen.Ex.Material.vs0ti",
+				"Xen.Ex.Material.vs1ti",
+				null,
+				"Xen.Ex.Material.vs3ti",
+				null,
+				null,
+				"Xen.Ex.Material.vs6ti"
+			};
+		static readonly string[] vsSourceColoursInstance = new string[]
+			{
+				"Xen.Ex.Material.vs0ci",
+				"Xen.Ex.Material.vs1ci",
+				null,
+				"Xen.Ex.Material.vs3ci",
+				null,
+				null,
+				"Xen.Ex.Material.vs6ci"
+			};
+		static readonly string[] vsSourceTexColoursInstance = new string[]
+			{
+				"Xen.Ex.Material.vs0tci",
+				"Xen.Ex.Material.vs1tci",
+				null,
+				"Xen.Ex.Material.vs3tci",
+				null,
+				null,
+				"Xen.Ex.Material.vs6tci"
+			};
+		static readonly string[] vsSourceNormalsColoursInstance = new string[]
+			{
+				"Xen.Ex.Material.vs0nci",
+				"Xen.Ex.Material.vs1nci",
+				null,
+				"Xen.Ex.Material.vs3nci",
+				null,
+				null,
+				"Xen.Ex.Material.vs6nci"
+			};
+		static readonly string[] vsSourceNormalsInstance = new string[]
+			{
+				"Xen.Ex.Material.vs0ni",
+				"Xen.Ex.Material.vs1ni",
+				null,
+				"Xen.Ex.Material.vs3ni",
+				null,
+				null,
+				"Xen.Ex.Material.vs6ni"
+			};
+
+
+		/////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////
@@ -217,12 +289,12 @@ namespace Xen.Ex.Material
 				"Xen.Ex.Material.ps2tns"
 			};
 
-		public IShader GetShader(DrawState state, int vs, int ps, bool tex, bool vertexColours, bool normalMapped, bool pixelSpecular, bool vertexBlending, out ShaderBoundBones boundBones)
+		public IShader GetShader(DrawState state, int vs, int ps, bool tex, bool vertexColours, bool normalMapped, bool pixelSpecular, bool vertexBlending, bool instancing, out ShaderBoundBones boundBones)
 		{
 			boundBones = null;
 
 			tex |= normalMapped;
-			int index = GetSourceId(vs, ps, tex, vertexColours, normalMapped, pixelSpecular, vertexBlending);
+			int index = GetSourceId(vs, ps, tex, vertexColours, normalMapped, pixelSpecular, vertexBlending, instancing);
 			IShader shader;
 			lock (shaderCombinations)
 			{
@@ -273,44 +345,89 @@ namespace Xen.Ex.Material
 					}
 					else
 					{
-						if (tex)
+						if (instancing)
 						{
-							if (normalMapped)
+							if (tex)
 							{
-								if (vertexColours)
-									vss = vsSourceNormalsColours;
-								else
-									vss = vsSourceNormals;
+								if (normalMapped)
+								{
+									if (vertexColours)
+										vss = vsSourceNormalsColoursInstance;
+									else
+										vss = vsSourceNormalsInstance;
 
-								if (pixelSpecular)
-									pss = psSourceNormalsSpec;
+									if (pixelSpecular)
+										pss = psSourceNormalsSpec;
+									else
+										pss = psSourceNormals;
+								}
 								else
-									pss = psSourceNormals;
+								{
+									if (vertexColours)
+										vss = vsSourceTexColoursInstance;
+									else
+										vss = vsSourceTexInstance;
+
+									if (pixelSpecular)
+										pss = psSourceTexSpec;
+									else
+										pss = psSourceTex;
+								}
 							}
 							else
 							{
 								if (vertexColours)
-									vss = vsSourceTexColours;
+									vss = vsSourceColoursInstance;
 								else
-									vss = vsSourceTex;
+									vss = vsSourceInstance;
 
 								if (pixelSpecular)
-									pss = psSourceTexSpec;
+									pss = psSourceSpec;
 								else
-									pss = psSourceTex;
+									pss = psSource;
 							}
 						}
 						else
 						{
-							if (vertexColours)
-								vss = vsSourceColours;
-							else
-								vss = vsSource;
+							if (tex)
+							{
+								if (normalMapped)
+								{
+									if (vertexColours)
+										vss = vsSourceNormalsColours;
+									else
+										vss = vsSourceNormals;
 
-							if (pixelSpecular)
-								pss = psSourceSpec;
+									if (pixelSpecular)
+										pss = psSourceNormalsSpec;
+									else
+										pss = psSourceNormals;
+								}
+								else
+								{
+									if (vertexColours)
+										vss = vsSourceTexColours;
+									else
+										vss = vsSourceTex;
+
+									if (pixelSpecular)
+										pss = psSourceTexSpec;
+									else
+										pss = psSourceTex;
+								}
+							}
 							else
-								pss = psSource;
+							{
+								if (vertexColours)
+									vss = vsSourceColours;
+								else
+									vss = vsSource;
+
+								if (pixelSpecular)
+									pss = psSourceSpec;
+								else
+									pss = psSource;
+							}
 						}
 					}
 
@@ -332,21 +449,61 @@ namespace Xen.Ex.Material
 						vshader = GetInstance(state, vss[vs + 2]);
 					IShader pshader = GetInstance(state,pss[ps]);
 
-					if (vs == 0 && ps == 0 && !vertexBlending)
+					if (vs == 0 && ps == 0)
 					{
-						if (tex)
+						if (vertexBlending || instancing)
 						{
-							if (vertexColours)
-								shader = state.GetShader<Xen.Ex.Material.vs0ps0tc>();
+							if (vertexBlending)
+							{
+								if (tex)
+								{
+									if (vertexColours)
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0tcb>();
+									else
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0tb>();
+								}
+								else
+								{
+									if (vertexColours)
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0cb>();
+									else
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0b>();
+								}
+							}
 							else
-								shader = state.GetShader<Xen.Ex.Material.vs0ps0t>();
+							{
+								if (tex)
+								{
+									if (vertexColours)
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0tci>();
+									else
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0ti>();
+								}
+								else
+								{
+									if (vertexColours)
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0ci>();
+									else
+										shader = state.GetShader<Xen.Ex.Material.vs0ps0i>();
+								}
+							}
 						}
 						else
 						{
-							if (vertexColours)
-								shader = state.GetShader<Xen.Ex.Material.vs0ps0c>();
+							if (tex)
+							{
+								if (vertexColours)
+									shader = state.GetShader<Xen.Ex.Material.vs0ps0tc>();
+								else
+									shader = state.GetShader<Xen.Ex.Material.vs0ps0t>();
+							}
 							else
-								shader = state.GetShader<Xen.Ex.Material.vs0ps0>();
+							{
+								if (vertexColours)
+									shader = state.GetShader<Xen.Ex.Material.vs0ps0c>();
+								else
+									shader = state.GetShader<Xen.Ex.Material.vs0ps0>();
+							}
 						}
 					}
 					else
@@ -516,10 +673,10 @@ namespace Xen.Ex.Material
 		/// 
 		///		float brightness = 1.0f / (CA + LA*len + QA*(len^2));
 		/// </code>
-		/// <para>Where <i>len</i> is the distance from the light source,
-		/// <br/><i>CA</i> is the <see cref="ConstantAttenuation"/> term,
-		/// <br/><i>LA</i> is the <see cref="LinearAttenuation"/> term,
-		/// <br/><i>QA</i> is the <see cref="QuadraticAttenuation"/> term.</para>
+		/// <para>Where <t>len</t> is the distance from the light source,
+		/// <br/><t>CA</t> is the <see cref="ConstantAttenuation"/> term,
+		/// <br/><t>LA</t> is the <see cref="LinearAttenuation"/> term,
+		/// <br/><t>QA</t> is the <see cref="QuadraticAttenuation"/> term.</para>
 		/// <para>
 		/// For constant light with no falloff (brightness always == 1), set the constant term to 1, and linear/quadratic to 0.
 		/// </para>
@@ -957,7 +1114,7 @@ namespace Xen.Ex.Material
 
 	/// <summary>
 	/// <para>A shader that implements a simple lighting model that supporting a large number of point and directional lights.</para>
-	/// <para>MaterialShader also allows for textures, normal maps and vertex colours to be used</para>
+	/// <para>MaterialShader also allows for textures, normal maps, vertex colours, skinning and hardware instancing to be used</para>
 	/// </summary>
 	public sealed class MaterialShader : IShader
 	{
@@ -968,14 +1125,12 @@ namespace Xen.Ex.Material
 			public int v_lights_id, p_lights_id, ambient_id, CustomTexture_id, CustomTextureSampler_id, CustomNormalMap_id, CustomNormalMapSampler_id, blendMatrices_id;
 		}
 
-		private bool dirty = true;
 		private IShader shader;
 		private ShaderBoundBones shaderBoundBones;
 		private AppMaterialID appId;
-		private bool useVertexColour;
 		private Texture2D texture, normalmap;
 		private TextureSamplerState textureSampler = TextureSamplerState.BilinearFiltering, normalSampler = TextureSamplerState.BilinearFiltering;
-		private bool perPixelSpecular;
+		private bool perPixelSpecular, useHardwareInstancing, useVertexColour, dirty = true;
 		private float specularPower = 16;
 		private Vector3 specularColour;
 		private Vector3 diffuseColour = Vector3.One;
@@ -991,8 +1146,10 @@ namespace Xen.Ex.Material
 		public MaterialAnimationTransformHierarchy AnimationTransforms
 		{
 			get { return animationTransforms; }
-			set 
+			set
 			{
+				if (value != null && this.useHardwareInstancing)
+					throw new ArgumentException("UseHardwareInstancing and AnimationTransforms are incompatible");
 				if (value != animationTransforms)
 				{
 					dirty |= (value == null) != (animationTransforms == null);
@@ -1118,6 +1275,25 @@ namespace Xen.Ex.Material
 				if (perPixelSpecular != value)
 				{
 					perPixelSpecular = value;
+					dirty = true;
+				}
+			}
+		}
+
+		/// <summary>
+		/// <para>Enables the shader to be used with HardwareInstancing when supported by the hardware</para>
+		/// <para>Use with calls to DrawState.DrawBatch, or manual instancing</para>
+		/// </summary>
+		public bool UseHardwareInstancing
+		{
+			get { return useHardwareInstancing; }
+			set
+			{
+				if (value && this.animationTransforms != null)
+					throw new ArgumentException("UseHardwareInstancing and AnimationTransforms are incompatible");
+				if (useHardwareInstancing != value)
+				{
+					useHardwareInstancing = value;
 					dirty = true;
 				}
 			}
@@ -1270,12 +1446,12 @@ namespace Xen.Ex.Material
 
 #if DEBUG
 			if (appId.application != _state.Application)
-				throw new ArgumentException("MaterialShader is being used with multiple application instances");
+				throw new ArgumentException("MaterialShader instance is being used with multiple application instances");
 #endif
 
 			int vsLightCount = 0;
 			int psLightCount = 0;
-			Vector3 ambient = new Vector3(1,1,1);
+			Vector3 ambient = diffuseColour;
 
 			if (lightCollection != null &&
 				lightCollection.LightingEnabled)
@@ -1400,8 +1576,9 @@ namespace Xen.Ex.Material
 					this.texture != null, 
 					this.useVertexColour, 
 					this.normalmap != null, 
-					this.perPixelSpecular, 
-					animationTransforms != null && animationTransforms.BlendingEnabled, 
+					this.perPixelSpecular,
+					animationTransforms != null && animationTransforms.BlendingEnabled,
+					this.useHardwareInstancing && _state.SupportsHardwareInstancing,
 					out shaderBoundBones);
 
 				dirty = false;

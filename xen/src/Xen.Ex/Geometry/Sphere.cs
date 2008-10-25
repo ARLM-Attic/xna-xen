@@ -140,9 +140,9 @@ namespace Xen.Ex.Geometry
 			verts.Draw(state, inds, PrimitiveType.TriangleList);
 		}
 
-		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances)
+		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances, int instanceCount)
 		{
-			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances);
+			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances, instanceCount);
 		}
 	}
 }

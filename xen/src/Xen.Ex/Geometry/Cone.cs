@@ -122,14 +122,6 @@ namespace Xen.Ex.Geometry
 				}
 				else
 				{
-					//inds.Add(0);
-					//inds.Add((ushort)(y+1));
-					//inds.Add((ushort)((y + 1) % y_count + 1));
-
-					//inds.Add(0);
-					//inds.Add((ushort)(((y + 1) % y_count) * 3));
-					//inds.Add((ushort)(y * 3));
-
 					inds.Add(0);
 					inds.Add((ushort)(y * 2 + 2));
 					inds.Add((ushort)(((y + 1) % y_count) * 2 + 2));
@@ -141,26 +133,6 @@ namespace Xen.Ex.Geometry
 						inds.Add((ushort)(y*2+1));
 					}
 				}
-
-				//if (prevCount != -1)
-				//{
-				//    int p = 0, c = 0;
-				//    while (p != prevCount || c != div)
-				//    {
-				//        if (p / (float)prevCount > c / (float)div)
-				//        {
-				//            inds.Add((ushort)(c % div + startIndex));
-				//            inds.Add((ushort)(p % prevCount + prevStartIndex));
-				//            inds.Add((ushort)((++c) % div + startIndex));
-				//        }
-				//        else
-				//        {
-				//            inds.Add((ushort)(c % div + startIndex));
-				//            inds.Add((ushort)(p % prevCount + prevStartIndex));
-				//            inds.Add((ushort)((++p) % prevCount + prevStartIndex));
-				//        }
-				//    }
-				//}
 
 				prevCount = div;
 				prevStartIndex = startIndex;
@@ -211,9 +183,10 @@ namespace Xen.Ex.Geometry
 		/// <param name="state"></param>
 		/// <param name="CanDrawItem">Callback delegate for culling instances (may be null)</param>
 		/// <param name="instances"></param>
-		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances)
+		/// <param name="instanceCount"></param>
+		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances, int instanceCount)
 		{
-			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances);
+			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances, instanceCount);
 		}
 	}
 }

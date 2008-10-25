@@ -155,9 +155,10 @@ namespace Xen.Ex.Geometry
 		/// <param name="state"></param>
 		/// <param name="CanDrawItem"></param>
 		/// <param name="instances"></param>
-		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances)
+		/// <param name="instanceCount"></param>
+		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances, int instanceCount)
 		{
-			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances);
+			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances, instanceCount);
 		}
 	}
 }
