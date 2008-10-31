@@ -1,53 +1,48 @@
 ﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
-    <ProjectGuid>{D2D915BF-878B-4F2E-8524-CB88814E92F8}</ProjectGuid>
-    <ProjectTypeGuids>{6D335F3A-9D43-41b4-9D22-F6F17C4BE596};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{35989594-AB32-4934-93CE-F80D5A7359A6}</ProjectGuid>
+    <ProjectTypeGuids>{2DF5C3F4-5A5F-47a9-8E94-23B4456F55E2};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <OutputType>WinExe</OutputType>
+    <Platform Condition=" '$(Platform)' == '' ">Xbox 360</Platform>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Tutorials</RootNamespace>
     <AssemblyName>Tutorials</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <XnaFrameworkVersion>v3.0</XnaFrameworkVersion>
-    <XnaPlatform>Windows</XnaPlatform>
-    <XnaCrossPlatformGroupID>ab6e9982-1053-4abf-b432-f6b50a22e23c</XnaCrossPlatformGroupID>
-    <ApplicationIcon>Game.ico</ApplicationIcon>
+    <XnaPlatform>Xbox 360</XnaPlatform>
+    <XnaCrossPlatformGroupID>76ea7eb5-5aca-4da8-8b6b-f7e3139dc78e</XnaCrossPlatformGroupID>
     <Thumbnail>GameThumbnail.png</Thumbnail>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|Xbox 360' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\x86\Debug</OutputPath>
-    <DefineConstants>DEBUG;TRACE;WINDOWS</DefineConstants>
+    <OutputPath>bin\Xbox 360\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE;XBOX;XBOX360</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
     <UseVSHostingProcess>false</UseVSHostingProcess>
-    <PlatformTarget>x86</PlatformTarget>
-    <XnaCompressContent>false</XnaCompressContent>
+    <XnaCompressContent>true</XnaCompressContent>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Xbox 360' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\x86\Release</OutputPath>
-    <DefineConstants>TRACE;WINDOWS</DefineConstants>
+    <OutputPath>bin\Xbox 360\Release</OutputPath>
+    <DefineConstants>TRACE;XBOX;XBOX360</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
     <UseVSHostingProcess>false</UseVSHostingProcess>
-    <PlatformTarget>x86</PlatformTarget>
     <XnaCompressContent>true</XnaCompressContent>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Xna.Framework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=x86">
+    <Reference Include="Microsoft.Xna.Framework">
       <Private>False</Private>
-      <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="Microsoft.Xna.Framework.Game, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Xna.Framework.Game">
       <Private>False</Private>
-      <SpecificVersion>True</SpecificVersion>
     </Reference>
     <Reference Include="mscorlib">
       <Private>False</Private>
@@ -55,19 +50,20 @@
     <Reference Include="System">
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Xml">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>False</Private>
     </Reference>
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Xen.Graphics.ShaderSystem, Version=1.0.1.0, Culture=neutral, PublicKeyToken=264190ff2b3fa357, processorArchitecture=x86">
+    <Reference Include="Xen.Graphics.ShaderSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=264190ff2b3fa357, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\x86\Xen.Graphics.ShaderSystem.dll</HintPath>
+      <HintPath>..\..\bin\Xbox 360\Xen.Graphics.ShaderSystem.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -102,20 +98,13 @@
       <DependentUpon>shader.fx</DependentUpon>
     </Compile>
     <Compile Include="Tutorial 20\Animation Stress Test.cs" />
-    <Compile Include="TutorialChooser.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="TutorialChooser.Designer.cs">
-      <DependentUpon>TutorialChooser.cs</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Game.ico" />
     <Content Include="GameThumbnail.png" />
   </ItemGroup>
   <ItemGroup>
     <NestedContentProject Include="Content\Content.contentproj">
-      <Project>eeb38a90-26a5-4cbf-810c-d79ca8668594</Project>
+      <Project>122a2094-98f0-4f8f-9440-53cf3858b2e5</Project>
       <Visible>False</Visible>
     </NestedContentProject>
   </ItemGroup>
@@ -130,19 +119,13 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="TutorialChooser.resx">
-      <DependentUpon>TutorialChooser.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Xen.Ex\Xen.Ex_XNAGS_3_0_beta.csproj">
-      <Project>{36FAD642-A41A-4D97-B00E-C857ABCA7740}</Project>
-      <Name>Xen.Ex_XNAGS_3_0_beta</Name>
+    <ProjectReference Include="..\Xen.Ex\Xen.Ex.x360.csproj">
+      <Project>{4AAA18D9-81F5-4215-8259-4C2B0303245C}</Project>
+      <Name>Xen.Ex.x360</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Xen\Xen_XNAGS_3_0_beta.csproj">
-      <Project>{E4A8ECCA-3DA6-40FB-84E8-94F29B36A9F5}</Project>
-      <Name>Xen_XNAGS_3_0_beta</Name>
+    <ProjectReference Include="..\Xen\Xen.x360.csproj">
+      <Project>{C569FC3B-351E-48E6-AD7E-C7B5DB7A2C77}</Project>
+      <Name>Xen.x360</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

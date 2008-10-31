@@ -213,7 +213,7 @@ namespace Xen.Ex.Graphics.Content
 		{
 			get { return typeof(RuntimeReader).AssemblyQualifiedName; }
 		}
-		
+
 #if DEBUG
 
 		public ModelData(string name, MeshData[] meshes, SkeletonData skeleton, AnimationData[] animations)
@@ -281,7 +281,7 @@ namespace Xen.Ex.Graphics.Content
 			count = reader.ReadInt32();
 			this.animations = new AnimationData[count];
 			for (int i = 0; i < count; i++)
-				this.animations[i] = new AnimationData(reader,i);
+				this.animations[i] = new AnimationData(reader, i);
 
 			GeometryBounds[] bounds = new GeometryBounds[meshes.Length];
 			for (int i = 0; i < bounds.Length; i++)
@@ -294,7 +294,7 @@ namespace Xen.Ex.Graphics.Content
 			for (int i = 0; i < animationStaticBounds.Length; i++)
 				animationStaticBounds[i] = new GeometryBounds(reader);
 		}
-		
+
 #if DEBUG
 
 		internal void Write(BinaryWriter writer)
@@ -328,7 +328,7 @@ namespace Xen.Ex.Graphics.Content
 		/// </summary>
 		public readonly GeometryBounds StaticBounds;
 		internal readonly GeometryBounds[] animationStaticBounds;
-		
+
 #if DEBUG
 
 		public MeshData(string name, GeometryData[] data, AnimationData[] animations)
@@ -424,7 +424,7 @@ namespace Xen.Ex.Graphics.Content
 		public bool UseVertexColour { get { return useVertexColour; } }
 		public Texture2D Texture { get { return textureMap; } }
 		public Texture2D NormalMap { get { return normalMap; } }
-		
+
 #if DEBUG
 
 		public MaterialData(
@@ -463,7 +463,7 @@ namespace Xen.Ex.Graphics.Content
 
 			UpdateTextures(reader.ContentManager, Path.GetDirectoryName(reader.AssetName));
 		}
-		
+
 #if DEBUG
 
 		public void Write(BinaryWriter writer)
@@ -549,6 +549,9 @@ namespace Xen.Ex.Graphics.Content
 
 		private void ComputeAnimationBounds(SkeletonData skeleton, AnimationData[] animations)
 		{
+			if (skeleton == null)
+				return;
+		
 			Matrix[] worldBones = skeleton.BoneLocalMatrices.ToArray();
 			Matrix[] transforms = new Matrix[skeleton.BoneCount];
 			skeleton.TransformHierarchy(worldBones);
@@ -979,7 +982,7 @@ namespace Xen.Ex.Graphics.Content
 				this.indices = new Indices<int>(inds);
 			}
 
-			Xen.Application.ApplicationProviderService app = 
+			Xen.Application.ApplicationProviderService app =
 				(Xen.Application.ApplicationProviderService)reader.ContentManager.ServiceProvider.GetService(typeof(Xen.Application.ApplicationProviderService));
 
 			if (app != null)
@@ -1040,7 +1043,7 @@ namespace Xen.Ex.Graphics.Content
 		private readonly float duration;
 		internal readonly int index;
 		private Stack<AnimationStreamControl> streamCache;
-		
+
 #if DEBUG
 
 		public AnimationData(string name, int[] indices, KeyFrameData[] keyframes, float duration, float tollerance)
@@ -1123,7 +1126,7 @@ namespace Xen.Ex.Graphics.Content
 		}
 		internal void CacheUnusedStream(AnimationStreamControl stream)
 		{
-			stream.Reset(true,false);
+			stream.Reset(true, false);
 			lock (boneIndices)
 			{
 				if (streamCache == null)
@@ -1255,7 +1258,7 @@ namespace Xen.Ex.Graphics.Content
 		internal readonly Transform[] boneLocalTransforms, boneWorldTransforms;
 		private readonly BoneData[] boneData;
 		private readonly int[] hierarchy;
-		
+
 #if DEBUG
 		internal readonly Matrix[] boneLocalMatrices;
 
@@ -1315,7 +1318,7 @@ namespace Xen.Ex.Graphics.Content
 		/// <param name="transforms"></param>
 		public void TransformHierarchyInverse(Transform[] transforms)
 		{
-			for (int i = hierarchy.Length-2; i >= 0; i -= 2)
+			for (int i = hierarchy.Length - 2; i >= 0; i -= 2)
 			{
 				int parent = hierarchy[i];
 				int index = hierarchy[i + 1];
@@ -1454,7 +1457,7 @@ namespace Xen.Ex.Graphics.Content
 			}
 			return transforms;
 		}
-		
+
 #if DEBUG
 		internal void Write(BinaryWriter writer)
 		{
@@ -1494,7 +1497,7 @@ namespace Xen.Ex.Graphics.Content
 		private readonly int boneIndex;
 		private readonly int[] children;
 		private readonly int parent;
-		
+
 #if DEBUG
 
 		public BoneData(string name, int boneIndex, int parent, int[] children)
@@ -1524,7 +1527,7 @@ namespace Xen.Ex.Graphics.Content
 		{
 			get { return new ReadOnlyArrayCollection<int>(children); }
 		}
-		
+
 #if DEBUG
 
 		internal void Write(BinaryWriter writer)

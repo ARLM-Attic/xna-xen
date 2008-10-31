@@ -27,7 +27,7 @@ namespace Xen.Ex.ModelImporter
 
 		public override string GetRuntimeReader(TargetPlatform targetPlatform)
 		{
-			return (string)typeof(ModelData).GetProperty("RuntimeReaderType", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null,new object[0]);
+			return (string)typeof(ModelData).GetProperty("RuntimeReaderType", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, new object[0]);
 		}
 	}
 
@@ -39,12 +39,13 @@ namespace Xen.Ex.ModelImporter
 
 		public override ModelData Process(NodeContent input, ContentProcessorContext context)
 		{
+
 			List<MeshData> meshes = new List<MeshData>();
 			SkeletonData skeleton = null;
 			List<AnimationData> animations = new List<AnimationData>();
 
 			List<SkeletonData> skeletons = new List<SkeletonData>();
-			
+
 
 			string rootPath = input.Identity.SourceFilename;
 
@@ -53,9 +54,9 @@ namespace Xen.Ex.ModelImporter
 
 			if (this.RotationX != 0 || this.RotationY != 0 || this.RotationZ != 0 || this.Scale != 1)
 			{
-				Matrix transform = 
+				Matrix transform =
 					Matrix.CreateRotationZ(MathHelper.ToRadians(this.RotationZ)) *
-					Matrix.CreateRotationX(MathHelper.ToRadians(this.RotationX)) * 
+					Matrix.CreateRotationX(MathHelper.ToRadians(this.RotationX)) *
 					Matrix.CreateRotationY(MathHelper.ToRadians(this.RotationY)) *
 					Matrix.CreateScale(this.Scale);
 
@@ -94,8 +95,8 @@ namespace Xen.Ex.ModelImporter
 				ProcessAnimations(input, context, animations, boneIndices, skeleton);
 
 			ProcessMeshNodes(input, context, meshes, rootPath, processedContent, skeleton, animations.ToArray());
-			
-			return new ModelData(input.Name,meshes.ToArray(),skeleton,animations.ToArray());
+
+			return new ModelData(input.Name, meshes.ToArray(), skeleton, animations.ToArray());
 		}
 
 		void ProcessSkeletonNodes(NodeContent node, ContentProcessorContext context, List<SkeletonData> skeletons)
@@ -120,7 +121,7 @@ namespace Xen.Ex.ModelImporter
 					continue;
 				if (child is MeshContent)
 				{
-					meshes.Add(ProcessMesh(child as MeshContent, context, rootPath, processedContent, skeleton,animations));
+					meshes.Add(ProcessMesh(child as MeshContent, context, rootPath, processedContent, skeleton, animations));
 					continue;
 				}
 
@@ -132,21 +133,24 @@ namespace Xen.Ex.ModelImporter
 		{
 			MeshHelper.TransformScene(mesh, mesh.AbsoluteTransform);
 
-			string[] normalMapNames = new string[]{"Bump0", "Bump", "NormalMap", "Normalmap", "Normals", "BumpMap"};
+			string[] normalMapNames = new string[] { "Bump0", "Bump", "NormalMap", "Normalmap", "Normals", "BumpMap" };
 			MeshHelper.OptimizeForCache(mesh);
 
 			foreach (GeometryContent geom in mesh.Geometry)
 			{
-				string map = MaterialTexture(geom.Material, rootPath, null, null, normalMapNames);
-				if (map != null && map.Length > 0)
-					generateTangents = true;
+				if (geom.Material != null)
+				{
+					string map = MaterialTexture(geom.Material, rootPath, null, null, normalMapNames);
+					if (map != null && map.Length > 0)
+						generateTangents = true;
+				}
 			}
 
 			if (generateTangents)
 			{
 				MeshHelper.CalculateNormals(mesh, false);
 
-				bool hasNoTangent = !GeometryContainsChannel(mesh,VertexChannelNames.Tangent(0));
+				bool hasNoTangent = !GeometryContainsChannel(mesh, VertexChannelNames.Tangent(0));
 				bool hasNoBinorm = !GeometryContainsChannel(mesh, VertexChannelNames.Binormal(0));
 				if (hasNoTangent || hasNoBinorm)
 				{
@@ -159,9 +163,9 @@ namespace Xen.Ex.ModelImporter
 			{
 				MeshHelper.SwapWindingOrder(mesh);
 			}
-			
+
 			List<GeometryData> geometry = new List<GeometryData>();
-			
+
 			BoneContent skeleton = MeshHelper.FindSkeleton(mesh);
 			Dictionary<string, int> boneIndices = null;
 			if (skeleton != null)
@@ -172,7 +176,7 @@ namespace Xen.Ex.ModelImporter
 
 				this.ProcessVertexChannels(geom, context, boneIndices, null);
 				MeshHelper.MergeDuplicateVertices(geom);
-				
+
 				MaterialData material = new MaterialData(
 					MaterialValue<float>("Alpha", geom.Material, 1),
 					MaterialValue<float>("SpecularPower", geom.Material, 24),
@@ -193,7 +197,7 @@ namespace Xen.Ex.ModelImporter
 				geometry.Add(new GeometryData(geom.Name, ve, vb.VertexData, indices, material, skeletonData, animations, context.TargetPlatform == TargetPlatform.Xbox360));
 			}
 
-			return new MeshData(mesh.Name,geometry.ToArray(),animations);
+			return new MeshData(mesh.Name, geometry.ToArray(), animations);
 		}
 
 		string MaterialTexture(MaterialContent material, string rootPath, ContentProcessorContext context, Dictionary<string, object> processedContent, params string[] names)
@@ -201,7 +205,7 @@ namespace Xen.Ex.ModelImporter
 			ExternalReference<TextureContent> tex;
 			foreach (string name in names)
 			{
-				if (material.Textures.TryGetValue(name, out tex))
+				if (material != null && material.Textures.TryGetValue(name, out tex))
 				{
 					if (tex != null && tex.Filename != null)
 					{
@@ -220,7 +224,7 @@ namespace Xen.Ex.ModelImporter
 									processorParameters["GenerateMipmaps"] = this.GenerateMipmaps;
 									processorParameters["ResizeToPowerOfTwo"] = this.ResizeTexturesToPowerOfTwo;
 
-									content = context.BuildAsset<TextureContent, TextureContent>(tex, typeof(TextureProcessor).Name, processorParameters,null,null);
+									content = context.BuildAsset<TextureContent, TextureContent>(tex, typeof(TextureProcessor).Name, processorParameters, null, null);
 									processedContent.Add(tex.Filename, content);
 								}
 								else
@@ -253,7 +257,7 @@ namespace Xen.Ex.ModelImporter
 			{
 				if (fileDir.FullName == rootDir.FullName)
 				{
-					string path = Path.ChangeExtension(file.FullName.Substring(fileDir.FullName.Length),null);
+					string path = Path.ChangeExtension(file.FullName.Substring(fileDir.FullName.Length), null);
 					while (subDirs-- > 0)
 					{
 						if (subDirs != 0)
@@ -291,7 +295,7 @@ namespace Xen.Ex.ModelImporter
 		T MaterialValue<T>(string name, MaterialContent material, T defaultValue)
 		{
 			object obj;
-			if (material.OpaqueData.TryGetValue(name,out obj))
+			if (material != null && material.OpaqueData.TryGetValue(name, out obj))
 			{
 				if (obj is T)
 					return (T)obj;
@@ -303,7 +307,7 @@ namespace Xen.Ex.ModelImporter
 		void ProcessAnimations(NodeContent node, ContentProcessorContext context, List<AnimationData> animations, Dictionary<string, int> indices, SkeletonData skeleton)
 		{
 			foreach (AnimationContent anim in node.Animations.Values)
-				ProcessAnimation(anim, context, animations, indices,skeleton);
+				ProcessAnimation(anim, context, animations, indices, skeleton);
 
 			foreach (NodeContent child in node.Children)
 				ProcessAnimations(child, context, animations, indices, skeleton);
@@ -319,7 +323,7 @@ namespace Xen.Ex.ModelImporter
 			{
 				if (indices.ContainsKey(channelKVP.Key) == false)
 					continue;
-				
+
 				AnimationChannel channel = channelKVP.Value;
 
 				foreach (AnimationKeyframe frame in channel)
@@ -340,7 +344,7 @@ namespace Xen.Ex.ModelImporter
 
 			int index = 0;
 
-			foreach (KeyValuePair<string,AnimationChannel> channelKVP in anim.Channels)
+			foreach (KeyValuePair<string, AnimationChannel> channelKVP in anim.Channels)
 			{
 				if (indices.ContainsKey(channelKVP.Key) == false)
 					continue;
@@ -463,7 +467,7 @@ namespace Xen.Ex.ModelImporter
 
 			index = 0;
 			float duration = 0;
-			foreach (KeyValuePair<TimeSpan,Matrix[]> kvp in transforms)
+			foreach (KeyValuePair<TimeSpan, Matrix[]> kvp in transforms)
 			{
 				float seconds = (float)kvp.Key.TotalSeconds;
 
@@ -475,7 +479,7 @@ namespace Xen.Ex.ModelImporter
 
 				//replace the animated bones..
 				for (int i = 0; i < kvp.Value.Length; i++)
-				    worldTransform[boneIndices[i]] = kvp.Value[i];
+					worldTransform[boneIndices[i]] = kvp.Value[i];
 
 				//transform into a world space skeleton
 				skeleton.TransformHierarchy(worldTransform);
@@ -510,7 +514,7 @@ namespace Xen.Ex.ModelImporter
 
 		SkeletonData ProcessSkeleton(BoneContent root, ContentProcessorContext context)
 		{
-			Dictionary<string,int> bones = FlattenSkeleton(root);
+			Dictionary<string, int> bones = FlattenSkeleton(root);
 
 			int boneCount = 0;
 			foreach (int index in bones.Values)
@@ -590,7 +594,7 @@ namespace Xen.Ex.ModelImporter
 				if (str == "Color")
 					ProcessColorChannel(geometry, vertexChannelIndex);
 				if (str == "Weights")
-					ProcessWeightsChannel(geometry, vertexChannelIndex,boneIndices,boneRemap);
+					ProcessWeightsChannel(geometry, vertexChannelIndex, boneIndices, boneRemap);
 			}
 		}
 		private static void ProcessColorChannel(GeometryContent geometry, int vertexChannelIndex)
@@ -671,7 +675,7 @@ namespace Xen.Ex.ModelImporter
 			outputWeights[vertexIndex] = new Vector4(tempWeights[0], tempWeights[1], tempWeights[2], tempWeights[3]);
 		}
 
-		private static void VertexWeightsInUse(BoneWeightCollection inputWeights, Dictionary<string, int> boneIndices, SortedDictionary<int,bool> indicesInUse)
+		private static void VertexWeightsInUse(BoneWeightCollection inputWeights, Dictionary<string, int> boneIndices, SortedDictionary<int, bool> indicesInUse)
 		{
 			if (boneIndices == null)
 				throw new InvalidContentException("Mesh has bone weights with no skeleton");
@@ -739,8 +743,8 @@ namespace Xen.Ex.ModelImporter
 			}
 		}
 
-		
-		
+
+
 		[DefaultValue(false), DisplayName("Import Meshes from BoneContent"), Category("Geometry")]
 		public virtual bool ImportBoneContentMeshes
 		{
