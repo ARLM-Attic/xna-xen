@@ -1,6 +1,6 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
-    <ProjectGuid>{754C33AA-BA92-4B1A-881F-B346628DBF42}</ProjectGuid>
+    <ProjectGuid>{E4A8ECCA-3DA6-40FB-84E8-94F29B36A9F5}</ProjectGuid>
     <ProjectTypeGuids>{6D335F3A-9D43-41b4-9D22-F6F17C4BE596};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -8,41 +8,59 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Xen</RootNamespace>
     <AssemblyName>Xen</AssemblyName>
-    <XnaFrameworkVersion>v2.0</XnaFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <XnaFrameworkVersion>v3.0</XnaFrameworkVersion>
     <XnaPlatform>Windows</XnaPlatform>
-    <XnaCrossPlatformGroupID>57b03c52-942c-4029-8613-b7a566c0178b</XnaCrossPlatformGroupID>
+    <XnaCrossPlatformGroupID>f6933402-2a30-418b-b089-d960d00f7992</XnaCrossPlatformGroupID>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;WINDOWS;XNA_2_0</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;WINDOWS;XNA_3_0</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <PlatformTarget>x86</PlatformTarget>
+    <XnaCompressContent>True</XnaCompressContent>
     <DocumentationFile>..\..\bin\x86\Debug\Xen.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;WINDOWS;XNA_2_0</DefineConstants>
+    <DefineConstants>TRACE;WINDOWS;XNA_3_0</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <PlatformTarget>x86</PlatformTarget>
+    <XnaCompressContent>true</XnaCompressContent>
     <DocumentationFile>..\..\bin\x86\Release\Xen.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Xna.Framework, Version=2.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=x86">
+    <Reference Include="Microsoft.Xna.Framework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=x86">
       <Private>False</Private>
       <SpecificVersion>True</SpecificVersion>
     </Reference>
-    <Reference Include="Microsoft.Xna.Framework.Game, Version=2.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Xna.Framework.Game, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=MSIL">
       <Private>False</Private>
       <SpecificVersion>True</SpecificVersion>
     </Reference>
@@ -52,55 +70,84 @@
     <Reference Include="System">
       <Private>False</Private>
     </Reference>
-    <Reference Include="System.Data" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Xen.Graphics.ShaderSystem, Version=1.0.1.0, Culture=neutral, PublicKeyToken=264190ff2b3fa357, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\x86\Xen.Graphics.ShaderSystem.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Camera\ICuller.cs" />
-    <Compile Include="Camera\CameraControl.cs" />
+    <Compile Include="Application.cs" />
     <Compile Include="Camera\Camera2D.cs" />
     <Compile Include="Camera\Camera3D.cs" />
+    <Compile Include="Camera\CameraControl.cs" />
     <Compile Include="Camera\ICamera.cs" />
+    <Compile Include="Camera\ICuller.cs" />
+    <Compile Include="Camera\Projection.cs" />
     <Compile Include="Content.cs" />
-    <Compile Include="Application.cs" />
-    <Compile Include="Graphics\DrawFlags.cs" />
-    <Compile Include="State.cs" />
     <Compile Include="Graphics\Buffer.cs" />
-    <Compile Include="Graphics\VertexDeclaration.cs" />
-    <Compile Include="Graphics\VerticesGroup.cs" />
-    <Compile Include="Graphics\Vertices.cs" />
-    <Compile Include="Graphics\Indices.cs" />
+    <Compile Include="Graphics\DrawFlags.cs" />
     <Compile Include="Graphics\DrawStateGeometry.cs" />
     <Compile Include="Graphics\DrawStateRender.cs" />
-    <Compile Include="Graphics\Modifier.cs" />
     <Compile Include="Graphics\DrawTarget.cs" />
-    <Compile Include="Camera\Projection.cs" />
-    <Compile Include="Graphics\State.cs" />
+    <Compile Include="Graphics\Indices.cs" />
+    <Compile Include="Graphics\Modifier.cs" />
     <Compile Include="Graphics\Resource.cs" />
-    <Compile Include="Input\State.cs" />
-    <Compile Include="Input\Mapping.cs" />
+    <Compile Include="Graphics\State.cs" />
+    <Compile Include="Graphics\VertexDeclaration.cs" />
+    <Compile Include="Graphics\Vertices.cs" />
+    <Compile Include="Graphics\VerticesGroup.cs" />
     <Compile Include="Input\Input.cs" />
+    <Compile Include="Input\Mapping.cs" />
+    <Compile Include="Input\State.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="State.cs" />
     <Compile Include="Threading\ThreadPool.cs" />
     <Compile Include="Update.cs" />
   </ItemGroup>
   <ItemGroup>
     <NestedContentProject Include="Content\Content.contentproj">
-      <Project>018e1b54-714a-46d5-8722-c1e8698317a1</Project>
+      <Project>b64ca1a8-9bcb-4d50-aee2-a60d31b17637</Project>
       <Visible>False</Visible>
     </NestedContentProject>
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Xna.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>Microsoft XNA Framework Redistributable 3.0</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\XNA Game Studio\v2.0\Microsoft.Xna.GameStudio.Common.targets" />
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\XNA Game Studio\v2.0\Microsoft.Xna.GameStudio.NestedContent.targets" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\XNA Game Studio\Microsoft.Xna.GameStudio.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
