@@ -1,7 +1,7 @@
 Xen: Graphics API for XNA
 www.codeplex.com/xen
 
-version 1.1
+version 1.2 (XNA 3.0)
 
 
 
@@ -43,8 +43,20 @@ XboxLive: StatusUnknown
 -----------------------------------------------------------------------------------------------------
 -- Change Log
 
-25/OCT/08
-Version 1.1
+-- 31/OCT/08
+-- Version 1.2
+
+Updated to XNA 3.0
+XNA 2.0 and XNA 3.0 BETA are no longer supported
+All tools have been rebuilt for .NET 3.5
+
+[Fixed] The model importer no longer falls over if the model doesn't have animations or materials
+
+
+
+-- 25/OCT/08
+-- Version 1.1
+
 XBOX hardware instancing support added.
 A number of bug fixes and tweaks, only one breaking change:
 
@@ -99,8 +111,8 @@ The 'prebuild' batch file registers the plugin and builds the debug xen librarie
 -----------------------------------------------------------------------------------------------------
 -- Xna Notes:
 
-Xen currently supports XNA Game Studio 2.0, Windows and the Xbox360.
-Zune support for GS3.0 is not planned.
+Xen supports XNA Game Studio 3.0, Windows and the Xbox360.
+Zune support is not planned.
 
 
 
