@@ -787,7 +787,7 @@ namespace Xen
 #if !XBOX360
 
 			mousePrev = new Point(mouse.X, mouse.Y);
-			XNAGame.GetInputState(ref keyboard, ref mouse, ref windowFocused, ref mouseCen, ref mouseCenTo);
+			((XNAGame)application).GetInputState(ref keyboard, ref mouse, ref windowFocused, ref mouseCen, ref mouseCenTo);
 			if (!windowFocused)
 				focusSkip = 5;
 			if (!mousePosSet || focusSkip > 0)
@@ -803,7 +803,7 @@ namespace Xen
 
 #else
 
-			XNAGame.GetInputState(ref keyboard);
+			((XNAGame)application).GetInputState(ref keyboard);
 
 #endif
 			UpdateState updateState = state ?? GetUpdateState();

@@ -132,11 +132,8 @@ namespace Xen
 		static object inputLock = new object();
 		static KeyboardState keyboard;
 
-		protected override void Update(GameTime gameTime)
+		internal void UpdateInputState()
 		{
-			this.IsFixedTimeStep = false;
-			//parent.updateSyncStart.WaitOne();
-
 			lock (inputLock)
 			{
 				keyboard = Keyboard.GetState();
@@ -144,16 +141,7 @@ namespace Xen
 #if !XBOX360
 				mouse = Mouse.GetState();
 
-				if (windowForm == null)
-				{
-					windowForm = (System.Windows.Forms.Form)System.Windows.Forms.Form.FromHandle(Window.Handle);
-					windowForm.Deactivate += delegate { windowFocusedBuffer = false; };
-					windowForm.Activated += delegate { windowFocusedBuffer = true; };
-				}
-
 				Point p = new Point(windowForm.Width / 2, windowForm.Height / 2);
-				
-				windowFocused = windowFocusedBuffer;
 
 				if (centreMouse && windowFocused)
 					Mouse.SetPosition(p.X, p.Y);
@@ -167,6 +155,28 @@ namespace Xen
 				centreMousePrevious = centreMouse;
 #endif
 			}
+		}
+
+		protected override void Update(GameTime gameTime)
+		{
+			this.IsFixedTimeStep = false;
+			//parent.updateSyncStart.WaitOne();
+
+			lock (inputLock)
+			{
+#if !XBOX360
+
+				if (windowForm == null)
+				{
+					windowForm = (System.Windows.Forms.Form)System.Windows.Forms.Form.FromHandle(Window.Handle);
+					windowForm.Deactivate += delegate { windowFocusedBuffer = false; };
+					windowForm.Activated += delegate { windowFocusedBuffer = true; };
+				}
+
+				windowFocused = windowFocusedBuffer;
+
+#endif
+			}
 
 			//parent.updateSyncEnd.Set();
 			//	base.Update(gameTime);
@@ -177,10 +187,11 @@ namespace Xen
 		}
 
 #if !XBOX360
-		internal static void GetInputState(ref KeyboardState k, ref MouseState m, ref bool windowFocused, ref bool mouseCentred, ref Point centerPoint)
+		internal void GetInputState(ref KeyboardState k, ref MouseState m, ref bool windowFocused, ref bool mouseCentred, ref Point centerPoint)
 		{
 			lock (inputLock)
 			{
+				UpdateInputState();
 
 				m = mouse;
 				k = keyboard;
@@ -190,7 +201,7 @@ namespace Xen
 			}
 		}
 #else
-		internal static void GetInputState(ref KeyboardState k)
+		internal void GetInputState(ref KeyboardState k)
 		{
 			lock (inputLock)
 				k = keyboard;
