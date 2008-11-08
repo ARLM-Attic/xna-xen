@@ -516,6 +516,8 @@ namespace Xen.Ex.Graphics2D
 			int beginWord = 0;
 			int beginLine = 0;
 			int beginWordIndex = 0;
+			int beginWordLength = 0;
+			int spriceCount = 0;
 			int lastIndex = -1;
 			float beginX = 0;
 			if (!font.TryGetCharacterIndex('.',out periodIndex))
@@ -587,6 +589,7 @@ namespace Xen.Ex.Graphics2D
 							{
 								beginWord = lastIndex;
 								beginWordIndex = i;
+								beginWordLength = spriceCount;
 								beginX = position.X;
 							}
 
@@ -611,7 +614,7 @@ namespace Xen.Ex.Graphics2D
 										//find out how long this word is...
 
 										float length = 0;
-										for (int n = i+1; n < text.Length; n++)
+										for (int n = i; n < text.Length; n++)
 										{
 											if (!(char.IsLetterOrDigit(text[n]) || text[n] == '_'))
 												break;
@@ -633,8 +636,9 @@ namespace Xen.Ex.Graphics2D
 
 										if (!tooLong)
 										{
-											sprite.RemoveLastSprite(i - beginWordIndex);
+											sprite.RemoveLastSprite(spriceCount - beginWordLength);
 											i = beginWordIndex;
+											spriceCount = beginWordLength;
 											position.X = beginX;
 											if (textAlign == TextHorizontalAlignment.Justified &&
 												spaces.Count > 0)
@@ -713,6 +717,8 @@ namespace Xen.Ex.Graphics2D
 										for (int n = 0; n < 3; n++)
 										{
 											sprite.AddSprite(ref pos, ref font.glyphSize[periodIndex], ref colour, ref font.glyphDataV4[periodIndex]);
+											spriceCount++;
+
 											pos.X += kerning.X + kerning.Y + kerning.Z;
 										}
 
@@ -726,6 +732,7 @@ namespace Xen.Ex.Graphics2D
 
 
 								lastIndex = sprite.AddSprite(ref pos, ref font.glyphSize[index], ref colour, ref font.glyphDataV4[index]);
+								spriceCount++;
 
 								flag = false;
 								position.X += ((kerning.Y + kerning.Z));

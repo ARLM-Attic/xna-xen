@@ -128,17 +128,17 @@ namespace Xen
 		static MouseState mouse;
 		static bool centreMouse, mouseCentred, centreMousePrevious, windowFocused = true, windowFocusedBuffer = true;
 		static Point mouseCentrePoint;
-#endif
 		static object inputLock = new object();
 		static KeyboardState keyboard;
+#endif
 
 		internal void UpdateInputState()
 		{
+#if !XBOX360
 			lock (inputLock)
 			{
 				keyboard = Keyboard.GetState();
 
-#if !XBOX360
 				mouse = Mouse.GetState();
 
 				Point p = new Point(windowForm.Width / 2, windowForm.Height / 2);
@@ -153,18 +153,17 @@ namespace Xen
 				}
 
 				centreMousePrevious = centreMouse;
-#endif
 			}
+#endif
 		}
 
 		protected override void Update(GameTime gameTime)
 		{
 			this.IsFixedTimeStep = false;
-			//parent.updateSyncStart.WaitOne();
-
+			
+#if !XBOX360
 			lock (inputLock)
 			{
-#if !XBOX360
 
 				if (windowForm == null)
 				{
@@ -175,11 +174,8 @@ namespace Xen
 
 				windowFocused = windowFocusedBuffer;
 
-#endif
 			}
-
-			//parent.updateSyncEnd.Set();
-			//	base.Update(gameTime);
+#endif
 
 			state.SetGameTime(gameTime);
 
@@ -200,23 +196,16 @@ namespace Xen
 				windowFocused = XNAGame.windowFocused;
 			}
 		}
-#else
-		internal void GetInputState(ref KeyboardState k)
-		{
-			lock (inputLock)
-				k = keyboard;
-		}
 #endif
 		internal static void SetMouseCentreState(bool centreMouse)
 		{
+#if !XBOX360
 			lock (inputLock)
 			{
 
-#if !XBOX360
 				XNAGame.centreMouse = centreMouse;
-#endif
-
 			}
+#endif
 		}
 
 	}
@@ -381,7 +370,8 @@ namespace Xen
 		void Draw(DrawState state);
 	}
 	/// <summary>
-	/// Interface to a sepecial object that can drawn itself as a batch. All batch drawable objects also are <see cref="IDraw"/> instances
+	/// <para>Interface to a sepecial object that can drawn itself as a batch. All batch drawable objects also are <see cref="IDraw"/> instances</para>
+	/// <para>Most DrawBatch objects will use hardware instancing when supported</para>
 	/// </summary>
 	/// <remarks>
 	/// <para>This interface is usually used by low level geometry classes</para>
@@ -398,6 +388,28 @@ namespace Xen
 		/// <param name="instances">World matrix of the instances to be drawn</param>
 		/// <param name="instanceCount">The number of instances to draw</param>
 		void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItemIndex, Matrix[] instances, int instanceCount);
+	}
+	/// <summary>
+	/// <para>Interface to an object that can draw itself as a batch, using an InstanceBuffer. All batch drawable objects also are <see cref="IDraw"/> instances</para>
+	/// <para>Most DrawBatch objects will use hardware instancing when supported</para>
+	/// <para>NOTE: calls to BeginDrawBatch/EndDrawBatch may not be nested</para>
+	/// </summary>
+	public interface IBeginEndDrawBatch : IDraw
+	{
+		/// <summary>
+		/// Begin drawing a batch (used for batch setup), specifying the maximum number of instances that may be drawn. This method must be followed by a call to <see cref="EndDrawBatch"/>
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="maxInstances">The maximun number of instances that may be drawn</param>
+		/// <returns>An instance buffer is returned. Instances should be added to the instance buffer, before the call to <see cref="EndDrawBatch"/></returns>
+		/// <remarks>Most implementations will simply return <see cref="DrawState.BeginDrawBatch"/></remarks>
+		Graphics.StreamFrequency.InstanceBuffer BeginDrawBatch(DrawState state, int maxInstances);
+		/// <summary>
+		/// Ends drawing a batch. This method will draw all the batches stored in the InstanceBuffer
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="buffer">A buffer storing the instances that will be drawn by this method call</param>
+		void EndDrawBatch(DrawState state, Graphics.StreamFrequency.InstanceBuffer buffer);
 	}
 	/// <summary>
 	/// Interface to an object that modifies draw state and must be setup/shutdown. Usually used by internal classes only

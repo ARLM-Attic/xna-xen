@@ -95,6 +95,76 @@ namespace Xen.Graphics
 	public sealed class StreamFrequency
 	{
 		/// <summary>
+		/// A buffer providing more fleixble setup for instancing matrices (for use with DrawState.DrawBatch)
+		/// </summary>
+		public class InstanceBuffer
+		{
+			internal void Set(object buffer, InstanceMatrix[] instances, int start, int length)
+			{
+				this.instanceBuffer = buffer;
+				this.instances = instances;
+				this.instanceIndex = start;
+				this.instanceLength = length;
+				this.index = 0;
+			}
+			internal object instanceBuffer;
+			private InstanceMatrix[] instances;
+			private int index;
+			private int instanceIndex, instanceLength;
+
+			/// <summary>
+			/// Add an instance to the buffer
+			/// </summary>
+			/// <param name="instance"></param>
+			public void AddInstance(ref Matrix instance)
+			{
+				index++;
+#if DEBUG
+				if (index == instanceLength)
+					throw new IndexOutOfRangeException();
+#endif
+				instances[instanceIndex++].Set(ref instance);
+			}
+
+			/// <summary>
+			/// Add an instance to the buffer, using the current world matrix
+			/// </summary>
+			/// <param name="state"></param>
+			public void AddInstance(DrawState state)
+			{
+				index++;
+#if DEBUG
+				if (index == instanceLength)
+					throw new IndexOutOfRangeException();
+#endif
+				instances[instanceIndex++].Set(ref state.worldMatrix.value);
+			}
+
+			/// <summary>
+			/// Add an instance to the buffer
+			/// </summary>
+			/// <param name="position"></param>
+			public void AddInstance(ref Vector3 position)
+			{
+				index++;
+#if DEBUG
+				if (index == instanceLength)
+					throw new IndexOutOfRangeException();
+#endif
+				instances[instanceIndex++].Set(ref position);
+			}
+
+			/// <summary>
+			/// Gets the number of instances added to the buffer
+			/// </summary>
+			public int InstanceCount { get { return index; } }
+			/// <summary>
+			/// Gets the maximum number of instances that can be added to this buffer
+			/// </summary>
+			public int MaxInstanceCount { get { return instanceLength; } }
+		}
+
+		/// <summary>
 		/// A structure used to store per-instance world matrix data
 		/// </summary>
 		/// <remarks>This data is stored in vertex shader inputs POSITION12,POSITION13,POSITION14,POSITION15 to ease implementation</remarks>

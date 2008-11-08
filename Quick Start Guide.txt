@@ -1,7 +1,7 @@
 Xen: Graphics API for XNA
 www.codeplex.com/xen
 
-version 1.2 (XNA 3.0)
+version 1.3 (XNA 3.0)
 
 
 
@@ -12,7 +12,7 @@ version 1.2 (XNA 3.0)
 2.) Open ./xen/Tutorials.sln
 
 
-Tutorials.sln contains 16 small tutorial applications.
+Tutorials.sln contains 17 small tutorial applications.
 These show step by step ways to use xen features.
 
 Reading these will make learning xen a lot easier!
@@ -43,6 +43,24 @@ XboxLive: StatusUnknown
 -----------------------------------------------------------------------------------------------------
 -- Change Log
 
+-- 8/NOV/08
+-- Version 1.3
+
+[Added] KeyboardInputState class, treats keys as Button objects, for more flexibility
+[Added] Tutorial 17 (Keyboard input)
+[Added] BeginDrawBatch / EndDrawBatch in DrawState and the IBeginEndDrawBatch interface
+[Fixed] World matrix inconsistencies when using DrawBatch and the CanDraw callback
+[Fixed] Some bugs with text rendering
+[Improved] Tutorial 09 now uses a shader to sample the texture
+
+
+-- 3/NOV/08
+-- Version 1.2a
+
+[Fixed] The shader custom tool now works correctly with alternate system culture number formats
+[Fixed] Centring the mouse works correctly with high frame rates when vsync is disabled
+
+
 -- 31/OCT/08
 -- Version 1.2
 
@@ -51,7 +69,6 @@ XNA 2.0 and XNA 3.0 BETA are no longer supported
 All tools have been rebuilt for .NET 3.5
 
 [Fixed] The model importer no longer falls over if the model doesn't have animations or materials
-
 
 
 -- 25/OCT/08
@@ -67,8 +84,8 @@ A number of bug fixes and tweaks, only one breaking change:
 [Added] Tutorial 16
 [Added] Projection cull pause
 [Added] VFetch support on the xbox (see tutorial 16)
-[Added] Hardware instacing emulation on the Xbox360
-[Added] Hardware instacing support added to MaterialShader (xbox and PC)
+[Added] Hardware instancing emulation on the Xbox360
+[Added] Hardware instancing support added to MaterialShader (xbox and PC)
 [Fixed] DrawState.PushWorldTranslateMultiply now works correctly
 [Fixed] Unregister FX actually works now
 [Improved] MaterialShader is now more space efficient
@@ -81,6 +98,8 @@ A number of bug fixes and tweaks, only one breaking change:
 Version 1.0
 
 Initial Release
+
+
 
 -----------------------------------------------------------------------------------------------------
 -- Build notes:
@@ -125,13 +144,13 @@ Zune support is not planned.
 There are 5 parts to xen:
 
 
-Xen.dll						-- the main API .dll
-Xen.Ex.dll					-- extensions, helpers and experimental classes
-Xen.Graphics.ShaderSystem.dll			-- shader interfaces
+Xen.dll 					-- the main API .dll
+Xen.Ex.dll 					-- extensions, helpers and experimental classes
+Xen.Graphics.ShaderSystem.dll 			-- shader interfaces
 
 
-Xen.Ex.ModelImporter.dll			-- Content pipeline model importer for Xen.Ex
-Xen.Graphics.ShaderSystem.CustomTool.dll	-- Visual Studio 2005/2008 CustomTool plugin
+Xen.Ex.ModelImporter.dll 			-- Content pipeline model importer for Xen.Ex
+Xen.Graphics.ShaderSystem.CustomTool.dll 	-- Visual Studio 2005/2008 CustomTool plugin
 
 
 
@@ -166,7 +185,7 @@ Some of the worst offenders in Xna are:
 The Effect system,
 Managing render targets,
 Vertex/Index buffers (Declarations, streams, etc),
-Render state managment
+Render state management
 
 Xen provides complete replacements for all of these, which form the major parts of the API.
 
@@ -184,3 +203,4 @@ feature at a time, starting with the base Application class.
 Take a moment to read them, they demonstrate the fundamentals in xen with a minimum of fuss.
 
 
+Thankyou!

@@ -12,7 +12,7 @@ namespace Xen.Ex.Geometry
 	/// <summary>
 	/// A simple class that constructs spherical geometry
 	/// </summary>
-	public class Sphere : IDrawBatch
+	public class Sphere : IDrawBatch, IBeginEndDrawBatch
 	{
 		IVertices verts;
 		IIndices inds;
@@ -144,5 +144,19 @@ namespace Xen.Ex.Geometry
 		{
 			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances, instanceCount);
 		}
+
+		#region IBeginEndDrawBatch Members
+
+		public StreamFrequency.InstanceBuffer BeginDrawBatch(DrawState state, int maxInstances)
+		{
+			return state.BeginDrawBatch(maxInstances);
+		}
+
+		public void EndDrawBatch(DrawState state, StreamFrequency.InstanceBuffer buffer)
+		{
+			state.EndDrawBatch(verts, inds, PrimitiveType.TriangleList, buffer);
+		}
+
+		#endregion
 	}
 }

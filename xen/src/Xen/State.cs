@@ -76,12 +76,12 @@ namespace Xen
 		private long deltaTime, totalTime, realTime;
 		private IDictionary userValues;
 		private PlayerInputCollection input;
-		private KeyboardState keyboard;
 		private readonly GamePadState[] pads;
 		private UpdateManager manager;
 		private bool async;
-#if !XBOX
-		private MouseState mouse;
+#if !XBOX360
+		private readonly KeyboardInputState keyboard = new KeyboardInputState();
+		private readonly MouseInputState mouse = new MouseInputState();
 #endif
 
 		/// <summary>
@@ -115,15 +115,19 @@ namespace Xen
 			this.totalTime = totalTime;
 		}
 #if !XBOX
-		internal void UpdateSpecial(ref KeyboardState kb, ref MouseState ms)
+		internal void UpdateWindowsInput(ref KeyboardState kb, ref MouseState ms)
 		{
-			this.keyboard = kb;
-			this.mouse = ms;
+			this.keyboard.Update(this.totalTime, ref kb);
+			this.mouse.Update(this.totalTime,ref ms);
 		}
 #else
-		internal void UpdateSpecial(ref KeyboardState kb)
+		internal void UpdateXboxInput(KeyboardState[] pads)
 		{
-			this.keyboard = kb;
+			for (int i = 0; i < 4; i++)
+			{
+				if (this.PlayerInput[i].ControlInput != ControlInput.KeyboardMouse)
+					this.PlayerInput[i].UpdatePadState(this.totalTime, ref pads[(int)this.PlayerInput[i].ControlInput]);
+			}
 		}
 #endif
 
@@ -212,29 +216,45 @@ namespace Xen
 		}
 
 
+#if XBOX360
 		/// <summary>
-		/// Always an array of length 4 (PlayerInput[4])
+		/// <para>Stores <see cref="PlayerInput"/> instances for each player.</para>
+		/// <para>PlayerInput objects represent player GamePads. To access the Keyboard/Mouse in windows, use KeyboardState and MouseState</para>
 		/// </summary>
+#else
+		/// <summary>
+		/// <para>Stores <see cref="PlayerInput"/> instances for each player.</para>
+		/// <para>PlayerInput objects represent player GamePads. To access the Keyboard/Mouse in windows, use <see cref="KeyboardState"/> and <see cref="MouseState"/></para>
+		/// </summary>
+#endif
 		public PlayerInputCollection PlayerInput
 		{
 			get { return input; }
 		}
 
 		/// <summary>
-		/// Using <see cref="PlayerInput"/> is recommended over direct state access
+		/// [Windows Only]
+		/// For gamepad function, using <see cref="PlayerInput"/> is recommended over direct state access for simulating a gamepad
 		/// </summary>
-		public KeyboardState KeyboardState
+#if XBOX360
+		[Obsolete("Use PlayerInput.ChatPadState")]
+#endif
+		public KeyboardInputState KeyboardState
 		{
+#if XBOX360
+			get { throw new InvalidOperationException("Use PlayerInput.ChatPadState"); }
+#else
 			get { return keyboard; }
+#endif
 		}
 
 #if !XBOX360
 
 		/// <summary>
 		/// [Windows Only]
-		/// Using <see cref="PlayerInput"/> is recommended over direct state access
+		/// For gamepad function, using <see cref="PlayerInput"/> is recommended over direct state access for simulating a gamepad
 		/// </summary>
-		public MouseState MouseState
+		public MouseInputState MouseState
 		{
 			get { return mouse; }
 		}
@@ -551,7 +571,6 @@ namespace Xen
 		private IDictionary userValues = new Hashtable();
 		private readonly PlayerInput[] input = new PlayerInput[4];
 		private readonly PlayerInputCollection playerInputCollection;
-		private KeyboardState keyboard;
 		private readonly GamePadState[] pads = new GamePadState[4];
 
 		private DrawState renderState;
@@ -559,12 +578,17 @@ namespace Xen
 		private UpdateState updateState;
 
 #if !XBOX360
-
+		
+		private KeyboardState keyboard;
 		private MouseState mouse;
 		private Point mousePrev;
 		private bool mouseCen = false, mousePosSet = false, windowFocused = false, desireMouseCen;
 		private int focusSkip = 0;
 		private Point mouseCenTo;
+
+#else
+
+		private readonly KeyboardState[] chatPads = new KeyboardState[4];
 
 #endif
 
@@ -584,12 +608,7 @@ namespace Xen
 		internal UpdateState GetUpdateState()
 		{
 			this.updateState.Update(this.dt, this.hz, this.seconds,this.deltaTime,this.totalTime,this.realTime);
-#if !XBOX
-			if (windowFocused)
-				this.updateState.UpdateSpecial(ref this.keyboard, ref this.mouse);
-#else
-			this.updateState.UpdateSpecial(ref this.keyboard);
-#endif
+
 			return updateState;
 		}
 
@@ -619,15 +638,12 @@ namespace Xen
 			get { return input; }
 		}
 
-		/// <summary>
-		/// Using <see cref="PlayerInput"/> is recommended over direct state access
-		/// </summary>
+#if !XBOX360
+		
 		public KeyboardState KeyboardState
 		{
 			get { return keyboard; }
 		}
-
-#if !XBOX360
 
 		internal Point MouseCentredPosition
 		{
@@ -773,15 +789,23 @@ namespace Xen
 		{
 			UpdateInput(state);
 
+#if !XBOX360
+			this.updateState.UpdateWindowsInput(ref this.keyboard, ref this.mouse);
+#else
+			this.updateState.UpdateXboxInput(chatPads);
+#endif
+
 			return UpdateFrequency.FullUpdate60hz;
 		}
 
 		private void UpdateInput(UpdateState state)
 		{
-
 			for (int i = 0; i < 4; i++)
 			{
 				pads[i] = Microsoft.Xna.Framework.Input.GamePad.GetState((PlayerIndex)i);
+#if XBOX360
+				chatPads[i] = Keyboard.GetState((PlayerIndex)i);
+#endif
 			}
 
 #if !XBOX360
@@ -800,10 +824,6 @@ namespace Xen
 
 			XNAGame.SetMouseCentreState(desireMouseCen && windowFocused);
 			desireMouseCen = false;
-
-#else
-
-			((XNAGame)application).GetInputState(ref keyboard);
 
 #endif
 			UpdateState updateState = state ?? GetUpdateState();

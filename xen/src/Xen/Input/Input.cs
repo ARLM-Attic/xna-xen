@@ -185,7 +185,7 @@ namespace Xen.Input
 #endif
 	public sealed class PlayerInput
 	{
-
+		private readonly KeyboardInputState chatPadState = new KeyboardInputState();
 		private bool ronly;
 		private readonly PlayerInputCollection parent;
 		private ControlInput ci;
@@ -217,6 +217,14 @@ namespace Xen.Input
 		public int PlayerIndex
 		{
 			get { return index; }
+		}
+
+		/// <summary>
+		/// [Xbox Only] Gets the current state of the chatpad
+		/// </summary>
+		public KeyboardInputState ChatPadState
+		{
+			get { return chatPadState; }
 		}
 
 		/// <summary>
@@ -291,6 +299,13 @@ namespace Xen.Input
 			this.kmb = playerInput.kmb;
 			this.mapper = playerInput.mapper;
 		}
+
+#if XBOX360
+		internal void UpdatePadState(long tick, ref KeyboardState keyboardState)
+		{
+			this.chatPadState.Update(tick,ref keyboardState);
+		}
+#endif
 	}
 }
 

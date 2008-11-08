@@ -1,6 +1,7 @@
 //CompilerOptions = InternalClass, ParentNamespace
 float4x4 worldViewProj : WORLDVIEWPROJECTION;
-
+float4x4 viewProj : VIEWPROJECTION;
+float4x4 spriteWorldMatrix;
 #include <asm_vfetch>
 
 texture2D CustomTexture;
@@ -29,7 +30,7 @@ void SimpleVSTexInstancePC(
 	
 	pos.xy = mul(float3((pos.xy-rotation.yz) * sizePosition.zw,1),mat);
 	pos.xy = pos.xy + sizePosition.xy;
-	o_pos = mul(pos,worldViewProj);
+	o_pos = mul(mul(pos,spriteWorldMatrix),viewProj);
 	o_colour = colour;
 }
 

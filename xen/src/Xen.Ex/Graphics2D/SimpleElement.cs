@@ -229,6 +229,16 @@ namespace Xen.Ex.Graphics2D
 		/// Construct the element
 		/// </summary>
 		/// <param name="shader"></param>
+		/// <param name="sizeInPixels"></param>
+		public ShaderElement(IShader shader, Vector2 sizeInPixels)
+			: this(shader, 0, 0, sizeInPixels, false)
+		{
+		}
+
+		/// <summary>
+		/// Construct the element
+		/// </summary>
+		/// <param name="shader"></param>
 		/// <param name="size">If Normalised, the position and size are stored as [0,1] range. Otherwise the position and size are measured in pixels</param>
 		/// <param name="normalised"></param>
 		public ShaderElement(IShader shader, Vector2 size, bool normalised) : this(shader,0,0,size,normalised)

@@ -20,9 +20,11 @@ namespace Xen
 			private readonly Graphics.IVertices instanceMatrices;
 			private Graphics.VerticesGroup instanceBuffer;
 			private int index;
+			private bool bufferActive;
 			private static int InstanceSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Graphics.StreamFrequency.InstanceMatrix));
+			internal Graphics.StreamFrequency.InstanceBuffer FrequencyInstanceBuffer;
 
-			public StreamBuffer(Graphics.IVertices baseVertices, int count)
+			public StreamBuffer(int count)
 			{
 				int createSize = 256;
 				while (count > createSize)
@@ -31,7 +33,6 @@ namespace Xen
 				this.instanceMatricesData = new Graphics.StreamFrequency.InstanceMatrix[createSize];
 				this.instanceMatrices = new Graphics.Vertices<Graphics.StreamFrequency.InstanceMatrix>(this.instanceMatricesData);
 				this.instanceMatrices.ResourceUsage = Xen.Graphics.ResourceUsage.DynamicSequential;
-				this.instanceBuffer = new Graphics.VerticesGroup(baseVertices,this.instanceMatrices);
 				this.index = 0;
 			}
 
@@ -40,20 +41,29 @@ namespace Xen
 				get { return this.instanceMatricesData.Length - index; }
 			}
 
-			public Graphics.StreamFrequency.InstanceMatrix[] Prepare(Graphics.IVertices vertices, int maxPossibleCount, out int startIndex)
+			public Graphics.StreamFrequency.InstanceMatrix[] Prepare(out int startIndex)
 			{
-				instanceBuffer.SetChild(0, vertices);
-				instanceBuffer.Count = vertices.Count;
+				if (bufferActive)
+					throw new InvalidOperationException("A call to BeginDrawBatch has been made while already within a BeginDrawBatch/EndDrawBatch operation.");
+				bufferActive = true;
 				startIndex = index;
 				return instanceMatricesData;
 			}
 
-			public Graphics.VerticesGroup Fill(int count)
+			public Graphics.VerticesGroup Fill(Graphics.IVertices vertices, int count)
 			{
-				instanceBuffer.SetIndexOffset(1, index);
-				instanceMatrices.SetDirtyRange(index, count);
-				index += count;
-				return instanceBuffer;
+				if (this.instanceBuffer == null)
+					this.instanceBuffer = new Graphics.VerticesGroup(vertices, this.instanceMatrices);
+
+				bufferActive = false;
+
+				this.instanceBuffer.Count = vertices.Count;
+				this.instanceBuffer.SetChild(0, vertices);
+				this.instanceBuffer.SetIndexOffset(1, index);
+				this.instanceMatrices.SetDirtyRange(index, count);
+				this.index += count;
+
+				return this.instanceBuffer;
 			}
 
 			public void Clear()
@@ -68,17 +78,19 @@ namespace Xen
 				sb.Clear();
 		}
 
-		List<StreamBuffer> streamBuffers = new List<StreamBuffer>();
-		Graphics.StreamFrequency frequency;
+		private List<StreamBuffer> streamBuffers = new List<StreamBuffer>();
+		private Graphics.StreamFrequency frequency;
 
-		private StreamBuffer GetBuffer(Graphics.IVertices vertices, int count)
+		private Graphics.StreamFrequency.InstanceBuffer nullInstanceBuffer = new Xen.Graphics.StreamFrequency.InstanceBuffer();
+
+		private StreamBuffer GetBuffer(int count)
 		{
 			foreach (StreamBuffer buf in streamBuffers)
 			{
 				if (buf.FreeIndices > count)
 					return buf;
 			}
-			StreamBuffer buffer = new StreamBuffer(vertices,count);
+			StreamBuffer buffer = new StreamBuffer(count);
 			streamBuffers.Add(buffer);
 			return buffer;
 		}
@@ -114,10 +126,10 @@ namespace Xen
 			if (instancesLength == 0)
 				return 0;
 
-			StreamBuffer buffer = GetBuffer(vertices, instancesLength);
+			StreamBuffer buffer = GetBuffer(instancesLength);
 
 			int start;
-			Graphics.StreamFrequency.InstanceMatrix[] instanceMartixData = buffer.Prepare(vertices, instancesLength, out start);
+			Graphics.StreamFrequency.InstanceMatrix[] instanceMartixData = buffer.Prepare(out start);
 
 			int count = 0;
 			if (CanDrawItem != null)
@@ -129,7 +141,8 @@ namespace Xen
 
 					if (CanDrawItem(i, culler))
 					{
-						GetWorldMatrix(ref instanceMartixData[start++]);
+						instanceMartixData[start].Set(ref worldMatrix.value);
+						start++;
 						count++;
 					}
 
@@ -138,15 +151,29 @@ namespace Xen
 			}
 			else
 			{
-				for (int i = 0; i < instancesLength; i++)
-					instanceMartixData[start++].Set(ref instances[i]);
-				count = instancesLength;
+				if (worldMatrix.IsIdentity || (instancesLength > 4 && worldMatrix.value == Matrix.Identity))
+				{
+					for (int i = 0; i < instancesLength; i++)
+						instanceMartixData[start++].Set(ref instances[i]);
+					count = instancesLength;
+				}
+				else
+				{
+					for (int i = 0; i < instancesLength; i++)
+					{
+						PushWorldMatrixMultiply(ref instances[i]);
+						instanceMartixData[start].Set(ref worldMatrix.value);
+						start++;
+						count++;
+						PopWorldMatrix();
+					}
+				}
 			}
 
 			if (count == 0)
 				return 0;
 
-			return DrawBatch(buffer.Fill(count), indices, primitiveType, count);
+			return DrawBatch(buffer.Fill(vertices, count), indices, primitiveType, count);
 		}
 
 		/// <summary>
@@ -162,6 +189,54 @@ namespace Xen
 		{
 			return DrawBatch(vertices, indices, primitiveType, CanDrawItem, instances, instances.Length);
 		}
+
+
+		/// <summary>
+		/// [Requires <see cref="SupportsHardwareInstancing"/>] Returns a buffer that instances can be written to. Follow with a call to <see cref="EndDrawBatch"/> to draw the buffered instances
+		/// </summary>
+		/// <param name="maxInstanceCount"></param>
+		/// <returns></returns>
+		public Graphics.StreamFrequency.InstanceBuffer BeginDrawBatch(int maxInstanceCount)
+		{
+			ValidateProtected();
+
+			if (maxInstanceCount < 0)
+				throw new ArgumentException();
+
+			if (maxInstanceCount == 0)
+				return nullInstanceBuffer;
+
+			StreamBuffer buffer = GetBuffer(maxInstanceCount);
+			int start;
+			Graphics.StreamFrequency.InstanceMatrix[] instanceMartixData = buffer.Prepare(out start);
+
+			if (buffer.FrequencyInstanceBuffer == null)
+				buffer.FrequencyInstanceBuffer = new Xen.Graphics.StreamFrequency.InstanceBuffer();
+			buffer.FrequencyInstanceBuffer.Set(buffer, instanceMartixData, start, maxInstanceCount);
+
+			return buffer.FrequencyInstanceBuffer;
+		}
+
+		/// <summary>
+		/// [Requires <see cref="SupportsHardwareInstancing"/>] Complete a batch draw process (being with <see cref="BeginDrawBatch"/>)
+		/// </summary>
+		/// <param name="vertices">Vertex buffer of the instances to be drawn</param>
+		/// <param name="indices">Index buffer of the instances to be drawn</param>
+		/// <param name="primitiveType">Primitive type to be drawn</param>
+		/// <param name="instances">Instance buffer that contains the instances to be drawn</param>
+		public void EndDrawBatch(Xen.Graphics.IVertices vertices, Graphics.IIndices indices, PrimitiveType primitiveType, Graphics.StreamFrequency.InstanceBuffer instances)
+		{
+			ValidateProtected();
+
+			if (instances == null)
+				throw new ArgumentNullException();
+
+			if (instances.InstanceCount == 0)
+				return;
+
+			DrawBatch(((StreamBuffer)instances.instanceBuffer).Fill(vertices, instances.InstanceCount), indices, primitiveType, instances.InstanceCount);
+		}
+
 
 		/// <summary>
 		/// [Requires <see cref="SupportsHardwareInstancing"/>] Draws multiple instances of a vertex buffer in an efficient way, using an optional callback to determine if an instance should be drawn. Using Shader Instancing is highly recommended for smaller batches of simple geometry.
@@ -180,9 +255,9 @@ namespace Xen
 			if (instancesLength == 0)
 				return 0;
 
-			StreamBuffer buffer = GetBuffer(vertices, instancesLength);
+			StreamBuffer buffer = GetBuffer(instancesLength);
 			int start;
-			Graphics.StreamFrequency.InstanceMatrix[] instanceMartixData = buffer.Prepare(vertices, instancesLength, out start);
+			Graphics.StreamFrequency.InstanceMatrix[] instanceMartixData = buffer.Prepare(out start);
 
 			int count = 0;
 			if (CanDrawItem != null)
@@ -203,12 +278,26 @@ namespace Xen
 			}
 			else
 			{
-				for (int i = 0; i < instancesLength; i++)
-					instanceMartixData[start++].Set(ref instances[i]);
-				count = instancesLength;
+				if (worldMatrix.IsIdentity || (instancesLength > 4 && worldMatrix.value == Matrix.Identity))
+				{
+					for (int i = 0; i < instancesLength; i++)
+						instanceMartixData[start++].Set(ref instances[i]);
+					count = instancesLength;
+				}
+				else
+				{
+					for (int i = 0; i < instancesLength; i++)
+					{
+						PushWorldTranslateMultiply(ref instances[i]);
+						instanceMartixData[start].Set(ref worldMatrix.value);
+						start++;
+						count++;
+						PopWorldMatrix();
+					}
+				}
 			}
 
-			return DrawBatch(buffer.Fill(count), indices, primitiveType, count);
+			return DrawBatch(buffer.Fill(vertices, count), indices, primitiveType, count);
 		}
 
 		private int DrawBatch(Xen.Graphics.VerticesGroup vertices, Graphics.IIndices indices, PrimitiveType primitiveType, int count)

@@ -4,7 +4,6 @@
 @echo -----------------------------------------------------
 @echo - 
 @echo - This process will prebuild xen (Debug) for XNA 3.0.
-@echo - (Note XNA 2.0 and 3.0 Beta are no longer supported)
 @echo - 
 @echo - A VisualStudio CustomTool plugin will be installed,
 @echo - which may prompt for admin rights in Windows Vista.
@@ -39,6 +38,8 @@ xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Materi
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Material\InstanceMaterial.fx" "Xen.Ex.Material" "xen\src\Xen.Ex\Material\InstanceMaterial.fx.cs"
 @echo Building Tutorials.Tutorial_03 FX
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 03\shader.fx" "Tutorials.Tutorial_03" "xen\src\Tutorials\Tutorial 03\shader.fx.cs"
+@echo Building Tutorials.Tutorial_09 FX
+xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 09\shader.fx" "Tutorials.Tutorial_09" "xen\src\Tutorials\Tutorial 09\shader.fx.cs"
 @echo Building Tutorials.Tutorial_16 FX
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 16\shader.fx" "Tutorials.Tutorial_16" "xen\src\Tutorials\Tutorial 16\shader.fx.cs"
 @echo Building Xen and Xen.Ex DEBUG

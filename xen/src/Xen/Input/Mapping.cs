@@ -34,9 +34,9 @@ namespace Xen.Input.Mapping
 		}
 
 		/// <summary>
-		/// Current state of the keyboard and mouse
+		/// Current state of the keyboard and mouse. Prefer use of UpdateState.KeyboardState and UpdateState.MouseState.
 		/// </summary>
-		public KeyboardMouseState KeyboardMouseState
+		internal protected KeyboardMouseState KeyboardMouseState
 		{
 			get { return kms; }
 			internal set { kms = value; }
@@ -100,8 +100,8 @@ namespace Xen.Input.Mapping
 			}
 
 			kms.MouseState = gameState.MouseState;
-#endif
 			kms.KeyboardState = gameState.KeyboardState;
+#endif
 		}
 
 		internal void UpdateState(ref InputState inputState, UpdateState gameState, KeyboardMouseControlMapping mapping, ControlInput inputType, bool windowFocused)
@@ -545,7 +545,11 @@ namespace Xen.Input.Mapping
 			b = Keys.E;
 			x = Keys.Z;
 			y = Keys.C;
-			back = Keys.Back;
+#if XNA_3_0
+			back = Keys.Escape;
+#else
+			back = Keys.Back; //The escape key doesn't work in XNA 2!
+#endif
 			start = Keys.Enter;
 			DpadF = Keys.Up;
 			DpadB = Keys.Down;

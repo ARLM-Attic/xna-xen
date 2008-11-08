@@ -785,7 +785,7 @@ namespace Xen.Ex.Graphics2D.Statistics
 #if !XBOX
 			if (state.PlayerInput[0].ControlInput == Xen.Input.ControlInput.KeyboardMouse)
 			{
-				kstate = state.KeyboardState.IsKeyDown(debugKey);
+				kstate = state.KeyboardState.KeyState[debugKey];
 				toggleTextDisplay = toggleText;
 			}
 			else

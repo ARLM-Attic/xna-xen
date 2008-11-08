@@ -19,7 +19,7 @@ namespace Xen.Ex.Graphics2D
 
 		private static readonly int NonInstancingRenderCount = 60;
 		//how many sprites are needed before hardware instancing kicks in instead of shader instancing
-		private static readonly int HardwareInstancingMinimum = 300;
+		private static readonly int HardwareInstancingMinimum = NonInstancingRenderCount*4;
 
 		struct InstanceVertex
 		{
@@ -864,12 +864,19 @@ namespace Xen.Ex.Graphics2D
 		protected sealed override void DrawElement(DrawState state)
 		{
 			if (state.SupportsHardwareInstancing && instanceCount > HardwareInstancingMinimum)
+			{
+				Matrix identity = Matrix.Identity;
+				state.PushWorldMatrix(ref identity);
+
 				state.DrawBatch(vertices, indices, PrimitiveType.TriangleList, null, instances, instanceCount);
+
+				state.PopWorldMatrix();
+			}
 			else
 			{
 				Graphics2D.NonInstancingSprite shader = state.GetShader<Graphics2D.NonInstancingSprite>();
 
-				for (int i = 0; i < instanceCount; i+=NonInstancingRenderCount)
+				for (int i = 0; i < instanceCount; i += NonInstancingRenderCount)
 				{
 					int count = Math.Min(NonInstancingRenderCount, (instanceCount - i));
 
@@ -935,6 +942,9 @@ namespace Xen.Ex.Graphics2D
 			if (state.SupportsHardwareInstancing && instanceCount > HardwareInstancingMinimum)
 			{
 				Graphics2D.InstancingSprite shader = state.GetShader<Graphics2D.InstancingSprite>();
+				Matrix world;
+				state.GetWorldMatrix(out world);
+				shader.SetSpriteWorldMatrix(ref world);
 				shader.CustomTexture = texture;
 				shader.Bind(state);
 			}

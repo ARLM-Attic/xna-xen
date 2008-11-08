@@ -269,9 +269,20 @@ namespace Xen.Ex
 			return false;
 		}
 
+		/// <summary></summary>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		public static implicit operator string(TextValue value)
 		{
 			return value.value.ToString();
+		}
+
+		/// <summary></summary>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		public static implicit operator StringBuilder(TextValue value)
+		{
+			return value.value;
 		}
 
 		/// <summary>
@@ -296,6 +307,30 @@ namespace Xen.Ex
 				changeIndex++;
 			}
 		}
+
+		/// <summary>
+		/// Trim <paramref name="trimCharacters"/> number of characters from the end of the text
+		/// </summary>
+		/// <returns>the number of characters trimmed</returns>
+		/// <param name="trimCharacters"></param>
+		public int TrimEnd(int trimCharacters)
+		{
+			if (trimCharacters >= this.Length)
+			{
+				int len = this.Length;
+				Clear();
+				return len;
+			}
+
+			this.value.Length -= trimCharacters;
+			changeIndex++;
+			return trimCharacters;
+		}
+
+		/// <summary>
+		/// Set the text
+		/// </summary>
+		/// <param name="value"></param>
 		public void SetText(string value) 
 		{
 			this.value.Length = 0; this.value.Append(value); changeIndex++; 

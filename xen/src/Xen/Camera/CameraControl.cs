@@ -603,7 +603,7 @@ namespace Xen
 		private static bool renderStackSizeUsed = false;
 
 		private int frame;
-		private readonly WorldStackProvider worldMatrix;
+		internal readonly WorldStackProvider worldMatrix;
 		private readonly ViewProjectionProvider viewMatrix;
 		private readonly ViewProjectionProvider projectionMatrix;
 
