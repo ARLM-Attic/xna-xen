@@ -19,18 +19,23 @@ using Microsoft.Xna.Framework.Graphics;
  * This sample demonstrates:
  * 
  * How to load content using a class that implements IContentOwner (part 2)
+ * It also demonstrates sampling a texture in a shader, and creating an instance of that shader.
  * 
  */
 namespace Tutorials.Tutorial_09
 {
 	//This class simply draws an image loaded through the XNA content pipeline.
 	//The image is drawn to the centre of the screen.
-	//It implements the IContentOwner interface to load the image
+	//A custom shader is used to display this texture (see 'shader.fx')
+
+	//This class implements the IContentOwner interface to load the image
 	class ImageDisplayer : IDraw, IContentOwner
 	{
-		//Helper element that will display the image on screen
-		private TexturedElement element;
-
+		//Helper element that will display the image on screen, using the custom shader
+		private ShaderElement element;
+		//Store an instance of the custom shader
+		private Shader.Tutorial09Technique shader;
+		
 		//construct the displayer.
 		//Because this class needs to load content, a ContentRegister is a required
 		//constructor parameter. This makes sure it will always load content
@@ -41,8 +46,13 @@ namespace Tutorials.Tutorial_09
 
 			//create the element that will display the texture
 			Vector2 sizeInPixels = new Vector2(768,384);
-			//create the element, but don't set the texture yet.
-			this.element = new TexturedElement(sizeInPixels);
+
+			//create an instance of the shader
+			//The texture will be assigned to the shader in LoadContent
+			this.shader = new Shader.Tutorial09Technique();
+
+			//create the element which will display the shader
+			this.element = new ShaderElement(shader,sizeInPixels);
 
 			//place the element in the centre of the screen
 			this.element.HorizontalAlignment = HorizontalAlignment.Centre;
@@ -68,8 +78,15 @@ namespace Tutorials.Tutorial_09
 			//content manager.
 			//This is to encorage keeping all content loading in the one place.
 
-			//load and assign the texture
-			this.element.Texture = manager.Load<Texture2D>(@"skyline");
+			//load and assign the texture:
+			//Note the texture is assigned to the shader, not the visual element
+			this.shader.DisplayTexture = manager.Load<Texture2D>(@"skyline");
+
+			//use:
+			/*
+			this.shader.DisplayTextureSampler
+			*/
+			//to change how the texture is sampled
 		}
 
 		//for most implementations of IContentOwner, unload content can be left empty.
@@ -83,10 +100,11 @@ namespace Tutorials.Tutorial_09
 		//draw the element on screen
 		public void Draw(DrawState state)
 		{
+			//the element class automatically calls the shader Bind() method
 			element.Draw(state);
 		}
 
-		//always return true, so Draw() is always called
+		//always return true, so Draw() is always called (the element is always on screen)
 		public bool CullTest(ICuller culler)
 		{
 			return true;
@@ -96,10 +114,10 @@ namespace Tutorials.Tutorial_09
 
 
 
-	//This application class simply creates the image displayer and draws it to the screen
+	//This application class simply creates the image displayer and adds it to the screen
 	//The Application class stores its own ContentRegister (this.Content)
-	//Extra content registers can be created as well
-	[DisplayName(Name = "Tutorial 09: Content 02")]
+	//(Extra content registers can be created as well)
+	[DisplayName(Name = "Tutorial 09: Content 02 and Shader Texture Sampling")]
 	public class Tutorial : Application
 	{
 		//screen draw target
@@ -113,6 +131,7 @@ namespace Tutorials.Tutorial_09
 			//create the image displayer, passing in a reference
 			//to the ContentRegister for this Application instance
 			ImageDisplayer imageDisplayer = new ImageDisplayer(this.Content);
+
 			//add it to the screen
 			drawToScreen.Add(imageDisplayer);
 		}

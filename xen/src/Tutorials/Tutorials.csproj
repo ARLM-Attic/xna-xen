@@ -96,6 +96,11 @@
     <Compile Include="Tutorial 07\Draw to texture.cs" />
     <Compile Include="Tutorial 08\Content 01.cs" />
     <Compile Include="Tutorial 09\Content 02.cs" />
+    <Compile Include="Tutorial 09\shader.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>shader.fx</DependentUpon>
+    </Compile>
     <Compile Include="Tutorial 10\ModelInstance.cs" />
     <Compile Include="Tutorial 11\Model Animation.cs" />
     <Compile Include="Tutorial 12\Advanced Model Use.cs" />
@@ -109,6 +114,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>shader.fx</DependentUpon>
     </Compile>
+    <Compile Include="Tutorial 17\Keyboard Input.cs" />
     <Compile Include="Tutorial 20\Animation Stress Test.cs" />
     <Compile Include="TutorialChooser.cs">
       <SubType>Form</SubType>
@@ -129,6 +135,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Tutorial 03\shader.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>shader.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 09\shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>

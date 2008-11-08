@@ -71,6 +71,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Tutorial 17\Keyboard Input.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Tutorial 01\Game class.cs" />
@@ -88,6 +89,11 @@
     <Compile Include="Tutorial 07\Draw to texture.cs" />
     <Compile Include="Tutorial 08\Content 01.cs" />
     <Compile Include="Tutorial 09\Content 02.cs" />
+    <Compile Include="Tutorial 09\shader.fx.cs">
+      <DependentUpon>shader.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="Tutorial 10\ModelInstance.cs" />
     <Compile Include="Tutorial 11\Model Animation.cs" />
     <Compile Include="Tutorial 12\Advanced Model Use.cs" />
@@ -121,6 +127,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Tutorial 03\shader.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>shader.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 09\shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>
