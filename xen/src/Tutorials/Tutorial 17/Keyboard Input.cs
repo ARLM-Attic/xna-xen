@@ -140,22 +140,20 @@ namespace Tutorials.Tutorial_17
 
 				char character;
 
-				if (keyboard.TryGetKeyChar(key, out character))
+				//deal with backspace first
+
+				if (key == Keys.Back) //backspace
 				{
-					//we have the character that was pressed.
-
-					//if shift is held, make it upper case
-					if (keyboard[Keys.LeftShift] || keyboard[Keys.RightShift])
-						character = char.ToUpper(character);
-
-					//now add it to the text string
-					this.textElement.Text.Append(character);
+					this.textElement.Text.TrimEnd(1);//trim a character off the end
 				}
 				else
 				{
-					//a special key was pressed...
-					if (key == Keys.Back) //backspace
-						this.textElement.Text.TrimEnd(1);//trim a character off the end
+					if (keyboard.TryGetKeyChar(key, out character))
+					{
+						//we have the character that was pressed.
+						//now add it to the text string
+						this.textElement.Text.Append(character);
+					}
 				}
 			}
 

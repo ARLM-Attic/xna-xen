@@ -900,7 +900,7 @@ namespace Xen.Ex.Graphics2D
 			if (index >= 0 && index < characterIndex.Length)
 			{
 				index = characterIndex[index];
-				return true;
+				return index >= 0;
 			}
 			else
 			{

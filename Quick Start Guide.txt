@@ -43,6 +43,11 @@ XboxLive: StatusUnknown
 -----------------------------------------------------------------------------------------------------
 -- Change Log
 
+-- 9/NOV/08
+-- Version 1.3a
+
+[Improved] The keyboard input state 'TryGetKeyChar' method is now much more correct
+
 -- 8/NOV/08
 -- Version 1.3
 

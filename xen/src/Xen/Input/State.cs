@@ -271,15 +271,6 @@ namespace Xen.Input.State
 
 	#region keystate
 
-	class MappingAttribute : Attribute
-	{
-		public readonly char mapping;
-		public MappingAttribute(char mapping)
-		{
-			this.mapping = mapping;
-		}
-	}
-
 	/// <summary>
 	/// Stores a list of <see cref="Button"/> Key States
 	/// </summary>
@@ -304,17 +295,14 @@ namespace Xen.Input.State
 		//don't worry, this was made with a regular expression - mostly :-)
 
 		/// <summary>The 'A' button</summary>
-		[Mapping('a')]
 		public Button A { get { return buttons[0x41]; } }
 		/// <summary>The 'Add' button</summary>
-		[Mapping('+')]
 		public Button Add { get { return buttons[0x6b]; } }
 		/// <summary>The 'Apps' button</summary>
 		public Button Apps { get { return buttons[0x5d]; } }
 		/// <summary>The 'Attn' button</summary>
 		public Button Attn { get { return buttons[0xf6]; } }
 		/// <summary>The 'B' button</summary>
-		[Mapping('b')]
 		public Button B { get { return buttons[0x42]; } }
 		/// <summary>The 'Back' button</summary>
 		public Button Back { get { return buttons[8]; } }
@@ -333,7 +321,6 @@ namespace Xen.Input.State
 		/// <summary>The 'BrowserStop' button</summary>
 		public Button BrowserStop { get { return buttons[0xa9]; } }
 		/// <summary>The 'C' button</summary>
-		[Mapping('c')]
 		public Button C { get { return buttons[0x43]; } }
 		/// <summary>The 'CapsLock' button</summary>
 		public Button CapsLock { get { return buttons[20]; } }
@@ -344,55 +331,40 @@ namespace Xen.Input.State
 		/// <summary>The 'Crsel' button</summary>
 		public Button Crsel { get { return buttons[0xf7]; } }
 		/// <summary>The 'D' button</summary>
-		[Mapping('d')]
 		public Button D { get { return buttons[0x44]; } }
 		/// <summary>The 'D0' button</summary>
-		[Mapping('0')]
 		public Button D0 { get { return buttons[0x30]; } }
 		/// <summary>The 'D1' button</summary>
-		[Mapping('1')]
 		public Button D1 { get { return buttons[0x31]; } }
 		/// <summary>The 'D2' button</summary>
-		[Mapping('2')]
 		public Button D2 { get { return buttons[50]; } }
 		/// <summary>The 'D3' button</summary>
-		[Mapping('3')]
 		public Button D3 { get { return buttons[0x33]; } }
 		/// <summary>The 'D4' button</summary>
-		[Mapping('4')]
 		public Button D4 { get { return buttons[0x34]; } }
 		/// <summary>The 'D5' button</summary>
-		[Mapping('5')]
 		public Button D5 { get { return buttons[0x35]; } }
 		/// <summary>The 'D6' button</summary>
-		[Mapping('6')]
 		public Button D6 { get { return buttons[0x36]; } }
 		/// <summary>The 'D7' button</summary>
-		[Mapping('7')]
 		public Button D7 { get { return buttons[0x37]; } }
 		/// <summary>The 'D8' button</summary>
-		[Mapping('8')]
 		public Button D8 { get { return buttons[0x38]; } }
 		/// <summary>The 'D9' button</summary>
-		[Mapping('9')]
 		public Button D9 { get { return buttons[0x39]; } }
 		/// <summary>The 'Decimal' button</summary>
-		[Mapping('.')]
 		public Button Decimal { get { return buttons[110]; } }
 		/// <summary>The 'Delete' button</summary>
 		public Button Delete { get { return buttons[0x2e]; } }
 		/// <summary>The 'Divide' button</summary>
-		[Mapping('/')]
 		public Button Divide { get { return buttons[0x6f]; } }
 		/// <summary>The 'Down' button</summary>
 		public Button Down { get { return buttons[40]; } }
 		/// <summary>The 'E' button</summary>
-		[Mapping('e')]
 		public Button E { get { return buttons[0x45]; } }
 		/// <summary>The 'End' button</summary>
 		public Button End { get { return buttons[0x23]; } }
 		/// <summary>The 'Enter' button</summary>
-		[Mapping('\n')]
 		public Button Enter { get { return buttons[13]; } }
 		/// <summary>The 'EraseEof' button</summary>
 		public Button EraseEof { get { return buttons[0xf9]; } }
@@ -403,7 +375,6 @@ namespace Xen.Input.State
 		/// <summary>The 'Exsel' button</summary>
 		public Button Exsel { get { return buttons[0xf8]; } }
 		/// <summary>The 'F' button</summary>
-		[Mapping('f')]
 		public Button F { get { return buttons[70]; } }
 		/// <summary>The 'F1' button</summary>
 		public Button F1 { get { return buttons[0x70]; } }
@@ -454,28 +425,22 @@ namespace Xen.Input.State
 		/// <summary>The 'F9' button</summary>
 		public Button F9 { get { return buttons[120]; } }
 		/// <summary>The 'G' button</summary>
-		[Mapping('g')]
 		public Button G { get { return buttons[0x47]; } }
 		/// <summary>The 'H' button</summary>
-		[Mapping('h')]
 		public Button H { get { return buttons[0x48]; } }
 		/// <summary>The 'Help' button</summary>
 		public Button Help { get { return buttons[0x2f]; } }
 		/// <summary>The 'Home' button</summary>
 		public Button Home { get { return buttons[0x24]; } }
 		/// <summary>The 'I' button</summary>
-		[Mapping('i')]
 		public Button I { get { return buttons[0x49]; } }
 		/// <summary>The 'Insert' button</summary>
 		public Button Insert { get { return buttons[0x2d]; } }
 		/// <summary>The 'J' button</summary>
-		[Mapping('j')]
 		public Button J { get { return buttons[0x4a]; } }
 		/// <summary>The 'K' button</summary>
-		[Mapping('k')]
 		public Button K { get { return buttons[0x4b]; } }
 		/// <summary>The 'L' button</summary>
-		[Mapping('l')]
 		public Button L { get { return buttons[0x4c]; } }
 		/// <summary>The 'LaunchApplication1' button</summary>
 		public Button LaunchApplication1 { get { return buttons[0xb6]; } }
@@ -494,7 +459,6 @@ namespace Xen.Input.State
 		/// <summary>The 'LeftWindows' button</summary>
 		public Button LeftWindows { get { return buttons[0x5b]; } }
 		/// <summary>The 'M' button</summary>
-		[Mapping('m')]
 		public Button M { get { return buttons[0x4d]; } }
 		/// <summary>The 'MediaNextTrack' button</summary>
 		public Button MediaNextTrack { get { return buttons[0xb0]; } }
@@ -507,85 +471,60 @@ namespace Xen.Input.State
 		/// <summary>The 'Multiply' button</summary>
 		public Button Multiply { get { return buttons[0x6a]; } }
 		/// <summary>The 'N' button</summary>
-		[Mapping('n')]
 		public Button N { get { return buttons[0x4e]; } }
 		/// <summary>The 'NumLock' button</summary>
 		public Button NumLock { get { return buttons[0x90]; } }
 		/// <summary>The 'NumPad0' button</summary>
-		[Mapping('0')]
 		public Button NumPad0 { get { return buttons[0x60]; } }
 		/// <summary>The 'NumPad1' button</summary>
-		[Mapping('1')]
 		public Button NumPad1 { get { return buttons[0x61]; } }
 		/// <summary>The 'NumPad2' button</summary>
-		[Mapping('2')]
 		public Button NumPad2 { get { return buttons[0x62]; } }
 		/// <summary>The 'NumPad3' button</summary>
-		[Mapping('3')]
 		public Button NumPad3 { get { return buttons[0x63]; } }
 		/// <summary>The 'NumPad4' button</summary>
-		[Mapping('4')]
 		public Button NumPad4 { get { return buttons[100]; } }
 		/// <summary>The 'NumPad5' button</summary>
-		[Mapping('5')]
 		public Button NumPad5 { get { return buttons[0x65]; } }
 		/// <summary>The 'NumPad6' button</summary>
-		[Mapping('6')]
 		public Button NumPad6 { get { return buttons[0x66]; } }
 		/// <summary>The 'NumPad7' button</summary>
-		[Mapping('7')]
 		public Button NumPad7 { get { return buttons[0x67]; } }
 		/// <summary>The 'NumPad8' button</summary>
-		[Mapping('8')]
 		public Button NumPad8 { get { return buttons[0x68]; } }
 		/// <summary>The 'NumPad9' button</summary>
-		[Mapping('9')]
 		public Button NumPad9 { get { return buttons[0x69]; } }
 		/// <summary>The 'O' button</summary>
-		[Mapping('o')]
 		public Button O { get { return buttons[0x4f]; } }
 		/// <summary>The 'Oem8' button</summary>
 		public Button Oem8 { get { return buttons[0xdf]; } }
 		/// <summary>The 'OemBackslash' button</summary>
-		[Mapping('/')]
 		public Button OemBackslash { get { return buttons[0xe2]; } }
 		/// <summary>The 'OemClear' button</summary>
 		public Button OemClear { get { return buttons[0xfe]; } }
 		/// <summary>The 'OemCloseBrackets' button</summary>
-		[Mapping(']')]
 		public Button OemCloseBrackets { get { return buttons[0xdd]; } }
 		/// <summary>The 'OemComma' button</summary>
-		[Mapping(',')]
 		public Button OemComma { get { return buttons[0xbc]; } }
 		/// <summary>The 'OemMinus' button</summary>
-		[Mapping('-')]
 		public Button OemMinus { get { return buttons[0xbd]; } }
 		/// <summary>The 'OemOpenBrackets' button</summary>
-		[Mapping('[')]
 		public Button OemOpenBrackets { get { return buttons[0xdb]; } }
 		/// <summary>The 'OemPeriod' button</summary>
-		[Mapping('.')]
 		public Button OemPeriod { get { return buttons[190]; } }
 		/// <summary>The 'OemPipe' button</summary>
-		[Mapping('|')]
 		public Button OemPipe { get { return buttons[220]; } }
 		/// <summary>The 'OemPlus' button</summary>
-		[Mapping('+')]
 		public Button OemPlus { get { return buttons[0xbb]; } }
 		/// <summary>The 'OemQuestion' button</summary>
-		[Mapping('?')]
 		public Button OemQuestion { get { return buttons[0xbf]; } }
 		/// <summary>The 'OemQuotes' button</summary>
-		[Mapping('\'')]
 		public Button OemQuotes { get { return buttons[0xde]; } }
 		/// <summary>The 'OemSemicolon' button</summary>
-		[Mapping(';')]
 		public Button OemSemicolon { get { return buttons[0xba]; } }
 		/// <summary>The 'OemTilde' button</summary>
-		[Mapping('~')]
 		public Button OemTilde { get { return buttons[0xc0]; } }
 		/// <summary>The 'P' button</summary>
-		[Mapping('p')]
 		public Button P { get { return buttons[80]; } }
 		/// <summary>The 'Pa1' button</summary>
 		public Button Pa1 { get { return buttons[0xfd]; } }
@@ -604,10 +543,8 @@ namespace Xen.Input.State
 		/// <summary>The 'ProcessKey' button</summary>
 		public Button ProcessKey { get { return buttons[0xe5]; } }
 		/// <summary>The 'Q' button</summary>
-		[Mapping('q')]
 		public Button Q { get { return buttons[0x51]; } }
 		/// <summary>The 'R' button</summary>
-		[Mapping('r')]
 		public Button R { get { return buttons[0x52]; } }
 		/// <summary>The 'Right' button</summary>
 		public Button Right { get { return buttons[0x27]; } }
@@ -620,7 +557,6 @@ namespace Xen.Input.State
 		/// <summary>The 'RightWindows' button</summary>
 		public Button RightWindows { get { return buttons[0x5c]; } }
 		/// <summary>The 'S' button</summary>
-		[Mapping('s')]
 		public Button S { get { return buttons[0x53]; } }
 		/// <summary>The 'Scroll' button</summary>
 		public Button Scroll { get { return buttons[0x91]; } }
@@ -633,24 +569,18 @@ namespace Xen.Input.State
 		/// <summary>The 'Sleep' button</summary>
 		public Button Sleep { get { return buttons[0x5f]; } }
 		/// <summary>The 'Space' button</summary>
-		[Mapping(' ')]
 		public Button Space { get { return buttons[0x20]; } }
 		/// <summary>The 'Subtract' button</summary>
-		[Mapping('-')]
 		public Button Subtract { get { return buttons[0x6d]; } }
 		/// <summary>The 'T' button</summary>
-		[Mapping('t')]
 		public Button T { get { return buttons[0x54]; } }
 		/// <summary>The 'Tab' button</summary>
-		[Mapping('\t')]
 		public Button Tab { get { return buttons[9]; } }
 		/// <summary>The 'U' button</summary>
-		[Mapping('u')]
 		public Button U { get { return buttons[0x55]; } }
 		/// <summary>The 'Up' button</summary>
 		public Button Up { get { return buttons[0x26]; } }
 		/// <summary>The 'V' button</summary>
-		[Mapping('v')]
 		public Button V { get { return buttons[0x56]; } }
 		/// <summary>The 'VolumeDown' button</summary>
 		public Button VolumeDown { get { return buttons[0xae]; } }
@@ -659,16 +589,12 @@ namespace Xen.Input.State
 		/// <summary>The 'VolumeUp' button</summary>
 		public Button VolumeUp { get { return buttons[0xaf]; } }
 		/// <summary>The 'W' button</summary>
-		[Mapping('w')]
 		public Button W { get { return buttons[0x57]; } }
 		/// <summary>The 'X' button</summary>
-		[Mapping('x')]
 		public Button X { get { return buttons[0x58]; } }
 		/// <summary>The 'Y' button</summary>
-		[Mapping('y')]
 		public Button Y { get { return buttons[0x59]; } }
 		/// <summary>The 'Z' button</summary>
-		[Mapping('z')]
 		public Button Z { get { return buttons[90]; } }
 		/// <summary>The 'Zoom' button</summary>
 		public Button Zoom { get { return buttons[0xfb]; } }
@@ -699,7 +625,6 @@ namespace Xen.Input.State
 		public uint currentState6;
 		[System.Runtime.InteropServices.FieldOffset(28)]
 		public uint currentState7;
-
 	}
 
 	/// <summary>
@@ -708,7 +633,14 @@ namespace Xen.Input.State
 	public sealed class KeyboardInputState
 	{
 		private static readonly Keys[] keyIndices = new Keys[256];
-		private static readonly char?[] keyMapping = new char?[256];
+#if !XBOX360
+		private static readonly uint[] scanCodes = new uint[256];
+		private static readonly byte[] keyStateBytes = new byte[256];
+#else
+		private static char[] chatpadGreenMapping = new char[256];
+		private static char[] chatpadOrangeMapping = new char[256];
+#endif
+
 		internal readonly Button[] buttons = new Button[256];
 		private long initialTick = -1;
 		private readonly KeyState state;
@@ -718,21 +650,94 @@ namespace Xen.Input.State
 		{
 			System.Reflection.FieldInfo[] enums = typeof(Keys).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
 			List<Keys> keys = new List<Keys>();
-
-			Type keyStateType = typeof(KeyState);
+			List<Keys> control = new List<Keys>();
 
 			foreach (System.Reflection.FieldInfo field in enums)
 			{
 				Keys key = (Keys)field.GetValue(null);
 				keys.Add(key);
-				System.Reflection.PropertyInfo prop = keyStateType.GetProperty(key.ToString(), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
-				if (prop == null) continue;
-				foreach (object att in prop.GetCustomAttributes(true))
-				{
-					if (att is MappingAttribute)
-						keyMapping[(int)key] = ((MappingAttribute)att).mapping;
-				}
+
+				if (char.IsControl((char)key))
+					control.Add(key);
 			}
+			
+			#region key mapping
+
+#if !XBOX360
+			layout = GetKeyboardLayout(0);
+
+			for (int scan=0; scan<255; scan++)
+			{
+				uint key = MapVirtualKeyEx((uint)scan, 1, layout);
+				if (key != 0)
+					scanCodes[key] = (uint)scan;
+			}
+#else
+
+			char[] map = chatpadGreenMapping;
+
+			map['q'] = '!';
+			map['w'] = '@';
+			map['e'] = (char)8364;//'euro';
+			map['r'] = '#';
+			map['t'] = '%';
+			map['y'] = '^';
+			map['U'] = '&';
+			map['I'] = '*';
+			map['o'] = '(';
+			map['p'] = ')';
+			map['a'] = '~';
+			map['s'] = (char)353;
+			map['d'] = '{';
+			map['f'] = '}';
+			map['g'] = (char)168;
+			map['h'] = '/';
+			map['j'] = (char)903;
+			map['k'] = '[';
+			map['l'] = ']';
+			map[','] = ':';
+			map['z'] = (char)729;
+			map['x'] = (char)0x00AB;
+			map['c'] = (char)0x00BB;
+			map['v'] = '-';
+			map['b'] = '|';
+			map['n'] = '<';
+			map['m'] = '>';
+			map['.'] = '?';
+
+			map = chatpadOrangeMapping;
+
+			map['q'] = (char)0x00EC;
+			map['w'] = (char)0x00E3;
+			map['e'] = (char)0x00E9;
+			map['r'] = '$';
+			map['t'] = (char)0x00DE;
+			map['y'] = (char)0x00FD;
+			map['U'] = (char)0x00FA;
+			map['I'] = (char)0x00ED;
+			map['o'] = (char)0x00F3;
+			map['p'] = '=';
+			map['a'] = (char)0x00E1;
+			map['s'] = (char)0x00DF;
+			map['d'] = (char)0x00F4;
+			map['f'] = (char)0x00A3;
+			map['g'] = (char)0x00A5;
+			map['h'] = '\\';
+			map['j'] = '\"';
+			map['k'] = '$';
+			map['l'] = (char)0x00F8;
+			map[','] = ';';
+			map['z'] = (char)0x00E6;
+			map['x'] = (char)0x0153;
+			map['c'] = (char)0x00E7;
+			map['v'] = '_';
+			map['b'] = '+';
+			map['n'] = (char)0x00F1;
+			map['m'] = (char)0x00B5;
+			map['.'] = (char)0x00BF;
+
+#endif
+			#endregion
 
 			keyIndices = keys.ToArray();
 		}
@@ -752,7 +757,7 @@ namespace Xen.Input.State
 		}
 
 		/// <summary>
-		/// <para>Gets the character for a given <see cref="Keys"/> key. Eg: <see cref="Keys.A"/> will output 'a'.</para>
+		/// <para>Gets the character for a given <see cref="Keys"/> key. Eg: <see cref="Keys.A"/> will output 'a'. Uses the current keyboard modifier key state; Shift will convert to upper case, etc.</para>
 		/// <para>Returns false if the key character is unknown</para>
 		/// </summary>
 		/// <param name="key"></param>
@@ -760,15 +765,42 @@ namespace Xen.Input.State
 		/// <returns></returns>
 		public bool TryGetKeyChar(Keys key, out char keyChar)
 		{
-			keyChar = default(char);
-			int index = (int)key;
-			if (keyMapping[index].HasValue)
-			{
-				keyChar = keyMapping[index].Value;
-				return true;
-			}
-			return false;
+#if XBOX360
+			keyChar = (char)key;
+
+			if (this.KeyState.ChatPadGreen && chatpadGreenMapping[(int)key] != '\0')
+				keyChar = char.ToUpper(chatpadGreenMapping[(int)key]);
+			if (this.KeyState.ChatPadOrange && chatpadOrangeMapping[(int)key] != '\0')
+				keyChar = char.ToUpper(chatpadOrangeMapping[(int)key]);
+
+			if (!(this.KeyState.LeftShift | this.KeyState.RightShift))
+				keyChar = char.ToLower(keyChar);
+
+			return char.IsLetterOrDigit(keyChar) || char.IsPunctuation(keyChar) || char.IsWhiteSpace(keyChar);
+#else
+			keyChar = '\0';
+
+			keyStateBytes[0x10] = (byte)((this.KeyState.LeftShift | this.KeyState.RightShift) ? 0x80 : 0);
+			keyStateBytes[0x11] = (byte)((this.KeyState.LeftControl | this.KeyState.RightControl) ? 0x80 : 0);
+			
+			return ToUnicodeEx((uint)key, scanCodes[(uint)key], keyStateBytes, out keyChar, 1, 0, layout) == 1;
+#endif
 		}
+
+#if !XBOX360
+
+		static IntPtr layout;
+
+		[System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+		static extern int ToUnicodeEx(uint wVirtKey, uint wScanCode, byte[] lpKeyState, out char pwszBuff, int cchBuff, uint wFlags, IntPtr layout);
+	
+		[System.Runtime.InteropServices.DllImport("user32.dll")]
+		internal static extern uint MapVirtualKeyEx(uint uCode, uint uMapType, IntPtr layout);
+
+		[System.Runtime.InteropServices.DllImport("user32.dll")]
+		internal static extern IntPtr GetKeyboardLayout(uint thread);
+#endif
+
 
 		/// <summary>
 		/// Gets the current KeyState
