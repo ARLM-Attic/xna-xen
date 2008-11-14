@@ -1137,7 +1137,7 @@ namespace Xen.Ex.Material
 		private Vector3 emmissiveColour = Vector3.Zero;
 		private MaterialLightCollection lightCollection;
 		private short vsLightCount, psLightCount;
-		private Vector4 emissive;
+		private Vector4 emissive = new Vector4(0,0,0,1);
 		private MaterialAnimationTransformHierarchy animationTransforms;
 
 		/// <summary>
