@@ -40,7 +40,7 @@ namespace Tutorials.Tutorial_07
 		private DrawTargetTexture2D drawToTexture;
 
 		//Draw target that draws to the screen,
-		//This will draw the off screen texture to the bottom left of the screen
+		//This will draw the off screen texture in the bottom left of the screen
 		private DrawTargetScreen drawToScreen;
 
 
@@ -58,7 +58,7 @@ namespace Tutorials.Tutorial_07
 			drawToTexture = new DrawTargetTexture2D(camera, 128, 128, SurfaceFormat.Color, DepthFormat.Depth24Stencil8);
 
 			//make the texture clear colour different from the screen, so it's more obvious
-			drawToTexture.ClearBuffer.ClearColour = Color.DarkBlue;
+			drawToTexture.ClearBuffer.ClearColour = Color.WhiteSmoke;
 
 			//create the sphere (reused from Tutorial_03)
 			Tutorial_03.SphereDrawer sphere = new Tutorial_03.SphereDrawer(Vector3.Zero);
@@ -69,10 +69,11 @@ namespace Tutorials.Tutorial_07
 
 			//now, create the drawToScreen object..
 
-			//note, the same camera is being used, although it doesn't have to be.
-			//The 2D element helper class automatically pushes it's own 2D Camera when 
+			//The same camera is being used, although it doesn't have to be.
+			//The 2D element helper class that will be used will automatically push it's own 2D Camera when 
 			//drawing, to keep itself consistent.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 
 			Vector2 sizeInPixels = new Vector2(512,512);

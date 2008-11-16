@@ -69,7 +69,7 @@ namespace Tutorials.Tutorial_11
 			//Animations in xen are lossy compressed.
 			//For the model used here, the animation data is reduced from nearly 2mb
 			//down to around 200kb. (The model geometry is less than 300kb)
-			//The amount of compression change be configured in the content's properties
+			//The amount of compression change can be configured in the content's properties
 			//The 'Animation Compression Tolerance' value is a percentage
 			//The default is .5%. This means the animation will always be within .5%
 			//of the source. Setting this value to 0 will save a lossless animation.
@@ -114,6 +114,7 @@ namespace Tutorials.Tutorial_11
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 			//NEW CODE
 			//create the actor instance

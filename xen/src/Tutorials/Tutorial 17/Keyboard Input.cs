@@ -35,7 +35,7 @@ namespace Tutorials.Tutorial_17
 	{
 		private DrawTargetScreen drawToScreen;
 
-		//This is text element will display the custom text
+		//This text element will display the user entered text
 		private TextElementRect textElement;
 		private TextElement helpDisplay;
 
@@ -118,7 +118,7 @@ namespace Tutorials.Tutorial_17
 			//keyboard[Keys.F10].DownDuration
 
 
-			//the keyboard also provides a callback method to return a list of the
+			//the keyboard also provides a method to return a list of the
 			//keys that are pressed or held.
 
 			//this method will be used to add the keys to the 'pressedKeys' array
@@ -126,17 +126,18 @@ namespace Tutorials.Tutorial_17
 			if (this.pressedKeys == null)
 				this.pressedKeys = new List<Microsoft.Xna.Framework.Input.Keys>();
 
-			//
-			keyboard.GetPressedKeys(this.KeyPressCallback);
-			//note that KeyPressCallback is the callback *method*
 
-			//pressedKeys will not have any keys that have been pressed added to it
+			keyboard.GetPressedKeys(this.pressedKeys);
+
+			//pressedKeys will contain a list of any keys that have been pressed
 
 			foreach (Microsoft.Xna.Framework.Input.Keys key in pressedKeys)
 			{
 				//the keyboard class can also translate a Keys enumerator into a
 				//character. Eg, Keys.A will become 'a'. It cannot do this for 
 				//all keys. (Eg, F1 doesn't have a character)
+				//This will also apply keyboard modifiers, such as Shift.
+				//'1' will become '!' on a standard query keyboard, etc.
 
 				char character;
 
@@ -156,16 +157,6 @@ namespace Tutorials.Tutorial_17
 					}
 				}
 			}
-
-			//Finally, clear the pressedKeys list (now the keys have been processed)
-			pressedKeys.Clear();
-		}
-
-		//this is the callback method, which takes the key as a parametre
-		private void KeyPressCallback(Microsoft.Xna.Framework.Input.Keys key)
-		{
-			//add the key to the list
-			pressedKeys.Add(key);
 		}
 
 

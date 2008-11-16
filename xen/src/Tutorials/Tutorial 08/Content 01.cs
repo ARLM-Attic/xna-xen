@@ -24,7 +24,7 @@ using Microsoft.Xna.Framework.Graphics;
  */
 namespace Tutorials.Tutorial_08
 {
-	//The SphereDrawer class from Tutorial_02 is reused in this tutorial
+	//The SphereDrawer class from Tutorial_03 is reused in this tutorial
 
 	//This tutorial does exactly the same thing as Tutorial 07,
 	//In tutorial 7, a sphere is drawn to a texture,
@@ -42,8 +42,8 @@ namespace Tutorials.Tutorial_08
 	//updated during a device reset.
 	//
 	//In this tutorial, the use of the IContentOwner interface is shown indirectly.
-	//The Application class implements IContentOwner, and is registered as a content owner
-	//directly after the call to Initialise().
+	//The Application class already implements IContentOwner, and is registered as a
+	//content owner directly after the call to Initialise().
 	//
 	//IContentOwner has two methods, LoadContent and UnloadContent. Both of these methods
 	//can be overridden by Application implementations. The LoadContent method is the only
@@ -51,10 +51,11 @@ namespace Tutorials.Tutorial_08
 	//that loading content only happens in LoadContent. 
 	//(So content is always correctly reloaded)
 	//
-	//The ContentRegister class keeps a weak-referenced list of IContentOwner classes,
-	//and calls LoadContent/UnloadContent when needed. The base Application class has it's own
-	//instance, this.Content. IContentOwners can be registered by calling Content.Add(),
-	//instances need not be unregistered, due to weak referencing.
+	//The ContentRegister class keeps a weak-referenced list of IContentOwners.
+	//It calls LoadContent/UnloadContent when needed. The base Application class has it's own
+	//instance of ContentRegister, this.Content. 
+	//IContentOwners can be registered by calling Content.Add(), instances need not be
+	//unregistered, due to weak referencing.
 	//
 	//Registering an IContentLoader with a ContentRegister guarantees that LoadContent
 	//will be called at least once - where possible it gets called immediately.
@@ -63,9 +64,8 @@ namespace Tutorials.Tutorial_08
 	//It prevents the case where content is loaded in unexpected ways.
 	//
 	//
-	//Note DrawTargetTexture2D and DrawTargetTextureCube are the only exception,
-	//Vertices<>, Indices<> and other classes automatically deal with device
-	//resets, including those storing Dynamic data.
+	//Vertices<>, Indices<> and other xen classes automatically deal with device
+	//resets, including buffers storing Dynamic data.
 	//
 	//The next tutorial will implement a IContentLoader instance.
 	//For now, the LoadContent method will be overridden
@@ -92,7 +92,7 @@ namespace Tutorials.Tutorial_08
 			drawToTexture = new DrawTargetTexture2D(camera, 128, 128, SurfaceFormat.Color, DepthFormat.Depth24Stencil8);
 
 			//make the texture clear colour different from the screen, so it's more obvious
-			drawToTexture.ClearBuffer.ClearColour = Color.DarkBlue;
+			drawToTexture.ClearBuffer.ClearColour = Color.WhiteSmoke;
 
 			//add a sphere from tutorial 03 to the texture
 			drawToTexture.Add(new Tutorial_03.SphereDrawer(Vector3.Zero));
@@ -109,6 +109,8 @@ namespace Tutorials.Tutorial_08
 
 			//create the drawToScreen object..
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
+
 			//add the helper element to the screen
 			drawToScreen.Add(displayElement);
 		}
@@ -129,7 +131,7 @@ namespace Tutorials.Tutorial_08
 			//
 			//Whenever the device is reset (which can happen fairly easily), any off screen textures
 			//will become invalid.
-			//As will any resource loaded through a ContentManager.
+			//As will many resource loaded through a ContentManager.
 
 			displayElement.Texture = drawToTexture.GetTexture(state);
 
@@ -139,10 +141,9 @@ namespace Tutorials.Tutorial_08
 		//main application draw method
 		protected override void Draw(DrawState state)
 		{
-			//used by Tutorial03 shader
+			//required by Tutorial03 shader
 			state.SetShaderGlobal("colour", new Vector4(1, 0, 0, 1));
 
-			//NEW CODE
 			//Draw the off screen texture (the texture cannot be used until after the first time it's drawn!)
 			//In this tutorial, the texture is drawn every frame
 			drawToTexture.Draw(state);

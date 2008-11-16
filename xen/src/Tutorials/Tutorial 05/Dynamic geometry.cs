@@ -25,11 +25,14 @@ using Microsoft.Xna.Framework.Graphics;
  */
 namespace Tutorials.Tutorial_05
 {
-	//A custom vertex structure, storing a position and normal.
+	//A custom vertex structure, storing a position and normal. (just like tutorial 4, now with colour)
 	struct CustomVertex
 	{
 		public Vector3 position;
 		public Vector3 normal;
+		//NEW CODE
+		//add a vertex colour (which defaults to white)
+		public Vector4 colour;
 
 
 		//constructor
@@ -37,6 +40,8 @@ namespace Tutorials.Tutorial_05
 		{
 			this.position = position;
 			this.normal = normal;
+			//NEW CODE
+			this.colour = Vector4.One;
 		}
 	}
 
@@ -50,11 +55,11 @@ namespace Tutorials.Tutorial_05
 		private IIndices indices;
 
 		//NEW CODE
-		//local copy of the source vertex data
+		//A local copy of the source vertex data.
 		//Dynamic vertices/indices are created in the same way as normal vertices/indices,
 		//To change the data, edit the source array then tell the buffer it needs updating
 		//This differs from XNA, where you copy the changed data manually.
-		//The advantage is you do not need to worry about the XNA ContentLost situation
+		//The advantage is you do not need to worry about the XNA ContentLost situation.
 		CustomVertex[] vertexData;
 
 
@@ -62,7 +67,7 @@ namespace Tutorials.Tutorial_05
 		public DynamicQuadGeometry()
 		{
 			//create the array of custom vertices, to form a quad
-			vertexData = new CustomVertex[4]
+			this.vertexData = new CustomVertex[4]
 			{
 				new CustomVertex(new Vector3(-1,-1,0), Vector3.UnitZ), // bottom left
 				new CustomVertex(new Vector3(-1, 1,0), Vector3.UnitZ), // top left
@@ -72,7 +77,8 @@ namespace Tutorials.Tutorial_05
 
 			//create the buffers
 			this.vertices = new Vertices<CustomVertex>(vertexData);
-			this.indices = new Indices<ushort>(0, 1, 2, 1, 3, 2); //shortcut using params[] supporting constructor
+
+			this.indices = new Indices<ushort>(0, 1, 2, 1, 3, 2); //this is a shortcut using params[] supporting constructor
 
 			//NEW CODE
 			//Set the resource usage of the vertices to Dynamic
@@ -82,16 +88,23 @@ namespace Tutorials.Tutorial_05
 
 
 		//NEW CODE
-		//writes dynamic data changes to the source vertex data (in this case, applying a simple sin wave)
-		void OffsetVertices(float time)
+		//writes dynamic data changes to the source vertex data (in this case, applying simple sin waves)
+		void ModifyVertices(float time)
 		{
 			float indexF = 0;//avoid casting index to a float (float to int hurts on the xbox! although here it's not going to do much :)
 
-			//set the Z coordinate of each vertex to a sin wave
+			//set the Z coordinate and RGB colour of each vertex to a sin wave
 			for (int index = 0; index < vertexData.Length; index++)
 			{
-				//offset in the Z-axis (towards the camera)
+				//offset in the Z-axis (Z-axis is away/towards the camera)
 				vertexData[index].position.Z = (float)Math.Sin(time + indexF);
+
+				//and cycle the colours a bit...
+				vertexData[index].colour.X = (float)Math.Sin(time + indexF + 1) + 1;
+				vertexData[index].colour.Y = (float)Math.Sin(time + indexF + 2) + 1;
+				vertexData[index].colour.Z = (float)Math.Sin(time + indexF + 3) + 1;
+
+				//ideally, the normals would be updated too, since the shape changed.
 
 				indexF++;
 			}
@@ -103,7 +116,7 @@ namespace Tutorials.Tutorial_05
 		{
 			//NEW CODE
 			//apply changes to the source vertex data
-			OffsetVertices(state.TotalTimeSeconds);
+			ModifyVertices(state.TotalTimeSeconds);
 
 			//NEW CODE
 			//tell the vertices that the entire source buffer has changed and needs updating
@@ -115,7 +128,8 @@ namespace Tutorials.Tutorial_05
 
 		public bool CullTest(ICuller culler)
 		{
-			//cull test with an approximate bounding box... (a bit of a hack :)
+			//cull test with an bounding box...
+			//this time taking into account the z values can also range between -1 and 1
 			return culler.TestBox(new Vector3(-1, -1, -1), new Vector3(1, 1, 1));
 		}
 	}
@@ -139,13 +153,15 @@ namespace Tutorials.Tutorial_05
 			//setup the world matrix
 			worldMatrix = Matrix.CreateTranslation(position);
 
-			//create a basic lighting shader with some nice looking lighting
+			//create a basic lighting shader with some average looking lighting :-)
 			MaterialShader material = new MaterialShader();
-			Vector3 lightDirection = new Vector3(0.5f,1,-0.5f); //a dramatic direction
+			Vector3 lightDirection = new Vector3(-1, -1, -1); //a dramatic direction
 			material.Lights = new MaterialLightCollection();
-			material.Lights.AddDirectionalLight(false, lightDirection, Color.Gray);//two light sources
-			material.Lights.AddDirectionalLight(false, -lightDirection, Color.DarkSlateBlue);
-			material.SpecularColour = Color.LightYellow.ToVector3();//with a nice sheen
+			material.Lights.AddDirectionalLight(false, -lightDirection, Color.WhiteSmoke);
+			material.SpecularColour = Color.LightYellow.ToVector3() * 0.5f;
+
+			//Note: To use vertex colours with a MaterialShader, UseVertexColour has to be set to true
+			material.UseVertexColour = true;
 
 			this.shader = material;
 		}
@@ -196,6 +212,7 @@ namespace Tutorials.Tutorial_05
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 			//create the geometry
 			GeometryDrawer geometry = new GeometryDrawer(Vector3.Zero);

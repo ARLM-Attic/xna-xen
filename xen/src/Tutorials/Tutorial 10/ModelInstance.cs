@@ -102,6 +102,7 @@ namespace Tutorials.Tutorial_10
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 			//NEW CODE
 			//create the actor instance

@@ -171,6 +171,7 @@ namespace Tutorials.Tutorial_13
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 			//NEW CODE
 			//create the CameraOrbit object..

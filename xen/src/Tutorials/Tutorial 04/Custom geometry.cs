@@ -27,13 +27,12 @@ namespace Tutorials.Tutorial_04
 {
 	//NEW CODE
 	//A custom vertex structure, storing a position and normal.
-	//(An XNA vertex structure could also be used)
+	//(An XNA vertex structure could also be used, such as VertexPositionNormalTexture)
 	struct CustomVertex
 	{
 		public Vector3 position;
 		public Vector3 normal;
-
-
+		
 		//constructor
 		public CustomVertex(Vector3 position, Vector3 normal)
 		{
@@ -56,6 +55,7 @@ namespace Tutorials.Tutorial_04
 		public QuadGeometry()
 		{
 			//create an array of custom vertices to form a quad
+			//(this is just a normal C# array)
 			CustomVertex[] verts = new CustomVertex[]
 			{
 				new CustomVertex(new Vector3(-1,-1,0), Vector3.UnitZ), // bottom left
@@ -64,7 +64,7 @@ namespace Tutorials.Tutorial_04
 				new CustomVertex(new Vector3( 1, 1,0), Vector3.UnitZ), // top right
 			};
 
-			//create the indices array
+			//create the indices data array
 			ushort[] inds = new ushort[]
 			{
 				0,1,2, // first triangle	(bottom left -> top left -> bottom right)
@@ -79,13 +79,19 @@ namespace Tutorials.Tutorial_04
 		//draw the quad
 		public void Draw(DrawState state)
 		{
-			//draw the vertices as triangle list, with the indices
+			//draw the vertices as a triangle list, with the indices
 			this.vertices.Draw(state, this.indices, PrimitiveType.TriangleList);
 		}
 
+		//Fully implement CullTest
 		public bool CullTest(ICuller culler)
 		{
-			//cull test with an approximate bounding box...
+			//cull test with a bounding box...
+			//the box is represented as 'min / max' positions.
+			//the vertex positions range from -1,-1,0 to 1,1,0
+
+			//If the camera were changed, and this quad were offscreen, the cull test
+			//would return false, and it would not be drawn.
 			return culler.TestBox(new Vector3(-1, -1, 0), new Vector3(1, 1, 0));
 		}
 	}
@@ -102,19 +108,21 @@ namespace Tutorials.Tutorial_04
 
 		public GeometryDrawer(Vector3 position)
 		{
+			//NEW CODE
 			//create the quad
 			geometry = new QuadGeometry();
 
 			//setup the world matrix
 			worldMatrix = Matrix.CreateTranslation(position);
 
-			//create a basic lighting shader with some nice looking lighting
+			//create a lighting shader with some average looking lighting :-)
 			MaterialShader material = new MaterialShader();
-			Vector3 lightDirection = new Vector3(0.5f,1,-0.5f); //a dramatic direction
+			Vector3 lightDirection = new Vector3(0.5f,1,-0.5f); //a less dramatic direction
 			material.Lights = new MaterialLightCollection();
-			material.Lights.AddDirectionalLight(false, lightDirection, Color.Gray);//two light sources
-			material.Lights.AddDirectionalLight(false, -lightDirection, Color.DarkSlateBlue);
+			material.Lights.AmbientLightColour = Color.DarkGoldenrod.ToVector3() * 0.5f;
+			material.Lights.AddDirectionalLight(false, -lightDirection, Color.WhiteSmoke);
 			material.SpecularColour = Color.LightYellow.ToVector3();//with a nice sheen
+			material.UsePerPixelSpecular = true;
 
 			this.shader = material;
 		}
@@ -124,7 +132,7 @@ namespace Tutorials.Tutorial_04
 			//push the world matrix, multiplying by the current matrix if there is one
 			state.PushWorldMatrixMultiply(ref worldMatrix);
 
-			//cull test the geometry
+			//cull test the custom geometry
 			if (geometry.CullTest(state))
 			{
 				//bind the shader
@@ -165,6 +173,7 @@ namespace Tutorials.Tutorial_04
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 			//create the geometry
 			GeometryDrawer geometry = new GeometryDrawer(Vector3.Zero);

@@ -64,11 +64,11 @@ namespace Tutorials.Tutorial_09
 			//LoadContent() will be called whenever the device is created/reset.
 			contentRegister.Add(this);
 
-			//At this point, if the device had been created, LoadContent() would have
-			//been called already. However in this tutorial, the device hasn't been 
-			//created yet - so LoadContent() will be called at a later time.
+			//At this point, since the device has been created, LoadContent() will have
+			//been called already. If the device hadn't been created yet, then
+			//LoadContent() would be called at a later time.
 
-			//LoadContent() will be called before Draw() is called.
+			//LoadContent() will always be called before the first time Draw() is called.
 		}
 
 		//Load content
@@ -100,7 +100,7 @@ namespace Tutorials.Tutorial_09
 		//draw the element on screen
 		public void Draw(DrawState state)
 		{
-			//the element class automatically calls the shader Bind() method
+			//the ShaderElement class automatically calls the shader Bind() method
 			element.Draw(state);
 		}
 

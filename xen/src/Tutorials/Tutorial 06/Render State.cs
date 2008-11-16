@@ -82,8 +82,8 @@ namespace Tutorials.Tutorial_06
 			//When geometry is rendered, state.RenderState is compared to the current known device state
 			//This comparison is very fast. Any changes detected will be applied at render time.
 			//
-			//Because of this, chaning state.RenderState is very fast and efficient, as actual render state
-			//on the GraphicsDevice doesn't change until the geometry is drawn. No logic is run when chaning
+			//Because of this, changing state.RenderState is very fast and efficient, as actual render state
+			//on the GraphicsDevice doesn't change until the geometry is drawn. No logic is run when changing
 			//the value.
 			//
 			//In terms of efficiency, think of setting the DeviceRenderState as equivalent assigning integers.
@@ -96,7 +96,7 @@ namespace Tutorials.Tutorial_06
 			//set blending...
 			state.RenderState.AlphaBlend.Enabled = true;								//one bit is changed
 			state.RenderState.AlphaBlend.SourceBlend = Blend.SourceAlpha;				//4 bits are changed
-			state.RenderState.AlphaBlend.DestinationBlend = Blend.InverseSourceAlpha;
+			state.RenderState.AlphaBlend.DestinationBlend = Blend.InverseSourceAlpha;	//4 bits are changed
 
 
 			//draw the sphere
@@ -105,12 +105,11 @@ namespace Tutorials.Tutorial_06
 
 			//set the previous state back
 			state.SetRenderState(ref currentState);
-			//
-			//Because state.RenderState is a Property, state.RenderState actually returns a wrapper class (so the 
-			//fields can be modified directly). However because of this, you cannot directly set the entire state
-			//eg,
+
+			//Note:
+			//you cannot write:
 			//state.RenderState = currentState;
-			//is invalid.
+			//you have to call 'SetRenderState()' instead.
 		}
 
 
@@ -119,7 +118,7 @@ namespace Tutorials.Tutorial_06
 			//manual render state, using Push/Pop render state
 
 			//push the render state
-			//pusing/popping the render state is very fast, no memory is allocated. Internally just 4 ints are assigned.
+			//pusing/popping the render state is *very* fast, no memory is allocated. Internally just 4 ints are assigned.
 			state.PushRenderState();
 
 
@@ -172,7 +171,7 @@ namespace Tutorials.Tutorial_06
 		private void DrawPushPopStored(DrawState state)
 		{
 			//push render state and replace it with a precalculateed render state.
-			//Note this sets every render state, not just alpha blending
+			//Note this sets *every* render state, not just alpha blending
 			//this is the most efficient way to set the entire render state
 			state.PushRenderState(ref alphaRenderState);
 			
@@ -195,7 +194,7 @@ namespace Tutorials.Tutorial_06
 		//state.DirtyInternalRenderState(...)
 		//
 		//When called, flags are passed in specifying what parts of the internally tracked render state
-		//should be considered dirty - or in an unknown state.
+		//should be considered dirty - ('dirty' means it's in an unknown state).
 		//
 		//For example, if some eternal code manually sets the alpha blend mode through the GraphicsDevice,
 		//then call
@@ -243,7 +242,7 @@ namespace Tutorials.Tutorial_06
 		//world matrix (position and rotation) of the sphere
 		private Matrix worldMatrix;
 		//shader used to display the sphere
-		private IShader shader;
+		private MaterialShader shader;
 
 		//constructor
 		public SphereDrawer(Vector3 position)
@@ -260,10 +259,10 @@ namespace Tutorials.Tutorial_06
 			MaterialShader material = new MaterialShader();
 			Vector3 lightDirection = new Vector3(0.5f,1,-0.5f); //a dramatic direction
 			material.Lights = new MaterialLightCollection();
+			material.Lights.AmbientLightColour = Color.CornflowerBlue.ToVector3() * 0.5f;
 			material.Lights.AddDirectionalLight(false, lightDirection, Color.Gray);//two light sources
 			material.Lights.AddDirectionalLight(false, -lightDirection, Color.DarkSlateBlue);
 			material.SpecularColour = Color.LightYellow.ToVector3();//with a nice sheen
-			material.Alpha = 0.75f;
 
 			this.shader = material;
 		}
@@ -271,6 +270,9 @@ namespace Tutorials.Tutorial_06
 		//draw the sphere
 		private void DrawGeometry(DrawState state)
 		{
+			//animate the material alpha.. (in a sin wave btween 0 and 1)
+			shader.Alpha = (float)Math.Sin(state.TotalTimeSeconds * 2) * 0.5f + 0.5f;
+			
 			//push the world matrix, multiplying by the current matrix if there is one
 			state.PushWorldMatrixMultiply(ref this.worldMatrix);
 
@@ -297,7 +299,7 @@ namespace Tutorials.Tutorial_06
 
 
 	//a application that draws a sphere in the middle of the screen
-	[DisplayName(Name = "Tutorial 07: Render State")]
+	[DisplayName(Name = "Tutorial 06: Render State")]
 	public class Tutorial : Application
 	{
 		//a DrawTargetScreen is a draw target that draws items directly to the screen.
@@ -313,6 +315,7 @@ namespace Tutorials.Tutorial_06
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 			//create the sphere
 			SphereDrawer sphere = new SphereDrawer(Vector3.Zero);

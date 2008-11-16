@@ -28,19 +28,34 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Tutorials.Tutorial_02
 {
 	//This is a class that draws a sphere. (It uses a prebuilt Sphere geometry class)
+	//It stores a world matrix for the sphere it will draw, a shader used to draw it and the 
+	//geometry for the sphere.
+	//
 	//This class implements IDraw.
-	//It stores a world matrix for the sphere it will draw, a shader used to draw it, and the geometry for the sphere
+	//Anything in xen that can be drawn implements the IDraw interface
+	//
+	//Almost every drawing class in xen implements IDraw. This includes the DrawTarget objects,
+	//the only exception are vertex buffers. (More on that in tutorial 4)
+	//
+	//Each DrawTarget stores a list of other IDraw objects. (such as game entities, effects, etc).
+	//These objects get drawn to the target during the DrawTarget.Draw() call.
+	//If you wish to have an object drawn to the screen, Add() it to the DrawTargetScreen object.
+	//This is shown later in this tutorial...
+
 	class SphereDrawer : IDraw
 	{
-		//This object stores the geometry of the sphere.
+		//This object stores the geometry of a sphere, using a pre-built class in Xen.Ex.
 		//Xen.Ex.Geometry.Sphere implements IDraw too.
-		//Note however that Sphere *only* draws the geometry. (It doesn't bind a shader, for example)
+		//Note however that the Sphere class *only* draws the geometry. (It doesn't bind a shader, for example)
 		private Xen.Ex.Geometry.Sphere sphereGeometry;
 
-		//world matrix (position, rotation, etc) of the sphere
+		//world matrix (position, scale, rotation, etc) of the sphere
 		private Matrix worldMatrix;
-		//shader instance used to display the sphere
+
+		//shader instance used to display the sphere.
+		//all geometry must be drawn with a shader bound.
 		private IShader shader;
+
 
 		//constructor
 		public SphereDrawer(Vector3 position)
@@ -48,14 +63,14 @@ namespace Tutorials.Tutorial_02
 			//setup the sphere geometry
 			Vector3 size = new Vector3(1,1,1);
 			//Use the prebuilt sphere geometry class
-			sphereGeometry = new Sphere(size, 32);
+			this.sphereGeometry = new Sphere(size, 32);
 
 			//Setup the world matrix
-			worldMatrix = Matrix.CreateTranslation(position);
+			this.worldMatrix = Matrix.CreateTranslation(position);
 
 			//Create a lighting shader with some nice looking lighting
 			//This is a prebuilt class in Xen.Ex. It is similar to the XNA BasicEffect
-			//All shaders, including this one, implement IShader
+			//This class implements IShader. All shaders implement IShader.
 			MaterialShader material = new MaterialShader();
 
 			Vector3 lightDirection = new Vector3(0.5f,1,-0.5f); //a dramatic direction
@@ -63,62 +78,91 @@ namespace Tutorials.Tutorial_02
 			//create a light collection and add a couple of lights to it
 			material.Lights = new MaterialLightCollection();
 			material.UsePerPixelSpecular = true;
-			material.Lights.AddDirectionalLight(true, lightDirection, Color.Gray);//add the first of two light sources
+			material.Lights.AmbientLightColour = Color.CornflowerBlue.ToVector3() * 0.5f;	//set the ambient
+			material.Lights.AddDirectionalLight(true, lightDirection, Color.Gray);			//add the first of two light sources
 			material.Lights.AddDirectionalLight(true, -lightDirection, Color.DarkSlateBlue);
-			material.SpecularColour = Color.LightYellow.ToVector3();//give the material a with a nice sheen
+			material.SpecularColour = Color.LightYellow.ToVector3();						//give the material a nice sheen
 
 			//store the shader
 			this.shader = material;
 		}
 
-		//draw the sphere
+		//draw the sphere (This is the method declared in the IDraw interface)
 		public void Draw(DrawState state)
 		{
-			//push the world matrix, multiplying by the current matrix if there is one
-			//this is very similar to openGL glPushMatrix() and glMultMatrix().
-			//The DrawState object maintains a world matrix stack. Pushing and Popping this stack is very fast.
+			//the DrawState object controls current drawing state for the application.
+
+			//The DrawState uses a number of stacks, it is important to understand how pushing/popping a stack works.
+
+			//First, push the world matrix, multiplying by the current matrix (if there is one).
+			//This is very similar to using openGL glPushMatrix() and then glMultMatrix().
+			//The DrawState object maintains the world matrix stack, pushing and popping this stack is very fast.
 			state.PushWorldMatrixMultiply(ref this.worldMatrix);
 
-			//Frustum cull test the sphere (the cull test uses the current world matrix)
-			//Culltest will return false if the test fails (in this tutorial false would mean the sphere is off screen)
+			//The next line frustum cull tests the sphere
+			//Culltest will return false if the test fails (in this case false would mean the sphere is off screen)
 			//The CullTest method requirs an ICuller to be passed in. Here the state object is used because the 
 			//DrawState object implements the ICuller interface (DrawState's culler performs screen culling)
+			//The cull test uses the current world matrix, so make sure you perform the CullTest after applying any
+			//transformations.
+			//The CullTest method is defined by the ICullable interface. Any IDraw object also implements ICullable.
 			if (sphereGeometry.CullTest(state))
 			{
-				//bind the shader. From now on all drawing will use this shader
+				//the sphere is on screen...
+
+				//bind the shader.
+				//Note that if the sphere was off screen, the shader would never be bound,
+				//which would save valuable CPU time. (The sphere geometry class assumes a shader is bound)
+				//This is why the CullTest() method is separate from the Draw() method.
 				shader.Bind(state);
+
+				//Once the call to Bind() has been made, the shaders will be active ('bound')
+				//on the graphics card. There is no way to 'unbind' or 'end' the shader.
+				//Once bound, that shader is in use - until the point a different shader is bound.
 
 				//draw the sphere geometry
 				sphereGeometry.Draw(state);
 			}
 
-			//always pop the matrix afterwards
+			//always pop the world matrix afterwards
 			state.PopWorldMatrix();
 		}
 
 		//Anything that implements IDraw (such as this class) also implements ICullable.
-		//Sometimes, however, like this case, you want to always return true..
-		//It's best not to cull yet, and to cull within the draw method.
-		//This is only a good idea for simple classes like this one..
-		//Using ICullable allows culling to occur before the Draw method is called,
-		//such as in the Draw() method above, in that tutorial the CullTest also 
-		//prevents the shader being bound, as well as the geometry being drawn.
+		//this requires an object to implement the CullTest method declared below.
+		//CullTest returns true or false.
+		//For the majority of cases, CullTest will perform frustum culling ('on-screen culling').
+		//A return value of true means on-screen, false means off screen.
+		//
+		//The 'culler' object passed in is smart. It knows the current draw context,
+		//for example it knows the world matrix.
+		//
+		//In the example above, the Sphere geometry class ('this.sphereGeometry') internally
+		//implements CullTest as:
+		//
+		//return culler.TestSphere(this.radius);
+		//
+		//The sphere need not know where it is being drawn (ie, it's current world matrix)
+		//because the ICuller already knows this.
 		public bool CullTest(ICuller culler)
 		{
-			//The culler object here is smart. It knows the current draw context,
-			//for example it knows the world matrix.
+			//in this case, however, simply return true.
+			//this means 'always draw'.
 
-			//Calling culler.TestSphere(1.0f) would cull test a sphere located at the current world position.
-			//culler.TestSphere(1, new Vector3(10,0,0)) would test the sphere at a location 10 units to the left of the world position
-			//culler.TestWorldSphere(1, Vector3.Zero) would test at the origin (the world matrix would be ignored)
-
-			/*
-			//a perfectly valid CullTest here would be:
+			//This is because in this case, a world-matrix will be applied during the
+			//draw() method, which will potentially change the result of the sphereGeometry
+			//cull test.
 			
-			return culler.TestSphere(this.sphereGeometry.Radius, this.worldMatrix.Translation);
-			
-			 */
+			//What this means is that:
 
+			//return sphereGeometry.CullTest(culler);
+
+			//would be invalid here.
+
+			//However,
+			//culler.TestSphere(this.sphereGeometry.Radius, this.worldMatrix.Translation);
+			//would be correct, assuming the world matrix was not scaling/rotating
+			
 			return true;
 		}
 	}
@@ -129,20 +173,22 @@ namespace Tutorials.Tutorial_02
 	public class Tutorial : Application
 	{
 		//a DrawTargetScreen is a draw target that draws items directly to the screen.
-		//in this case it will only draw a SphereDrawer
+		//in this case it will only draw a SphereDrawer (the class defined above)
 		DrawTargetScreen drawToScreen;
 
 		protected override void Initialise()
 		{
 			//draw targets usually need a camera.
 			Camera3D camera = new Camera3D();
+
 			//look at the sphere, which will be at 0,0,0. Look from 0,0,4
 			camera.LookAt(Vector3.Zero, new Vector3(0, 0, 4), Vector3.UnitY);
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
-			//create the sphere
+			//create the sphere at 0,0,0
 			SphereDrawer sphere = new SphereDrawer(Vector3.Zero);
 
 			//add it to be drawn to the screen
@@ -153,6 +199,7 @@ namespace Tutorials.Tutorial_02
 		protected override void Draw(DrawState state)
 		{
 			//draw to the screen.
+			//This causes the sphere to be drawn (because it was added to the screen)
 			drawToScreen.Draw(state);
 		}
 

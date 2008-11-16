@@ -30,7 +30,7 @@ using Microsoft.Xna.Framework.Graphics;
  */
 namespace Tutorials.Tutorial_03
 {
-	//this class is mostly the same as the Draw Sphere tutorial
+	//this class is mostly the same as the Draw Sphere tutorial,
 	//except the shader is hard coded to the custom shader
 	class SphereDrawer : IDraw
 	{
@@ -63,15 +63,16 @@ namespace Tutorials.Tutorial_03
 				//The class that was generated is Shader.Tutorial03Technique:
 				Shader.Tutorial03Technique shader = null;
 
-				//Use the draw state to get a shared static instance of the shader. 
-				//Getting shader instances in this way is  highly recommended for most shaders as it reduces
-				//memory usage and live object count, boosting performance for large projects.
+				//It is recommended to use the draw state to get a shared static instance of the shader. 
+				//Getting shader instances in this way is highly recommended for most shaders, as it reduces
+				//memory usage and live object count. This will boost performance in large projects.
 				shader = state.GetShader<Shader.Tutorial03Technique>();
 				
 				//Set the scale value (scale is declared in the shader source)
 				shader.Scale = scaleValue;
 				
 				//Bind the custom shader instance
+				//After the call to Bind(), the shader is in use. There is no Begin/End logic required for shaders
 				shader.Bind(state);
 
 				//draw the sphere geometry
@@ -88,7 +89,7 @@ namespace Tutorials.Tutorial_03
 		}
 	}
 
-	//a application that draws a sphere in the middle of the screen
+	//an application that draws a sphere in the middle of the screen
 	[DisplayName(Name = "Tutorial 03: Custom Shader")]
 	public class Tutorial : Application
 	{
@@ -98,13 +99,12 @@ namespace Tutorials.Tutorial_03
 
 		protected override void Initialise()
 		{
-			Resource.EnableResourceTracking();
-
 			Camera3D camera = new Camera3D();
 			camera.LookAt(Vector3.Zero, new Vector3(0, 0, 4), Vector3.UnitY);
 
 			//create the draw target.
 			drawToScreen = new DrawTargetScreen(this, camera);
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 
 			//create the sphere
 			SphereDrawer sphere = new SphereDrawer(Vector3.Zero);

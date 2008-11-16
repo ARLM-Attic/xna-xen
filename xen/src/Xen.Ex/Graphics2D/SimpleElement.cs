@@ -203,7 +203,12 @@ namespace Xen.Ex.Graphics2D
 		protected override void BindShader(DrawState state, bool maskOnly)
 		{
 			if (this.texture == null && textureSource != null)
-				this.Texture = textureSource.GetTexture();
+			{
+				Texture2D tex = textureSource.GetTexture();
+				if (tex == null)
+					throw new InvalidOperationException("TexturedElement is trying to use a DrawTargetTexture2D that hasn't been drawn (DrawTargetTexture2D.GetTexture() is null)");
+				this.Texture = tex;
+			}
 
 			FillCustomTexture shader = state.GetShader<FillCustomTexture>();
 

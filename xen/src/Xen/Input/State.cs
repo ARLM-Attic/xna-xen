@@ -108,7 +108,7 @@ namespace Xen.Input.State
 			get { return !pressed && prev; }
 		}
 		/// <summary>
-		/// Number of seconds the button was last held down for
+		/// Number of seconds the button has been held down for
 		/// </summary>
 		public float DownDuration
 		{
@@ -903,7 +903,27 @@ namespace Xen.Input.State
 		}
 
 		/// <summary>
-		/// Calls the <paramref name="callback"/> for each <see cref="Keys"/> key where <see cref="Button.IsDown"/> is true
+		/// Adds a key to the <paramref name="pressedList"/> for each <see cref="Keys"/> key where <see cref="Button.OnPressed"/> is true
+		/// </summary>
+		/// <param name="pressedList"></param>
+		public void GetPressedKeys(List<Keys> pressedList)
+		{
+			if (pressedList == null)
+				throw new ArgumentNullException();
+			pressedList.Clear();
+
+			if (currentFrame.currentState0 != previousFrame.currentState0) PressList(pressedList, 0);
+			if (currentFrame.currentState1 != previousFrame.currentState1) PressList(pressedList, 1);
+			if (currentFrame.currentState2 != previousFrame.currentState2) PressList(pressedList, 2);
+			if (currentFrame.currentState3 != previousFrame.currentState3) PressList(pressedList, 3);
+			if (currentFrame.currentState4 != previousFrame.currentState4) PressList(pressedList, 4);
+			if (currentFrame.currentState5 != previousFrame.currentState5) PressList(pressedList, 5);
+			if (currentFrame.currentState6 != previousFrame.currentState6) PressList(pressedList, 6);
+			if (currentFrame.currentState7 != previousFrame.currentState7) PressList(pressedList, 7);
+		}
+
+		/// <summary>
+		/// <para>Calls the <paramref name="callback"/> for each <see cref="Keys"/> key where <see cref="Button.IsDown"/> is true</para>
 		/// </summary>
 		/// <param name="callback"></param>
 		public void GetHeldKeys(Action<Keys> callback)
@@ -921,6 +941,27 @@ namespace Xen.Input.State
 			if (currentFrame.currentState7 != 0) HeldCallback(callback, 7);
 		}
 
+		/// <summary>
+		/// <para>Adds a key to the <paramref name="heldKeyList"/> for each <see cref="Keys"/> key where <see cref="Button.IsDown"/> is true</para>
+		/// <para>The list will be cleared before any keys are added</para>
+		/// </summary>
+		/// <param name="heldKeyList"></param>
+		public void GetHeldKeys(List<Keys> heldKeyList)
+		{
+			if (heldKeyList == null)
+				throw new ArgumentNullException();
+			heldKeyList.Clear();
+
+			if (currentFrame.currentState0 != 0) HeldList(heldKeyList, 0);
+			if (currentFrame.currentState1 != 0) HeldList(heldKeyList, 1);
+			if (currentFrame.currentState2 != 0) HeldList(heldKeyList, 2);
+			if (currentFrame.currentState3 != 0) HeldList(heldKeyList, 3);
+			if (currentFrame.currentState4 != 0) HeldList(heldKeyList, 4);
+			if (currentFrame.currentState5 != 0) HeldList(heldKeyList, 5);
+			if (currentFrame.currentState6 != 0) HeldList(heldKeyList, 6);
+			if (currentFrame.currentState7 != 0) HeldList(heldKeyList, 7);
+		}
+
 		void PressCallback(Action<Keys> callback, int group)
 		{
 			for (int i = 0; i < 32; i++)
@@ -932,6 +973,19 @@ namespace Xen.Input.State
 			for (int i = 0; i < 32; i++)
 				if (buttons[32 * group + i].IsDown)
 					callback((Keys)(32 * group + i));
+		}
+
+		void PressList(List<Keys> list, int group)
+		{
+			for (int i = 0; i < 32; i++)
+				if (buttons[32 * group + i].OnPressed)
+					list.Add((Keys)(32 * group + i));
+		}
+		void HeldList(List<Keys> list, int group)
+		{
+			for (int i = 0; i < 32; i++)
+				if (buttons[32 * group + i].IsDown)
+					list.Add((Keys)(32 * group + i));
 		}
 	}
 

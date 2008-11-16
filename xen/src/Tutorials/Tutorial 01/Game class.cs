@@ -16,8 +16,8 @@ using Microsoft.Xna.Framework.Graphics;
  * Welcome to xen!
  * 
  * 
- * This tutorial is here to show implementing the Application class.
- * It's quite similar to the XNA Game class.
+ * This tutorial shows how to implement the Application class.
+ * (It's quite similar to the XNA Game class)
  * 
  * 
  * 
@@ -25,30 +25,25 @@ using Microsoft.Xna.Framework.Graphics;
  * 
  * implementing the Application class
  * creating a draw target that draws to the screen
- * setting the clear colour for a draw target
+ * setting the clear colour of the draw target
  * 
  */
 namespace Tutorials.Tutorial_01
 {
-	//Staring simple...
+	//Starting simple...
 	//
-	//This is a basic application class implementation.
-	//All it does is perform a draw to the screen, and all that does is clear the screen to blue.
+	//This is a basic implementation of the Application class.
+	//All it will do is draw to the screen, clearing it to blue.
+
 	[DisplayName(Name = "Tutorial 01: Game Class")]
 	public class Tutorial : Application
 	{
-		//Anything in xen that can be drawn implements IDraw or has a Draw(DrawState) method
+		//A DrawTarget is a class that performs all the logic needed to complete a draw operation to
+		//a surface (such as the screen or a texture).
 		//
-		//This goes from high to low level. So drawing to a surface (such as the screen) is
-		//handled by a DrawTarget object.
-		//A DrawTarget runs all the logic needed to complete the draw operation.
 		//Drawing in xen is very explicit, the call to Draw() will perform the entire draw operation.
-		//A DrawTarget stores a list of IDraw objects, these objects are drawn to the target.
 		//
 		//A DrawTargetScreen is a draw target that draws items directly to the screen.
-		//
-		//If you wish to have an object drawn to the screen, Add() it to the DrawTargetScreen object.
-		//The next tutorial will show this in action...
 		//
 		//In this tutorial all that will happen is the DrawTarget will clear itself to blue
 		//(Most applications will only have one DrawTargetScreen)
@@ -67,24 +62,26 @@ namespace Tutorials.Tutorial_01
 
 			//Set the screen clear colour to blue
 			//(Draw targets have a built in ClearBuffer object)
-			drawToScreen.ClearBuffer.ClearColour = Color.DarkBlue;
+			drawToScreen.ClearBuffer.ClearColour = Color.CornflowerBlue;
 		}
 
 		//this is the default Update method.
-		//Update is called 60 times per second, which is the same rate as player input
+		//Update() is called 60 times per second, which is the same rate that player input
+		//is updated.
 		//Note: Player input and Updating is explained in more detail in Tutorial 13
 		protected override void Update(UpdateState state)
 		{
-			//quit when the back button is pressed
+			//quit when the back button is pressed (escape on the PC)
 			if (state.PlayerInput[PlayerIndex.One].InputState.Buttons.Back.OnPressed)
 				this.Shutdown();
 		}
 
 		//This is the main application draw method. All drawing code should go in here.
+		//
 		//Any drawing should be done through, or using the DrawState object.
 		//Do not store a reference to a DrawState - if a method doesn't give access to it, you shouldn't be drawing in that method.
 		//The most useful GraphicsDevice functionality is covered by the DrawState or other objects in Xen/Xen.Ex
-		//The majority of applications shouldn't need to directly access the graphics device.
+		//The vast majority of applications shouldn't need to directly access the graphics device.
 		protected override void Draw(DrawState state)
 		{
 			//perform the draw to the screen.

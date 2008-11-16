@@ -17,9 +17,9 @@ sampler2D DisplayTextureSampler = sampler_state
 	
 	//The following are optional properties that set how the texture is sampled:
 	//Most applications won't need to include these.
-	//Xen, unlike XNA Effects, forces default values for these properties
+	//Xen, unlike XNA Effects, has default values for these properties
 	
-	//The Xen.Graphics.State.TextureSamplerState class represents these settings.
+	//The Xen.Graphics.State.TextureSamplerState struct represents these settings.
 	//it has documentation detailing how they work and what they do visually.
 	
 	MagFilter = LINEAR;		//(default)
