@@ -11,17 +11,38 @@ using Xen.Threading;
 
 namespace Xen
 {
+	/// <summary>
+	/// Interface for an application wrapper (XNA Game application, or WinForms application)
+	/// </summary>
+	interface IXNAAppWrapper : IDisposable
+	{
+		GraphicsDevice GraphicsDevice { get; }
+		bool VSyncEnabled { get; }
+		GameServiceContainer Services { get; }
+		ContentManager Content { get; }
+		GameComponentCollection Components { get; }
+		bool IsActive { get; }
+		event EventHandler Exiting;
+		void Run();
+		void Exit();
+		GameWindow Window { get; }
+		IntPtr WindowHandle { get; }
+	}
+
+
+	/// <summary>
+	/// This class wraps either an XNAGameAppWrapper (which wraps the XNA Game class) or XNAWinFormsAppWrapper, which wraps a windows form. Either class is presented as the same common class
+	/// </summary>
 #if !DEBUG_API
 	[System.Diagnostics.DebuggerStepThrough]
 #endif
-	sealed class XNAGame : Game
+	sealed class XNALogic : IDisposable
 	{
-		GraphicsDeviceManager graphics;
-		RenderTargetUsage presentation;
-		Application parent;
-		internal AppState state;
+		internal readonly AppState state;
+		private readonly Application parent;
+		private IXNAAppWrapper xnaGame;
 
-		internal XNAGame(Application parent)
+		internal XNALogic(Application parent, object host)
 		{
 			this.state = new AppState(parent);
 
@@ -29,87 +50,166 @@ namespace Xen
 			parent.UpdateManager.Add(state);
 			parent.UpdateManager.Add(parent);
 
-			graphics = new GraphicsDeviceManager(this);
-			graphics.PreparingDeviceSettings += new EventHandler<PreparingDeviceSettingsEventArgs>(PreparingDeviceSettings);
-			graphics.MinimumPixelShaderProfile = ShaderProfile.PS_2_0;
-			graphics.MinimumVertexShaderProfile = ShaderProfile.VS_2_0;
-			graphics.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
-			graphics.SynchronizeWithVerticalRetrace = true;
-
-#if DEBUG
 #if !XBOX360
-			Window.Title += " [DEBUG API]";
-#endif
-#endif
-			presentation = RenderTargetUsage.PlatformContents;
-
-			parent.SetWindowSize(graphics);
-			parent.SetupGraphicsDeviceManager(graphics, ref presentation);
-			parent.SetWindowSize(graphics);
-		}
-
-		void PreparingDeviceSettings(object sender, PreparingDeviceSettingsEventArgs e)
-		{
-#if DEBUG
-#if !XBOX360
-			foreach (GraphicsAdapter adapter in GraphicsAdapter.Adapters)
+			if (host == null)
 			{
-				if (adapter.Description.Contains("PerfHUD"))
-				{
-					e.GraphicsDeviceInformation.DeviceType = DeviceType.Reference;
-					e.GraphicsDeviceInformation.Adapter = adapter;
-				}
+				this.xnaGame = new XNAGameAppWrapper(this,parent);
 			}
+			else
+			{
+				WinFormsHostControl _host = host as WinFormsHostControl;
+				if (_host != null)
+					this.xnaGame = new XNAWinFormsHostAppWrapper(this, parent, _host);
+				else
+					this.xnaGame = new XNAGameAppWrapper(this, parent);
+			}
+#else
+			this.xnaGame = new XNAGameAppWrapper(this, parent);
 #endif
-#endif
-			e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage = presentation;
+
+			this.Exiting += delegate
+			{
+				Xen.Graphics.Resource.ClearResourceTracking();
+			};
 		}
 
+		#region XNA Game members
+
+		/// <summary></summary>
+		public GameServiceContainer Services
+		{
+			get 
+			{
+				return xnaGame.Services; 
+			}
+		}
+
+#if !XBOX360
+
+		public bool IsWindowsFormsHost
+		{
+			get { return xnaGame is XNAWinFormsHostAppWrapper; }
+		}
+
+#endif
+
+		/// <summary></summary>
+		public ContentManager Content
+		{
+			get
+			{
+				return xnaGame.Content;
+			}
+		}
+
+		/// <summary></summary>
+		public GameComponentCollection Components
+		{
+			get
+			{
+				return xnaGame.Components;
+			}
+		}
+
+		/// <summary></summary>
+		public bool IsActive
+		{
+			get
+			{
+				return xnaGame.IsActive;
+			}
+		}
+
+		/// <summary></summary>
+		public event EventHandler Exiting
+		{
+			add { xnaGame.Exiting += value;  }
+			remove { xnaGame.Exiting -= value; }
+		}
+
+		/// <summary></summary>
+		public void Run()
+		{
+			xnaGame.Run();
+		}
+
+		/// <summary></summary>
+		public void Exit()
+		{
+			xnaGame.Exit();
+		}
+
+		/// <summary></summary>
+		public GameWindow Window
+		{
+			get { return xnaGame.Window; }
+		}
+
+		/// <summary></summary>
+		public IntPtr WindowHandle
+		{
+			get { return xnaGame.WindowHandle; }
+		}
+
+		public GraphicsDevice GraphicsDevice
+		{
+			get
+			{
+				return xnaGame.GraphicsDevice;
+			}
+		}
+
+		/// <summary></summary>
 		public bool VSyncEnabled
 		{
-			get { return graphics.SynchronizeWithVerticalRetrace; }
+			get
+			{
+				return xnaGame.VSyncEnabled;
+			}
 		}
 
-		protected override void OnExiting(object sender, EventArgs args)
+		/// <summary>
+		/// Dispose the wrapper
+		/// </summary>
+		public void Dispose()
 		{
-			base.OnExiting(sender, args);
-
-			Xen.Graphics.Resource.ClearResourceTracking();
+			if (xnaGame != null)
+			{
+				xnaGame.Dispose();
+				xnaGame = null;
+			}
 		}
 
-		protected override void Initialize()
+		internal Game GetGame()
+		{
+			return xnaGame as Game;
+		}
+
+		#endregion
+
+		public void Initialize()
 		{
 			parent.SetGraphicsDevice(GraphicsDevice);
-			
+
 			parent.Initialise();
 			parent.InitialisePlayerInput(this.state.GetUpdateState().PlayerInput);
 
 			parent.SetReadyToLoadContent();
-
-			base.Initialize();
 		}
 
-		protected override void LoadContent()
+		public void LoadContent()
 		{
 			parent.SetGraphicsDevice(GraphicsDevice);
 
 			parent.SupportsHardwareInstancing = true;
 #if !XBOX360
-			parent.SupportsHardwareInstancing = graphics.GraphicsDevice.GraphicsDeviceCapabilities.VertexShaderVersion.Major >= 3;
+			parent.SupportsHardwareInstancing = GraphicsDevice.GraphicsDeviceCapabilities.VertexShaderVersion.Major >= 3;
 #endif
-
-			base.LoadContent();
 		}
 
-		protected override void UnloadContent()
+		public void Draw()
 		{
-			base.UnloadContent();
-		}
-
-		protected override void Draw(GameTime gameTime)
-		{
-			//state.SetGameTime(gameTime);
-			DrawState state = this.state.GetRenderState(this.graphics.GraphicsDevice);
+			DrawState state = this.state.GetRenderState(GraphicsDevice);
 			state.IncrementFrameIndex();
 
 #if XBOX360
@@ -117,8 +217,6 @@ namespace Xen
 #endif
 
 			parent.OnDraw(state);
-			
-			base.Draw(gameTime);
 		}
 
 
@@ -157,17 +255,15 @@ namespace Xen
 #endif
 		}
 
-		protected override void Update(GameTime gameTime)
+		public void Update(long totalRealTicks, long totalGameTicks)
 		{
-			this.IsFixedTimeStep = false;
-			
 #if !XBOX360
 			lock (inputLock)
 			{
 
 				if (windowForm == null)
 				{
-					windowForm = (System.Windows.Forms.Form)System.Windows.Forms.Form.FromHandle(Window.Handle);
+					windowForm = (System.Windows.Forms.Form)System.Windows.Forms.Form.FromHandle(WindowHandle);
 					windowForm.Deactivate += delegate { windowFocusedBuffer = false; };
 					windowForm.Activated += delegate { windowFocusedBuffer = true; };
 				}
@@ -177,7 +273,7 @@ namespace Xen
 			}
 #endif
 
-			state.SetGameTime(gameTime);
+			state.SetGameTime(totalRealTicks, totalGameTicks);
 
 			parent.CallUpdate(state.GetUpdateState());
 		}
@@ -191,9 +287,9 @@ namespace Xen
 
 				m = mouse;
 				k = keyboard;
-				mouseCentred = XNAGame.mouseCentred;
-				centerPoint = XNAGame.mouseCentrePoint;
-				windowFocused = XNAGame.windowFocused;
+				mouseCentred = XNALogic.mouseCentred;
+				centerPoint = XNALogic.mouseCentrePoint;
+				windowFocused = XNALogic.windowFocused;
 			}
 		}
 #endif
@@ -203,11 +299,112 @@ namespace Xen
 			lock (inputLock)
 			{
 
-				XNAGame.centreMouse = centreMouse;
+				XNALogic.centreMouse = centreMouse;
 			}
 #endif
 		}
+	}
 
+
+
+#if !DEBUG_API
+	[System.Diagnostics.DebuggerStepThrough]
+#endif
+	sealed class XNAGameAppWrapper : Game, IXNAAppWrapper
+	{
+		GraphicsDeviceManager graphics;
+		RenderTargetUsage presentation;
+		Application parent;
+		XNALogic logic;
+
+		internal XNAGameAppWrapper(XNALogic logic, Application parent)
+		{
+			this.parent = parent;
+			this.logic = logic;
+
+			graphics = new GraphicsDeviceManager(this);
+			graphics.PreparingDeviceSettings += new EventHandler<PreparingDeviceSettingsEventArgs>(PreparingDeviceSettings);
+			graphics.MinimumPixelShaderProfile = ShaderProfile.PS_2_0;
+			graphics.MinimumVertexShaderProfile = ShaderProfile.VS_2_0;
+			graphics.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
+			graphics.SynchronizeWithVerticalRetrace = true;
+
+#if DEBUG
+#if !XBOX360
+			Window.Title += " [DEBUG API]";
+#endif
+#endif
+			presentation = RenderTargetUsage.PlatformContents;
+
+			parent.SetWindowSizeAndFormat(graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,graphics.PreferredBackBufferFormat);
+
+			parent.SetupGraphicsDeviceManager(graphics, ref presentation);
+
+			//values may have changed in SetupGraphicsDeviceManager
+			parent.SetWindowSizeAndFormat(graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight, graphics.PreferredBackBufferFormat);
+		}
+
+		void PreparingDeviceSettings(object sender, PreparingDeviceSettingsEventArgs e)
+		{
+#if DEBUG
+#if !XBOX360
+			foreach (GraphicsAdapter adapter in GraphicsAdapter.Adapters)
+			{
+				if (adapter.Description.Contains("PerfHUD"))
+				{
+					e.GraphicsDeviceInformation.DeviceType = DeviceType.Reference;
+					e.GraphicsDeviceInformation.Adapter = adapter;
+				}
+			}
+#endif
+#endif
+			e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage = presentation;
+		}
+
+		public new GraphicsDevice GraphicsDevice
+		{
+			get
+			{
+				return graphics.GraphicsDevice;
+			}
+		}
+
+		public IntPtr WindowHandle
+		{
+			get { return Window.Handle; }
+		}
+
+		public bool VSyncEnabled
+		{
+			get
+			{
+				return graphics.SynchronizeWithVerticalRetrace; 
+			}
+		}
+
+		protected override void Initialize()
+		{
+			logic.Initialize();
+			base.Initialize();
+		}
+
+		protected override void LoadContent()
+		{
+			logic.LoadContent();
+			base.LoadContent();
+		}
+
+		protected override void Draw(GameTime gameTime)
+		{
+			logic.Draw();
+			base.Draw(gameTime);
+		}
+
+		protected override void Update(GameTime gameTime)
+		{
+			this.IsFixedTimeStep = false;
+			logic.Update(gameTime.TotalRealTime.Ticks, gameTime.TotalGameTime.Ticks);
+		}
 	}
 
 	/// <summary>
@@ -355,6 +552,19 @@ namespace Xen
 		bool CullTest(ICuller culler);
 	}
 	/// <summary>
+	/// Interface for an object that can cull instances using an <see cref="ICuller"/>. An example use may be off-screen culling
+	/// </summary>
+	public interface ICullableInstance
+	{
+		/// <summary>
+		/// Perform a cull test on an instance of an object. Returns false if the CullTest fails (for example, the object is offscreen)
+		/// </summary>
+		/// <param name="culler"></param>
+		/// <returns>Returns false if the CullTest fails (for example, the object is offscreen)</returns>
+		/// <param name="instance">Local matrix of the instance to CullTest</param>
+		bool CullTest(ICuller culler, ref Matrix instance);
+	}
+	/// <summary>
 	/// Interface to an object that can be drawn. All drawable objects also are <see cref="ICullable"/>
 	/// </summary>
 	/// <remarks>
@@ -464,11 +674,15 @@ namespace Xen
 		private bool supportsInstancing;
 		private bool supportsInstancingSet;
 		private bool initalised;
-		private XNAGame xnaGame;
+		private XNALogic xnaLogic;
 		private ContentRegister content;
 		private int windowWidth, windowHeight;
 		private bool readToLoadContent;
 		private int minimumFrameRate = 5;
+		internal List<IDraw> preFrameDrawList = new List<IDraw>();
+#if !XBOX360
+		private bool winFormsDispose;
+#endif
 
 		/// <summary>
 		/// XNA Service that returns the <see cref="Application"/>. Useful for warming resources when loading through the content pipeline.
@@ -507,7 +721,7 @@ namespace Xen
 
 		internal bool VSyncEnabled
 		{
-			get { return xnaGame.VSyncEnabled; }
+			get { return xnaLogic.VSyncEnabled; }
 		}
 
 		internal GraphicsDevice GraphicsDevice
@@ -536,7 +750,7 @@ namespace Xen
 		internal void SetReadyToLoadContent()
 		{
 			readToLoadContent = true;
-			this.LoadContent(this.GetProtectedDrawState(graphics), this.xnaGame.Content);
+			this.LoadContent(this.GetProtectedDrawState(graphics), this.xnaLogic.Content);
 		}
 
 
@@ -552,7 +766,7 @@ namespace Xen
 		/// </summary>
 		public System.Collections.IDictionary UserValues
 		{
-			get { return xnaGame.state.UserValues; }
+			get { return xnaLogic.state.UserValues; }
 		}
 		
 		/// <summary>
@@ -577,11 +791,11 @@ namespace Xen
 
 
 		/// <summary>
-		/// Access the XNA base game <see cref="GameComponentCollection"/>. Use with caution, Using Game Components is not tested/supported
+		/// Access the XNA base game <see cref="GameComponentCollection"/>. Use with caution, Using Game Components is not tested/supported (Not supported when using WinForms)
 		/// </summary>
 		public GameComponentCollection XnaComponents
 		{
-			get { return xnaGame.Components; }
+			get { return xnaLogic.Components; }
 		}
 
 		/// <summary>
@@ -589,7 +803,7 @@ namespace Xen
 		/// </summary>
 		public GameServiceContainer Services
 		{
-			get { return xnaGame.Services; }
+			get { return xnaLogic.Services; }
 		}
 
 		/// <summary>
@@ -597,7 +811,7 @@ namespace Xen
 		/// </summary>
 		public bool IsActive
 		{
-			get { return xnaGame.IsActive; }
+			get { return xnaLogic.IsActive; }
 		}
 
 		/// <summary>
@@ -607,7 +821,12 @@ namespace Xen
 		/// <returns></returns>
 		public static implicit operator Game(Application application)
 		{
-			return application.xnaGame;
+			return application.xnaLogic.GetGame();
+		}
+
+		internal XNALogic Logic
+		{
+			get { return xnaLogic; }
 		}
 
 		/// <summary>
@@ -615,16 +834,41 @@ namespace Xen
 		/// </summary>
 		public void Run()
 		{
-			xnaGame = new XNAGame(this);
-			xnaGame.Services.AddService(typeof(ApplicationProviderService), new ApplicationProviderService(this));
-			xnaGame.Exiting += new EventHandler(ShutdownThreadPool);
-			xnaGame.Content.RootDirectory += @"\Content";
+			xnaLogic = new XNALogic(this, IntPtr.Zero);
+			xnaLogic.Services.AddService(typeof(ApplicationProviderService), new ApplicationProviderService(this));
+			xnaLogic.Exiting += new EventHandler(ShutdownThreadPool);
+			xnaLogic.Content.RootDirectory += @"\Content";
 
-			content = new ContentRegister(this, xnaGame.Content);
+			content = new ContentRegister(this, xnaLogic.Content);
 			content.Add(this);
 
-			xnaGame.Run();
+			xnaLogic.Run();
 		}
+
+#if !XBOX360
+
+
+		/// <summary>
+		/// <para>Start the main application loop, running the application within a <see cref="WinFormsHostControl"/>. This method should be called from the entry point of the application</para>
+		/// <para>Note: The application must be running within WinForms application started with <see cref="System.Windows.Forms.Application.Run(System.Windows.Forms.Form)"/></para>
+		/// </summary>
+		public void Run(WinFormsHostControl host)
+		{
+			if (host == null)
+				throw new ArgumentNullException();
+
+			xnaLogic = new XNALogic(this, host);
+			xnaLogic.Services.AddService(typeof(ApplicationProviderService), new ApplicationProviderService(this));
+			xnaLogic.Exiting += new EventHandler(ShutdownThreadPool);
+			xnaLogic.Content.RootDirectory += @"\Content";
+
+			content = new ContentRegister(this, xnaLogic.Content);
+			content.Add(this);
+
+			xnaLogic.Run();
+		}
+
+#endif
 
 		void ShutdownThreadPool(object sender, EventArgs e)
 		{
@@ -632,13 +876,22 @@ namespace Xen
 		}
 
 		/// <summary>
-		/// Immediately shuts down the application
+		/// Immediately shuts down the application (WinForms hosted applications will shutdown at the end of the frame)
 		/// </summary>
 		public virtual void Shutdown()
 		{
-			xnaGame.Exit();
+#if !XBOX360
 
-			xnaGame.Dispose();
+			if (xnaLogic.IsWindowsFormsHost)
+			{
+				winFormsDispose = true;
+				return;
+			}
+
+#endif
+			xnaLogic.Exit();
+
+			xnaLogic.Dispose();
 		}
 
 		internal void OnDraw(DrawState state)
@@ -672,6 +925,11 @@ namespace Xen
 
 			state.PrepareForNewFrame();
 
+			foreach (IDraw item in preFrameDrawList)
+				item.Draw(state);
+
+			preFrameDrawList.Clear();
+
 			Draw(state);
 
 			state.RunDeferredDrawCalls();
@@ -680,6 +938,15 @@ namespace Xen
 
 #if DEBUG
 			currentFrame.End();
+#endif
+
+#if !XBOX360
+			if (winFormsDispose)
+			{
+				xnaLogic.Exit();
+
+				xnaLogic.Dispose();
+			}
 #endif
 		}
 
@@ -714,18 +981,18 @@ namespace Xen
 		/// <summary>
 		/// Override this method to change the graphics device options before the application starts (eg, set resolution, fullscreen, etc)
 		/// </summary>
-		/// <param name="graphics"></param>
+		/// <param name="graphics">XNA GraphicsDeviceManager (NOTE: This value will be null when displaying with Windows Forms)</param>
 		/// <param name="presentation">Allows modification of the <see cref="PresentationParameters"/> <see cref="RenderTargetUsage"/> for the primary display</param>
 		protected internal virtual void SetupGraphicsDeviceManager(GraphicsDeviceManager graphics, ref RenderTargetUsage presentation)
 		{
 		}
 
-		internal void SetWindowSize(GraphicsDeviceManager manager)
+		internal void SetWindowSizeAndFormat(int width, int height, SurfaceFormat format)
 		{
-			this.windowWidth = manager.PreferredBackBufferWidth;
-			this.windowHeight = manager.PreferredBackBufferHeight;
+			this.windowWidth = width;
+			this.windowHeight = height;
 
-			screenFormat = manager.PreferredBackBufferFormat;
+			screenFormat = format;
 			screenMultisample = MultiSampleType.None;
 		}
 
@@ -733,17 +1000,17 @@ namespace Xen
 
 		void IDisposable.Dispose()
 		{
-			xnaGame.Dispose();
+			xnaLogic.Dispose();
 		}
 
 		#endregion
 
 		/// <summary>
-		/// Gets the Window the application is being displayed on
+		/// Gets the Window the application is being displayed on (This value is null when using Windows Forms hosting)
 		/// </summary>
 		public GameWindow Window
 		{
-			get { return xnaGame.Window; }
+			get { return xnaLogic.Window; }
 		}
 
 		/// <summary>
@@ -813,7 +1080,7 @@ namespace Xen
 
 		internal DrawState GetProtectedDrawState(Microsoft.Xna.Framework.Graphics.GraphicsDevice graphics)
 		{
-			return xnaGame.state.GetProtectedDrawState(graphics);
+			return xnaLogic.state.GetProtectedDrawState(graphics);
 		}
 
 		/// <summary>
@@ -835,7 +1102,7 @@ namespace Xen
 
 		void IContentOwner.LoadContent(ContentRegister content, DrawState state, ContentManager manager)
 		{
-			xnaGame.state.GetRenderState(state.BeginGetGraphicsDevice(Xen.Graphics.State.StateFlag.None)).DirtyInternalRenderState(Xen.Graphics.State.StateFlag.All);
+			xnaLogic.state.GetRenderState(state.BeginGetGraphicsDevice(Xen.Graphics.State.StateFlag.None)).DirtyInternalRenderState(Xen.Graphics.State.StateFlag.All);
 			state.EndGetGraphicsDevice();
 			if (readToLoadContent)
 				this.LoadContent(state, manager);
@@ -843,7 +1110,7 @@ namespace Xen
 
 		void IContentOwner.UnloadContent(ContentRegister content, DrawState state)
 		{
-			xnaGame.state.GetRenderState(state.BeginGetGraphicsDevice(Xen.Graphics.State.StateFlag.None)).DirtyInternalRenderState(Xen.Graphics.State.StateFlag.All);
+			xnaLogic.state.GetRenderState(state.BeginGetGraphicsDevice(Xen.Graphics.State.StateFlag.None)).DirtyInternalRenderState(Xen.Graphics.State.StateFlag.All);
 			state.EndGetGraphicsDevice();
 			this.UnloadContent(state);
 		}

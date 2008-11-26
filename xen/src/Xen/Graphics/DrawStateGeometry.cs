@@ -312,7 +312,7 @@ namespace Xen
 		}
 
 		/// <summary>
-		/// Draw an XNA vertex buffer, using state managment to reduce redundant state changes.
+		/// Draw an XNA vertex buffer, using state management to reduce redundant state changes.
 		/// </summary>
 		/// <param name="vertices"></param>
 		/// <param name="indices"></param>

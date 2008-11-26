@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 namespace Xen.Ex.Scene
 {
 	/// <summary>
-	/// <para>Stores a list of IDraw instances in a scene partitioning binary tree</para>
+	/// <para>Stores a list of IDraw instances in a scene partitioning binary tree, this clas can be used to improve CullTest performance for large numbers of objects.</para>
 	/// <para>NOTE: Instances are assumed to not be moving (the must be static)</para>
 	/// </summary>
 	public sealed class StaticBinaryTreePartition : StaticPartition

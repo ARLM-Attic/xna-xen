@@ -132,6 +132,7 @@
     </Compile>
     <Compile Include="Material\MaterialShader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scene\Sort.cs" />
     <Compile Include="Scene\StaticBinaryTreePartition.cs" />
     <Compile Include="Scene\StaticPartition.cs" />
     <Compile Include="Shaders\Simple.fx.cs">

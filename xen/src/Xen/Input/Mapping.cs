@@ -67,7 +67,8 @@ namespace Xen.Input.Mapping
 		
 #if !XBOX360
 		/// <summary>
-		/// [Windows Only] When using <see cref="ControlInput.KeyboardMouse">KeyboardMouse</see> as the player <see cref="PlayerInput.ControlInput">ControlInput</see>, Sets the visibility state of the mouse.
+		/// <para>[Windows Only] When using <see cref="ControlInput.KeyboardMouse">KeyboardMouse</see> as the player <see cref="PlayerInput.ControlInput">ControlInput</see>, Sets the visibility state of the mouse.</para>
+		/// <para>This property has no effect when using Windows Forms hosting</para>
 		/// </summary>
 #else
 		/// <summary>
@@ -91,7 +92,9 @@ namespace Xen.Input.Mapping
 			if (inputType == ControlInput.KeyboardMouse)
 			{
 				gameState.DesireMouseCentred |= lockMouse;
-				((Game)gameState.Application).IsMouseVisible = mouseVisible;
+				Game game = (Game)gameState.Application;
+				if (game != null)
+					game.IsMouseVisible = mouseVisible;
 
 				if (lockMouse && gameState.MouseCentred)
 				{

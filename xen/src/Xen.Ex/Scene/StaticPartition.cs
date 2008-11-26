@@ -112,10 +112,12 @@ namespace Xen.Ex.Scene
 					addList[indexB] = itemA;
 					addList[indexA] = itemB;
 				}
+					
+				preCuller.BeginPreCullItem(state);
 				
 				foreach (IDraw item in addList)
 				{
-					preCuller.BeginPreCullItem(state);
+					preCuller.ResetPreCullItem();
 
 					if (item.CullTest(state))
 						item.Draw(state);
@@ -283,6 +285,7 @@ namespace Xen.Ex.Scene
 
 	/// <summary>
 	/// <para>When this class is used as a preculler, it will compute the cull bounds of the cull test calls made when drawing</para>
+	/// <para>Note: This class is somewhat inefficient on the Xbox right now. This will be improved in a future version.</para>
 	/// </summary>
 	public class BoundsCalculatingPreCuller : ICullPrimitive
 	{
@@ -293,7 +296,8 @@ namespace Xen.Ex.Scene
 		private bool reset;
 
 		/// <summary>
-		/// Call this method before drawing/culling an item. Match this method call with a call to TryGetBounds after the cull/draw is complete
+		/// <para>Call this method before drawing/culling an item. Match this method call with a call to TryGetBounds after the cull/draw is complete</para>
+		/// <para>The <see cref="ResetPreCullItem"/> method may also be used for subsequent items that are culled, provided the world matrix hasn't changed.</para>
 		/// </summary>
 		/// <param name="state"></param>
 		public void BeginPreCullItem(DrawState state)
@@ -316,6 +320,18 @@ namespace Xen.Ex.Scene
 								(matrix.M12 * matrix.M12 + matrix.M22 * matrix.M22 + matrix.M32 * matrix.M32)),
 								(matrix.M13 * matrix.M13 + matrix.M23 * matrix.M23 + matrix.M33 * matrix.M33)));
 			}
+		}
+
+		/// <summary>
+		/// <para>If drawing/culling multiple items with the same parent (Where the world matrix does not change), this method can be used in place of calls to <see cref="BeginPreCullItem"/></para>
+		/// <para>This method is considerably faster than <see cref="BeginPreCullItem"/></para>
+		/// </summary>
+		/// <param name="state"></param>
+		public void ResetPreCullItem()
+		{
+			minBound = new Vector3();
+			maxBound = new Vector3();
+			reset = true;
 		}
 
 		/// <summary>

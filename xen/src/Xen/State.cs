@@ -79,6 +79,7 @@ namespace Xen
 		private readonly GamePadState[] pads;
 		private UpdateManager manager;
 		private bool async;
+		internal bool validPreFrameContext;
 #if !XBOX360
 		private readonly KeyboardInputState keyboard = new KeyboardInputState();
 		private readonly MouseInputState mouse = new MouseInputState();
@@ -130,6 +131,21 @@ namespace Xen
 			}
 		}
 #endif
+
+		/// <summary>
+		/// <para>The the item passed in will be drawn at the start of the next frame, before the main application Draw method is called</para>
+		/// <para>This method may only be called from a <see cref="UpdateFrequency.OncePerFrame"/> context.</para>
+		/// </summary>
+		/// <param name="draw"></param>
+		public void PreFrameDraw(IDraw draw)
+		{
+			if (!validPreFrameContext)
+				throw new InvalidOperationException("PreFrameDraw() may only be called from a UpdateFrequency.OncePerFrame context");
+			if (draw == null)
+				throw new ArgumentNullException();
+
+			application.preFrameDrawList.Add(draw);
+		}
 
 		/// <summary>
 		/// True if the current state is potentially running on multiple threads
@@ -711,14 +727,14 @@ namespace Xen
 
 		public const long TicksInOneSecond = 10000000L;
 
-		internal void SetGameTime(GameTime time)
+		internal void SetGameTime(long totalRealTicks, long totalGameTicks)
 		{
 			if (initialRealTime == 0)
-				initialRealTime = time.TotalRealTime.Ticks;
+				initialRealTime = totalRealTicks;
 
-			this.realTime = time.TotalRealTime.Ticks - initialRealTime;
+			this.realTime = totalRealTicks - initialRealTime;
 			this.totalTime += deltaTime;
-			long delta = (time.TotalGameTime.Ticks - slowDownBias) - totalTime;
+			long delta = (totalGameTicks - slowDownBias) - totalTime;
 
 			int minFps = application.MinimumDesiredFrameRate;
 			if (minFps != 0)
@@ -811,7 +827,8 @@ namespace Xen
 #if !XBOX360
 
 			mousePrev = new Point(mouse.X, mouse.Y);
-			((XNAGame)application).GetInputState(ref keyboard, ref mouse, ref windowFocused, ref mouseCen, ref mouseCenTo);
+			application.Logic.GetInputState(ref keyboard, ref mouse, ref windowFocused, ref mouseCen, ref mouseCenTo);
+
 			if (!windowFocused)
 				focusSkip = 5;
 			if (!mousePosSet || focusSkip > 0)
@@ -822,7 +839,7 @@ namespace Xen
 				mousePosSet = true;
 			}
 
-			XNAGame.SetMouseCentreState(desireMouseCen && windowFocused);
+			XNALogic.SetMouseCentreState(desireMouseCen && windowFocused);
 			desireMouseCen = false;
 
 #endif

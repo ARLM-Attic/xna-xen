@@ -625,7 +625,7 @@ namespace Xen
 		}
 
 		/// <summary>
-		/// Auto detect scaled matrices in the world matrix stack. Default to FALSE. Corrects frustum culling logic when scaling, but causes a sligh performance loss.
+		/// Auto detect scaled matrices in the world matrix stack. Default to FALSE. Corrects frustum culling logic when scaling, but causes a slight performance loss.
 		/// </summary>
 		public bool WorldMatrixDetectScale
 		{
@@ -779,6 +779,102 @@ namespace Xen
 
 			return true;
 		}
+
+
+		bool ICuller.TestBox(Vector3 min, Vector3 max, ref Matrix localMatrix)
+		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).TestWorldBox(ref min, ref max, ref localMatrix);
+
+			Matrix matrix;
+			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+#if DEBUG
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
+#endif
+#if DEBUG
+			if (camera == null)
+				throw new ArgumentNullException("DrawState.Camera == null");
+#endif
+			for (int i = preCullerCount - 1; i >= 0; i--)
+			{
+				if (!preCullers[i].TestWorldBox(ref min, ref max, ref matrix))
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
+#endif
+					return false;
+				}
+			}
+
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, this.worldMatrix.detectScale ? 0 : 1))
+			{
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
+#endif
+				return false;
+			}
+
+			for (int i = 0; i < postCullerCount; i++)
+			{
+				if (!postCullers[i].TestWorldBox(ref min, ref max, ref matrix))
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
+#endif
+					return false;
+				}
+			}
+			return true;
+		}
+		bool ICuller.TestBox(ref Vector3 min, ref Vector3 max, ref Matrix localMatrix)
+		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).TestWorldBox(ref min, ref max, ref localMatrix);
+
+			Matrix matrix;
+			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+#if DEBUG
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
+#endif
+#if DEBUG
+			if (camera == null)
+				throw new ArgumentNullException("DrawState.Camera == null");
+#endif
+
+			for (int i = preCullerCount - 1; i >= 0; i--)
+			{
+				if (!preCullers[i].TestWorldBox(ref min, ref max, ref matrix))
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
+#endif
+					return false;
+				}
+			}
+
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, worldMatrix.detectScale ? 0 : 1))
+			{
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
+#endif
+				return false;
+			}
+
+			for (int i = 0; i < postCullerCount; i++)
+			{
+				if (!postCullers[i].TestWorldBox(ref min, ref max, ref matrix))
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
+#endif
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+
 		bool ICuller.TestSphere(float radius)
 		{
 #if DEBUG
@@ -842,7 +938,10 @@ namespace Xen
 				throw new ArgumentNullException("DrawState.Camera == null");
 #endif
 			Vector3 pos;
-			Vector3.Transform(ref position, ref worldMatrix.value, out pos);
+			if (worldMatrix.IsIdentity)
+				pos = position;
+			else
+				Vector3.Transform(ref position, ref worldMatrix.value, out pos);
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -876,6 +975,7 @@ namespace Xen
 
 			return true;
 		}
+
 
 
 		ContainmentType ICuller.IntersectBox(Vector3 min, Vector3 max)
@@ -986,6 +1086,123 @@ namespace Xen
 
 			return intersect ? ContainmentType.Intersects : ContainmentType.Contains;
 		}
+
+
+		ContainmentType ICuller.IntersectBox(Vector3 min, Vector3 max, ref Matrix localMatrix)
+		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).IntersectWorldBox(ref min, ref max, ref localMatrix);
+
+			Matrix matrix;
+			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+
+			ContainmentType type; bool intersect = false;
+#if DEBUG
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
+#endif
+#if DEBUG
+			if (camera == null)
+				throw new ArgumentNullException("DrawState.Camera == null");
+#endif
+			for (int i = preCullerCount - 1; i >= 0; i--)
+			{
+				type = preCullers[i].IntersectWorldBox(ref min, ref max, ref matrix);
+				if (type == ContainmentType.Disjoint)
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
+#endif
+					return type;
+				}
+				if (type == ContainmentType.Intersects)
+					intersect = true;
+			}
+
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, worldMatrix.detectScale ? 0 : 1);
+			if (type == ContainmentType.Disjoint)
+			{
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
+#endif
+				return type;
+			}
+			if (type == ContainmentType.Intersects)
+				intersect = true;
+
+			for (int i = 0; i < postCullerCount; i++)
+			{
+				type = postCullers[i].IntersectWorldBox(ref min, ref max, ref matrix);
+				if (type == ContainmentType.Disjoint)
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
+#endif
+					return type;
+				}
+				if (type == ContainmentType.Intersects)
+					intersect = true;
+			}
+			return intersect ? ContainmentType.Intersects : ContainmentType.Contains;
+		}
+		ContainmentType ICuller.IntersectBox(ref Vector3 min, ref Vector3 max, ref Matrix localMatrix)
+		{
+			if (worldMatrix.IsIdentity)
+				return ((ICuller)this).IntersectWorldBox(ref min, ref max, ref localMatrix);
+
+			Matrix matrix;
+			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+
+			ContainmentType type; bool intersect = false;
+#if DEBUG
+			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
+#endif
+#if DEBUG
+			if (camera == null)
+				throw new ArgumentNullException("DrawState.Camera == null");
+#endif
+
+			for (int i = preCullerCount - 1; i >= 0; i--)
+			{
+				type = preCullers[i].IntersectWorldBox(ref min, ref max, ref matrix);
+				if (type == ContainmentType.Disjoint)
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
+#endif
+					return type;
+				}
+				if (type == ContainmentType.Intersects)
+					intersect = true;
+			}
+
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, worldMatrix.detectScale ? 0 : 1);
+			if (type == ContainmentType.Disjoint)
+			{
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
+#endif
+				return type;
+			}
+			if (type == ContainmentType.Intersects)
+				intersect = true;
+
+			for (int i = 0; i < postCullerCount; i++)
+			{
+				type = postCullers[i].IntersectWorldBox(ref min, ref max, ref matrix);
+				if (type == ContainmentType.Disjoint)
+				{
+#if DEBUG
+					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
+#endif
+					return type;
+				}
+				if (type == ContainmentType.Intersects)
+					intersect = true;
+			}
+
+			return intersect ? ContainmentType.Intersects : ContainmentType.Contains;
+		}
+
 		ContainmentType ICuller.IntersectSphere(float radius)
 		{
 			ContainmentType type; bool intersect = false;
@@ -1170,7 +1387,7 @@ namespace Xen
 				}
 			}
 
-			if (!camera.TestWorldBox(ref min, ref max, ref world))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1206,7 +1423,7 @@ namespace Xen
 				}
 			}
 
-			if (!camera.TestWorldBox(ref min, ref max, ref world))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1243,7 +1460,7 @@ namespace Xen
 				}
 			}
 
-			if (!camera.TestWorldBox(ref min, ref max))
+			if (!FrustumCull.AABBInFrustum(camera.GetCullingPlanes(), ref min, ref max))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1279,7 +1496,7 @@ namespace Xen
 				}
 			}
 
-			if (!camera.TestWorldBox(ref min, ref max))
+			if (!FrustumCull.AABBInFrustum(camera.GetCullingPlanes(), ref min, ref max))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1317,7 +1534,7 @@ namespace Xen
 				}
 			}
 
-			if (!camera.TestWorldSphere(radius, ref position))
+			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(),radius,ref position))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
@@ -1353,7 +1570,7 @@ namespace Xen
 				}
 			}
 
-			if (!camera.TestWorldSphere(radius, ref position))
+			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius, ref position))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
@@ -1395,7 +1612,8 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = camera.IntersectWorldBox(ref min, ref max, ref world);
+
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1441,7 +1659,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = camera.IntersectWorldBox(ref min, ref max, ref world);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1488,7 +1706,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = camera.IntersectWorldBox(ref min, ref max);
+			type = FrustumCull.AABBIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1534,7 +1752,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = camera.IntersectWorldBox(ref min, ref max);
+			type = FrustumCull.AABBIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1582,7 +1800,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = camera.IntersectWorldSphere(radius, ref position);
+			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(),radius,ref position);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1628,7 +1846,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = camera.IntersectWorldSphere(radius, ref position);
+			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius, ref position);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -2152,7 +2370,7 @@ namespace Xen
         }
 
 		/// <summary>
-		/// Gets the unique ID index for a non-global shader attribute. For use in a call to <see cref="Xen.Graphics.IShader.SetAttribute(IShaderSystem,int,ref Matrix)"/>, <see cref="Xen.Graphics.IShader.SetTexture(IShaderSystem,int,Microsoft.Xna.Framework.Graphics.Texture2D)"/> or <see cref="Xen.Graphics.IShader.SetSamplerState(IShaderSystem,int,TextureSamplerState)"/>
+		/// Gets the unique ID index for a non-global shader attribute. For use in a call to IShader.SetAttribute, IShader.SetTexture or IShader.SetSamplerState"/>
 		/// </summary>
 		/// <param name="name">case sensitive name of the shader attribute</param>
 		/// <returns>globally unique index of the attribute name</returns>
@@ -3840,5 +4058,94 @@ namespace Xen
 
 		#endregion
 
+
+		#region Project / UnProject
+
+		/// <summary>
+		/// <para>Projects a position in 3D space into screen pixel coordinates</para>
+		/// <para>Returns false if the projected point is behind the camera</para>
+		/// </summary>
+		/// <param name="position">3D position to project into screen coordinates</param>
+		/// <param name="screenCoordinate">screen coordinates of the projected position</param>
+		/// <returns>True if the projected position is in front of the camera</returns>
+		public bool ProjectToScreen(ref Vector3 position, out Vector2 screenCoordinate)
+		{
+			Vector3 pos;
+			Vector3.Transform(ref position, ref worldMatrix.value, out pos);
+
+			Vector4 worldPositionW = new Vector4(pos, 1.0f);
+
+			this.ms_ViewProjection.UpdateValue(this.frame);
+
+			Vector2 drawTargetSize;
+			int index = -1;
+			DrawTarget.GetWidthHeightAsVector(out drawTargetSize,ref index);
+
+			Vector4.Transform(ref worldPositionW, ref this.ms_ViewProjection.value, out worldPositionW);
+
+			if (worldPositionW.W != 0)
+				worldPositionW.W = 1.0f / worldPositionW.W;
+
+			screenCoordinate = new Vector2(worldPositionW.X * worldPositionW.W,worldPositionW.Y * worldPositionW.W);
+
+			screenCoordinate.X = drawTargetSize.X * (screenCoordinate.X * 0.5f + 0.5f);
+			screenCoordinate.Y = drawTargetSize.Y * (screenCoordinate.Y * 0.5f + 0.5f);
+
+			return worldPositionW.Z > 0;
+		}
+
+		/// <summary>
+		/// Projects a position in screen coordinates into a 3D position in world space
+		/// </summary>
+		/// <param name="screenPosition">Position in screen space to project into world space</param>
+		/// <param name="projectDepth">Depth to project from the camera position</param>
+		/// <param name="position">projected position</param>
+		public void ProjectFromScreen(ref Vector2 screenPosition, float projectDepth, out Vector3 position)
+		{
+			this.ms_ViewProjection_Inverse.UpdateValue(this.frame);
+
+			Vector2 drawTargetSize;
+			int index = -1;
+			DrawTarget.GetWidthHeightAsVector(out drawTargetSize, ref index);
+
+			Vector4 coordinate = new Vector4(0,0,0.5f,1);
+			if (drawTargetSize.X != 0)
+				coordinate.X = ((screenPosition.X / drawTargetSize.X) - 0.5f) * 2;
+			if (drawTargetSize.Y != 0)
+				coordinate.Y = ((screenPosition.Y / drawTargetSize.Y) - 0.5f) * 2;
+
+			Vector4.Transform(ref coordinate, ref ms_ViewProjection_Inverse.value, out coordinate);
+
+			if (coordinate.W != 0)
+			{
+				coordinate.W = 1.0f / coordinate.W;
+				coordinate.X *= coordinate.W;
+				coordinate.Y *= coordinate.W;
+				coordinate.Z *= coordinate.W;
+				coordinate.W = 1;
+			}
+
+			Vector3 cameraPos;
+			camera.GetCameraPosition(out cameraPos);
+
+			Vector3 difference = new Vector3();
+			difference.X = coordinate.X - cameraPos.X;
+			difference.Y = coordinate.Y - cameraPos.Y;
+			difference.Z = coordinate.Z - cameraPos.Z;
+
+			if (difference.X != 0 || difference.Y != 0 || difference.Y != 0)
+				difference.Normalize();
+
+			difference.X *= projectDepth;
+			difference.Y *= projectDepth;
+			difference.Z *= projectDepth;
+
+			position = new Vector3();
+			position.X = difference.X + cameraPos.X;
+			position.Y = difference.Y + cameraPos.Y;
+			position.Z = difference.Z + cameraPos.Z;
+		}
+
+		#endregion
 	}
 }

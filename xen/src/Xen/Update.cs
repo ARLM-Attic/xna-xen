@@ -71,7 +71,6 @@ namespace Xen
 			set { pauseIfAppInactive = value; }
 		}
 
-
 		/// <summary>
 		/// Construct the update manager
 		/// </summary>
@@ -191,6 +190,9 @@ namespace Xen
 			long currentTotalTime = state.TotalTimeTicks;
 			long currentRealTime = state.TotalRealTimeTicks;
 
+			bool preDrawState = state.validPreFrameContext;
+			state.validPreFrameContext = false;
+
 			int count = 0;
 			while (updateTimer >= delta)
 			{
@@ -208,6 +210,7 @@ namespace Xen
 					if (i == (int)UpdateFrequency.OncePerFrame ||
 						i == (int)UpdateFrequency.OncePerFrameAsync)
 						continue;
+
 					Updater updater = updaters[i][frameUpdateIndex[i]];
 
 					if (updater != null)
@@ -235,18 +238,31 @@ namespace Xen
 					if (i == (int)UpdateFrequency.OncePerFrame ||
 						i == (int)UpdateFrequency.OncePerFrameAsync)
 						continue;
+
 					frameUpdateIndex[i]++;
 					if (frameUpdateIndex[i] == updaters[i].Length)
 						frameUpdateIndex[i] = 0;
 				}
 
-				for (int i = 0; i < addList.Count; i++)
+
+				if (addList.Count > 0)
 				{
-					UpdateFrequency frequency = addList[i].Key.Update(state);
-					if (frequency != UpdateFrequency.Terminate)
-						AddItem(addList[i].Key, frequency, addList[i].Value);
+					state.UpdateDelta(0, 0, 0);
+					state.validPreFrameContext = true;
+
+					for (int i = 0; i < addList.Count; i++)
+					{
+						UpdateFrequency frequency = addList[i].Key.Update(state);
+						if (frequency != UpdateFrequency.Terminate)
+							AddItem(addList[i].Key, frequency, addList[i].Value);
+					}
+
+					state.validPreFrameContext = false;
+
+					addList.Clear();
+
+					resetUpdate = true;
 				}
-				addList.Clear();
 
 				totalTime += delta;
 				unchecked { interval++; }
@@ -256,6 +272,8 @@ namespace Xen
 			{
 				state.Update(currentDts, currentHz, currentSeconds, currentDeltaTime, currentTotalTime, currentRealTime);
 			}
+
+			state.validPreFrameContext = true;
 
 			//update the OncePerFrame
 			{
@@ -276,18 +294,28 @@ namespace Xen
 						moveList[i].Clear();
 					}
 				}
+
 			}
 
-			for (int i = 0; i < addList.Count; i++)
+			if (addList.Count > 0)
 			{
-				UpdateFrequency frequency = addList[i].Key.Update(state);
-				if (frequency != UpdateFrequency.Terminate)
-					AddItem(addList[i].Key, frequency, addList[i].Value);
+				state.UpdateDelta(0, 0, 0);
+
+				for (int i = 0; i < addList.Count; i++)
+				{
+					UpdateFrequency frequency = addList[i].Key.Update(state);
+					if (frequency != UpdateFrequency.Terminate)
+						AddItem(addList[i].Key, frequency, addList[i].Value);
+				}
+
+				state.Update(currentDts, currentHz, currentSeconds, currentDeltaTime, currentTotalTime, currentRealTime);
+				addList.Clear();
 			}
-			addList.Clear();
 
 			state.UpdateManager = parent;
 			updating = false;
+
+			state.validPreFrameContext = preDrawState;
 
 			return UpdateFrequency.OncePerFrame;
 		}

@@ -69,6 +69,7 @@ namespace Xen.Camera
 				{
 					computedAspect = value;
 					changeIndex = this.changeIndex - 1;
+					set = false;
 				}
 			}
 

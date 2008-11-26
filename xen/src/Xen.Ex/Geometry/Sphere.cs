@@ -12,7 +12,7 @@ namespace Xen.Ex.Geometry
 	/// <summary>
 	/// A simple class that constructs spherical geometry
 	/// </summary>
-	public class Sphere : IDrawBatch, IBeginEndDrawBatch
+	public class Sphere : IDrawBatch, IBeginEndDrawBatch, ICullableInstance
 	{
 		IVertices verts;
 		IIndices inds;
@@ -155,6 +155,15 @@ namespace Xen.Ex.Geometry
 		public void EndDrawBatch(DrawState state, StreamFrequency.InstanceBuffer buffer)
 		{
 			state.EndDrawBatch(verts, inds, PrimitiveType.TriangleList, buffer);
+		}
+
+		#endregion
+
+		#region ICullableInstance Members
+
+		public bool CullTest(ICuller culler, ref Matrix instance)
+		{
+			return culler.TestSphere(this.radius, instance.Translation);
 		}
 
 		#endregion

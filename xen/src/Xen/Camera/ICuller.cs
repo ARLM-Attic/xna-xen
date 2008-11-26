@@ -137,6 +137,23 @@ namespace Xen
 		bool TestBox(Vector3 min, Vector3 max);
 
 		/// <summary>
+		/// FrustumCull test a box with a local matrix. World matrix will be inferred (eg, current <see cref="DrawState"/> <see cref="DrawState.GetWorldMatrix(out Matrix)">world matrix</see>)
+		/// </summary>
+		/// <param name="min">box minimum point (in local space)</param>
+		/// <param name="max">box maximum point (in local space)</param>
+		/// <param name="boxMatrix">Local matrix of the box</param>
+		/// <returns>True if the test passes (eg, box is on screen, box intersects shape, etc)</returns>
+		bool TestBox(ref Vector3 min, ref Vector3 max, ref Matrix boxMatrix);
+		/// <summary>
+		/// FrustumCull test a box with a local matrix. World matrix will be inferred (eg, current <see cref="DrawState"/> <see cref="DrawState.GetWorldMatrix(out Matrix)">world matrix</see>)
+		/// </summary>
+		/// <param name="min">box minimum point (in local space)</param>
+		/// <param name="max">box maximum point (in local space)</param>
+		/// <param name="boxMatrix">Local matrix of the box</param>
+		/// <returns>True if the test passes (eg, box is on screen, box intersects shape, etc)</returns>
+		bool TestBox(Vector3 min, Vector3 max, ref Matrix boxMatrix);
+
+		/// <summary>
 		/// FrustumCull test a sphere. World position will be inferred (eg, current <see cref="DrawState"/> <see cref="DrawState.GetWorldMatrix(out Matrix)">world matrix</see>)
 		/// </summary>
 		/// <param name="radius">Radius of the sphere</param>
@@ -174,6 +191,25 @@ namespace Xen
 		/// <param name="max">box maximum point (in local space)</param>
 		/// <returns>Intersetction test result</returns>
 		ContainmentType IntersectBox(Vector3 min, Vector3 max);
+
+		/// <summary>
+		/// <para>Intersect a box with a local matrix. World matrix will be inferred (eg, current <see cref="DrawState"/> <see cref="DrawState.GetWorldMatrix(out Matrix)">world matrix</see>)</para>
+		/// <para>Note: Intersection tests may be less efficient than boolean TestBox</para>
+		/// </summary>
+		/// <param name="min">box minimum point (in local space)</param>
+		/// <param name="max">box maximum point (in local space)</param>
+		/// <param name="boxMatrix">Local matrix of the box</param>
+		/// <returns>Intersetction test result</returns>
+		ContainmentType IntersectBox(ref Vector3 min, ref Vector3 max, ref Matrix boxMatrix);
+		/// <summary>
+		/// <para>Intersect a box with a local matrix. World matrix will be inferred (eg, current <see cref="DrawState"/> <see cref="DrawState.GetWorldMatrix(out Matrix)">world matrix</see>)</para>
+		/// <para>Note: Intersection tests may be less efficient than boolean TestBox</para>
+		/// </summary>
+		/// <param name="min">box minimum point (in local space)</param>
+		/// <param name="max">box maximum point (in local space)</param>
+		/// <param name="boxMatrix">Local matrix of the box</param>
+		/// <returns>Intersetction test result</returns>
+		ContainmentType IntersectBox(Vector3 min, Vector3 max, ref Matrix boxMatrix);
 
 		/// <summary>
 		/// <para>Intersect a sphere. World position will be inferred (eg, current <see cref="DrawState"/> <see cref="DrawState.GetWorldMatrix(out Matrix)">world matrix</see>)</para>
@@ -225,6 +261,9 @@ namespace Xen
 	}
 
 	//runs culling logic (so the logic isn't duplicated amongst implementations)
+#if !DEBUG_API
+	[System.Diagnostics.DebuggerStepThrough]
+#endif
 	internal static class FrustumCull
 	{
 		internal static bool SphereInFrustum(Plane[] frustum, float radius, ref Vector3 position)
@@ -263,7 +302,25 @@ namespace Xen
 				//		Math.Max(Math.Max(world.M13, world.M23), Math.Max(Math.Max(world.M31, world.M32), world.M33)));//min for unit matrix is Math.Sqrt(1.0/3.0), or .577, so mult by Math.Sqrt(3), which is 1.732
 
 				//min for a box of size [1,-1] is.. 1! box corner of (1,1,1) will mean a sphere of size Math.Sqrt(3), or 1.732
-				baseRadius *= Math.Max(Math.Max(Math.Max(Math.Abs(maxExtents.X), Math.Abs(minExtents.X)), Math.Max(Math.Abs(maxExtents.Y), Math.Abs(minExtents.Y))), Math.Max(Math.Abs(maxExtents.Z), Math.Abs(minExtents.Z)));
+
+				float max;
+				float value1,value2;
+
+				value1 = Math.Abs(minExtents.X);
+				value2 = Math.Abs(maxExtents.X);
+				max = value1 > value2 ? value1 : value2;
+
+				value1 = Math.Abs(minExtents.Y);
+				value2 = Math.Abs(maxExtents.Y);
+				max = max > value1 ? max : value1;
+				max = max > value2 ? max : value2;
+
+				value1 = Math.Abs(minExtents.Z);
+				value2 = Math.Abs(maxExtents.Z);
+				max = max > value1 ? max : value1;
+				max = max > value2 ? max : value2;
+
+				baseRadius *= max;
 				baseRadius *= 4; // Math.Sqrt(3) * 2 = 3.464..., round up to 4 to be safe.
 
 				bool overlap = false;
@@ -358,7 +415,25 @@ namespace Xen
 				//		Math.Max(Math.Max(world.M13, world.M23), Math.Max(Math.Max(world.M31, world.M32), world.M33)));//min for unit matrix is Math.Sqrt(1.0/3.0), or .577, so mult by Math.Sqrt(3), which is 1.732
 
 				//min for a box of size [1,-1] is.. 1! box corner of (1,1,1) will mean a sphere of size Math.Sqrt(3), or 1.732
-				baseRadius *= Math.Max(Math.Max(Math.Max(Math.Abs(maxExtents.X), Math.Abs(minExtents.X)), Math.Max(Math.Abs(maxExtents.Y), Math.Abs(minExtents.Y))), Math.Max(Math.Abs(maxExtents.Z), Math.Abs(minExtents.Z)));
+
+				float max;
+				float value1, value2;
+
+				value1 = Math.Abs(minExtents.X);
+				value2 = Math.Abs(maxExtents.X);
+				max = value1 > value2 ? value1 : value2;
+
+				value1 = Math.Abs(minExtents.Y);
+				value2 = Math.Abs(maxExtents.Y);
+				max = max > value1 ? max : value1;
+				max = max > value2 ? max : value2;
+
+				value1 = Math.Abs(minExtents.Z);
+				value2 = Math.Abs(maxExtents.Z);
+				max = max > value1 ? max : value1;
+				max = max > value2 ? max : value2;
+
+				baseRadius *= max;
 				baseRadius *= 4; // Math.Sqrt(3) * 2 = 3.464..., round up to 4 to be safe.
 
 				foreach (Plane plane in frustum)

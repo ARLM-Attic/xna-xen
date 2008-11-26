@@ -13,7 +13,7 @@ namespace Xen.Ex.Geometry
 	/// <summary>
 	/// Cube geometry
 	/// </summary>
-	public class Cube : IDrawBatch, IBeginEndDrawBatch
+	public class Cube : IDrawBatch, IBeginEndDrawBatch, ICullableInstance
 	{
 		IVertices verts;
 		IIndices inds;
@@ -171,6 +171,15 @@ namespace Xen.Ex.Geometry
 		public void EndDrawBatch(DrawState state, StreamFrequency.InstanceBuffer buffer)
 		{
 			state.EndDrawBatch(verts, inds, PrimitiveType.TriangleList, buffer);
+		}
+
+		#endregion
+
+		#region ICullableInstance Members
+
+		public bool CullTest(ICuller culler, ref Matrix instance)
+		{
+			return culler.TestBox(ref min, ref max, ref instance);
 		}
 
 		#endregion

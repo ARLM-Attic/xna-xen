@@ -46,7 +46,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;WINDOWS;XNA_3_0</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;WINDOWS;XNA_3_0;DEBUG_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
@@ -74,7 +74,10 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>False</Private>
@@ -85,7 +88,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Application.cs" />
+    <Compile Include="Application.cs">
+    </Compile>
     <Compile Include="Camera\Camera2D.cs" />
     <Compile Include="Camera\Camera3D.cs" />
     <Compile Include="Camera\CameraControl.cs" />
@@ -112,6 +116,9 @@
     <Compile Include="State.cs" />
     <Compile Include="Threading\ThreadPool.cs" />
     <Compile Include="Update.cs" />
+    <Compile Include="WinFormsHost.cs">
+      <SubType>Component</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <NestedContentProject Include="Content\Content.contentproj">

@@ -41,7 +41,7 @@ namespace Tutorials.Tutorial_16
 	//There will be one 'instance mesh drawer', and many instances.
 
 	//the instances will store the world matrix - and will then notify the mesh drawer
-	//if it's visible.
+	//if they are visible.
 
 	//After all the instances have been culled or 'drawn', the instance mesh drawer
 	//will draw all the visible instances in one batch.
@@ -302,13 +302,13 @@ namespace Tutorials.Tutorial_16
 			else
 			{
 				statusText.Text += stats.DrawIndexedPrimitiveCallCount;
-				statusText.Text += stats.InstancesDrawn == 1 ? " instance" : " instances";
+				statusText.Text += stats.DrawIndexedPrimitiveCallCount == 1 ? " instance" : " instances";
 				statusText.Text += " drawn";
 			}
 #endif
 			statusText.Text.AppendLine();
 			statusText.Text += cullButtonText;
-
+			
 			//draw everything
 			drawToScreen.Draw(state);
 		}

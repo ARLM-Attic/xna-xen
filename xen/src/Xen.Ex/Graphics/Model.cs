@@ -892,7 +892,7 @@ namespace Xen.Ex.Graphics
 	/// </example>
 	/// </para>
 	/// </remarks>
-	public sealed class ModelInstance : IDraw
+	public sealed class ModelInstance : IDraw, ICullableInstance
 	{
 		private ModelData data;
 		private AnimationController controller;
@@ -1133,6 +1133,29 @@ namespace Xen.Ex.Graphics
 			{
 				controller.WaitForAsyncAnimation(culler.GetState(), culler.FrameIndex,false);
 				return culler.TestBox(ref controller.boundsMin, ref controller.boundsMax);
+			}
+		}
+
+
+		/// <summary>
+		/// FrustumCull test the model at the given location
+		/// </summary>
+		/// <param name="culler"></param>
+		/// <returns></returns>
+		public bool CullTest(ICuller culler, ref Matrix instance)
+		{
+			if (data == null)
+				return false;
+
+			if (shaderProvider != null && shaderProvider.ProviderModifiesWorldMatrixInBeginDraw)
+				return true;
+
+			if (controller == null)
+				return culler.TestBox(data.StaticBounds.Minimum, data.StaticBounds.Maximum, ref instance);
+			else
+			{
+				controller.WaitForAsyncAnimation(culler.GetState(), culler.FrameIndex, false);
+				return culler.TestBox(ref controller.boundsMin, ref controller.boundsMax, ref instance);
 			}
 		}
 	}
