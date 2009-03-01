@@ -128,6 +128,25 @@ namespace Xen.Graphics
 			}
 			return count;
 		}
+		/// <summary>
+		/// Returns the number of resource objects that are still being referenced
+		/// </summary>
+		/// <returns></returns>
+		public static int CountDisposedResourcesStillAlive(ResourceType filter)
+		{
+			int count = 0;
+			lock (resources)
+			{
+				GetResources(localResourceList);
+				foreach (Resource r in localResourceList)
+				{
+					if (r.IsDisposed && r.ResourceType == filter)
+						count++;
+				}
+				localResourceList.Clear();
+			}
+			return count;
+		}
 
 		/// <summary>
 		/// Returns the number of resources that are yet to be used
@@ -142,6 +161,25 @@ namespace Xen.Graphics
 				foreach (Resource r in localResourceList)
 				{
 					if (r.IsDisposed == false && r.InUse == false)
+						count++;
+				}
+				localResourceList.Clear();
+			}
+			return count;
+		}
+		/// <summary>
+		/// Returns the number of resources that are yet to be used
+		/// </summary>
+		/// <returns></returns>
+		public static int CountResourcesNotUsedByDevice(ResourceType filter)
+		{
+			int count = 0;
+			lock (resources)
+			{
+				GetResources(localResourceList);
+				foreach (Resource r in localResourceList)
+				{
+					if (r.IsDisposed == false && r.InUse == false && r.ResourceType == filter)
 						count++;
 				}
 				localResourceList.Clear();
@@ -241,6 +279,25 @@ namespace Xen.Graphics
 			{
 				GetResources(localResourceList);
 				int count = localResourceList.Count;
+				localResourceList.Clear();
+				return count;
+			}
+		}
+		/// <summary>
+		/// Gets the number of resources tracked
+		/// </summary>
+		/// <returns></returns>
+		public static int GetResourceCount(ResourceType filter)
+		{
+			lock (localResourceList)
+			{
+				GetResources(localResourceList);
+				int count = 0;
+				foreach (Resource res in localResourceList)
+				{
+					if (res.ResourceType == filter)
+						count++;
+				}
 				localResourceList.Clear();
 				return count;
 			}

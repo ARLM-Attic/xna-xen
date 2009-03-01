@@ -756,6 +756,7 @@ namespace Xen.Graphics
 				ib.Dispose();
 				ib = null;
 			}
+			GC.SuppressFinalize(this);
 		}
 
 		void ValidateDisposed()

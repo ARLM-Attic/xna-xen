@@ -37,6 +37,15 @@ namespace Xen.Graphics
 			}
 			clone.rendering = false;
 			clone.enabled = true;
+
+			clone.bufferClear = new ClearBufferModifier(true);
+			clone.bufferClear.ClearColour = this.bufferClear.ClearColour;
+			clone.bufferClear.ClearColourEnabled = this.bufferClear.ClearColourEnabled;
+			clone.bufferClear.ClearDepth = this.bufferClear.ClearDepth;
+			clone.bufferClear.ClearDepthEnabled = this.bufferClear.ClearDepthEnabled;
+			clone.bufferClear.ClearStencilEnabled = this.bufferClear.ClearStencilEnabled;
+			clone.bufferClear.ClearStencilValue = this.bufferClear.ClearStencilValue;
+			clone.bufferClear.Enabled = this.bufferClear.Enabled;
 		}
 
 		internal DrawTarget(ICamera camera)
@@ -299,13 +308,14 @@ namespace Xen.Graphics
 					{
 						if (!BeginRepeat(state, repeat, ref cam))
 							continue;
-#if DEBUG
-						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawTargetsPassCount);
-#endif
 					}
+
 #if DEBUG
-					else
-						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawTargetsPassCount);
+					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawTargetsPassCount);
+
+#if XBOX360
+					state.Application.currentFrame.XboxPixelFillBias += this.Width * this.Height;
+#endif
 #endif
 
 					if (bufferClear.Enabled)
@@ -331,7 +341,9 @@ namespace Xen.Graphics
 							block.Draw(state);
 					}
 
+#if XEN_EXTRA
 					state.RunDeferredDrawCalls();
+#endif
 
 					state.PopCamera();
 
@@ -617,7 +629,7 @@ namespace Xen.Graphics
 		public DrawTargetTexture2DGroup(ICamera camera, params DrawTargetTexture2D[] targets)
 			: base(camera)
 		{
-			this.targets = targets;
+			this.targets = (DrawTargetTexture2D[])targets.Clone();
 
 			if (targets.Length < 1)
 				throw new ArgumentException("At least one render targets must be specified");
@@ -900,6 +912,13 @@ namespace Xen.Graphics
 			clone.cloneOf = this;
 			clone.depthEnabled &= retainDepth;
 			CloneTo(clone, copyModifiers, copyDrawList);
+
+			if (!retainDepth)
+			{
+				clone.ClearBuffer.ClearDepthEnabled = false;
+				clone.ClearBuffer.ClearStencilEnabled = false;
+			}
+
 			return clone;
 		}
 
@@ -1099,6 +1118,20 @@ namespace Xen.Graphics
 
 			this.depthFormat = depthFormat;
 			this.ownsDepth = true;
+
+			if (this.depthFormat == null)
+			{
+				this.ClearBuffer.ClearDepthEnabled = false;
+				this.ClearBuffer.ClearStencilEnabled = false;
+			}
+			else
+			{
+				if (this.depthFormat.Value != DepthFormat.Depth15Stencil1 &&
+					this.depthFormat.Value != DepthFormat.Depth24Stencil4 &&
+					this.depthFormat.Value != DepthFormat.Depth24Stencil8 &&
+					this.depthFormat.Value != DepthFormat.Depth24Stencil8Single)
+					this.ClearBuffer.ClearStencilEnabled = false;
+			}
 
 			SetHasDepth();
 		}
@@ -1514,6 +1547,13 @@ namespace Xen.Graphics
 			clone.cloneOf = this;
 			clone.depthEnabled &= retainDepth;
 			CloneTo(clone, copyModifiers, copyDrawList);
+
+			if (!retainDepth)
+			{
+				clone.ClearBuffer.ClearDepthEnabled = false;
+				clone.ClearBuffer.ClearStencilEnabled = false;
+			}
+
 			return clone;
 		}
 
@@ -1823,6 +1863,21 @@ namespace Xen.Graphics
 
 			this.depthFormat = depthFormat;
 			this.ownsDepth = true;
+
+			if (this.depthFormat == null)
+			{
+				this.ClearBuffer.ClearDepthEnabled = false;
+				this.ClearBuffer.ClearStencilEnabled = false;
+			}
+			else
+			{
+				if (this.depthFormat.Value != DepthFormat.Depth15Stencil1 &&
+					this.depthFormat.Value != DepthFormat.Depth24Stencil4 &&
+					this.depthFormat.Value != DepthFormat.Depth24Stencil8 &&
+					this.depthFormat.Value != DepthFormat.Depth24Stencil8Single)
+					this.ClearBuffer.ClearStencilEnabled = false;
+			}
+
 
 			SetHasDepth();
 		}

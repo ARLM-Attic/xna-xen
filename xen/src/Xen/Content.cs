@@ -10,7 +10,7 @@ using Microsoft.Xna.Framework;
 namespace Xen
 {
 	/// <summary>
-	/// Interface to an object that wishes to load and unload content through an XNA <see cref="ContentManager"/>, or handle implementation specific content load/unload logic, for use with the <see cref="ContentRegister"/> class (such as the <see cref="Application.Content"/> instatnce)
+	/// Interface to an object that wishes to load and unload content through an XNA <see cref="ContentManager"/>, or handle implementation specific content load/unload logic, for use with the <see cref="ContentRegister"/> class (such as the <see cref="Application.Content"/> instance)
 	/// </summary>
 	/// <remarks>
 	/// <para>This interface is intended as a lightweight replacement for the content loading methods found in <see cref="Microsoft.Xna.Framework.DrawableGameComponent"/></para>
@@ -42,7 +42,7 @@ namespace Xen
 #if !DEBUG_API
 	[System.Diagnostics.DebuggerStepThrough]
 #endif
-	public class ContentRegister : IDisposable
+	public sealed class ContentRegister : IDisposable
 	{
 
 		/// <summary>

@@ -34,9 +34,6 @@ namespace Xen.Ex.ModelImporter
 	[ContentProcessor(DisplayName = "Model - Xen")]
 	public class ModelImporter : ContentProcessor<NodeContent, ModelData>
 	{
-		bool generateTangents = false;
-		bool swapWinding = false;
-
 		public override ModelData Process(NodeContent input, ContentProcessorContext context)
 		{
 
@@ -712,10 +709,11 @@ namespace Xen.Ex.ModelImporter
 
 
 		#region Processor params
+		bool generateTangents = false;
+		bool swapWinding = false;
 		TextureProcessorOutputFormat destinationFormat = TextureProcessorOutputFormat.DxtCompressed;
 		bool importTextures = true, generateMipmaps = true, resizeTexturesToPowerOfTwo = true, swapWindingOrder = false, importAnimations = true, importBoneContentMehses;
 		float scale = 1, rotationX = 0, rotationY = 0, rotationZ = 0, animationCompressionTolerancePercent = 0.5f;
-
 
 		[DefaultValue(0.5f), DisplayName("Animation Compression Tolerance (Percent)"), Category("Animation")]
 		public virtual float AnimationCompressionTolerancePercent

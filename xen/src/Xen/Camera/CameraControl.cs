@@ -115,13 +115,19 @@ namespace Xen.Camera
 		private readonly Matrix[] stack;
 		private readonly int[] stackIndex;
 		private readonly bool[] stackIdentity;
-		private readonly float[] stackApproxSize;
 		private int highpoint = 1;
-		private uint top;
+		internal uint top;
+
+#if XEN_EXTRA
+		private readonly float[] stackApproxSize;
 		internal float approxScale = 1;
 		internal bool isApproxNorm = true;
 		internal bool detectScale = false;
-		private bool isIdentity = true;
+#else
+		internal readonly float approxScale = 1;
+		internal readonly bool detectScale = false;
+#endif
+		internal bool isIdentity = true;
 #if DEBUG
 		private DrawState state;
 #endif
@@ -133,10 +139,13 @@ namespace Xen.Camera
 #endif
 			stack = new Matrix[stackSize];
 			stackIndex = new int[stackSize];
-			stackApproxSize = new float[stackSize];
 			stackIdentity = new bool[stackSize];
+
+#if XEN_EXTRA
+			stackApproxSize = new float[stackSize];
 			for (int i = 0; i < stackApproxSize.Length; i++)
 				stackApproxSize[i] = 1;
+#endif
 		}
 
 		public void SetConstant(IValue<Matrix> constant, int frame)
@@ -146,9 +155,6 @@ namespace Xen.Camera
 #endif
 			constant.Set(ref value);
 		}
-
-		public uint MatrixStackTop { get { return top; } }
-		public bool IsIdentity { get { return isIdentity; } }
 
 		public void Set(ref Matrix matrix)
 		{
@@ -164,11 +170,13 @@ namespace Xen.Camera
 #endif
 			{
 				this.value = matrix;
+#if XEN_EXTRA
 				if (detectScale)
 				{
 					AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
 					this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
 				}
+#endif
 				index = ++highpoint;
 				isIdentity = false;
 			}
@@ -186,11 +194,13 @@ namespace Xen.Camera
 #endif
 				{
 					this.value = matrix;
+#if XEN_EXTRA
 					if (detectScale)
 					{
 						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
 						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
 					}
+#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -202,7 +212,9 @@ namespace Xen.Camera
 					stack[top] = matrix;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
+#if XEN_EXTRA
 					stackApproxSize[top] = approxScale;
+#endif
 				}
 				
 #if TestMatrixEquality
@@ -210,11 +222,13 @@ namespace Xen.Camera
 #endif
 				{
 					this.value = matrix;
+#if XEN_EXTRA
 					if (detectScale)
 					{
 						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
 						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
 					}
+#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -235,9 +249,10 @@ namespace Xen.Camera
 					this.value.M41 = translate.X;
 					this.value.M42 = translate.Y;
 					this.value.M43 = translate.Z;
-
+#if XEN_EXTRA
 					approxScale = 1;
 					isApproxNorm = true;
+#endif
 					isIdentity = false;
 
 					index = ++highpoint;
@@ -250,7 +265,9 @@ namespace Xen.Camera
 					stack[top] = value;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
+#if XEN_EXTRA
 					stackApproxSize[top] = approxScale;
+#endif
 				}
 				
 #if TestMatrixEquality
@@ -297,10 +314,10 @@ namespace Xen.Camera
 					this.value.M42 = translate.Y;
 					this.value.M43 = translate.Z;
 					this.value.M44 = 1;
-
+#if XEN_EXTRA
 					approxScale = 1;
 					isApproxNorm = true;
-
+#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -317,53 +334,18 @@ namespace Xen.Camera
 			if (top == 0)
 			{
 				if (
-					/*this.value.M11 != 1 ||
-					this.value.M12 != 0 ||
-					this.value.M13 != 0 ||
-					this.value.M14 != 0 ||
-
-					this.value.M21 != 0 ||
-					this.value.M22 != 1 ||
-					this.value.M23 != 0 ||
-					this.value.M24 != 0 ||
-
-					this.value.M31 != 0 ||
-					this.value.M32 != 0 ||
-					this.value.M33 != 1 ||
-					this.value.M34 != 0 ||
-
-					this.value.M11 != translate.X ||
-					this.value.M12 != translate.Y ||
-					this.value.M13 != translate.Z ||
-					this.value.M14 != 1
-					*/
 					translate.X != 0 || translate.Y != 0 || translate.Z != 0
 					)//prevents recalcuating shader constants later if not changed now
 				{
-					//this.value.M11 = 1;
-					//this.value.M12 = 0;
-					//this.value.M13 = 0;
-					//this.value.M14 = 0;
-
-					//this.value.M21 = 0;
-					//this.value.M22 = 1;
-					//this.value.M23 = 0;
-					//this.value.M24 = 0;
-
-					//this.value.M31 = 0;
-					//this.value.M32 = 0;
-					//this.value.M33 = 1;
-					//this.value.M34 = 0;
-
 					this.value.M41 = translate.X;
 					this.value.M42 = translate.Y;
 					this.value.M43 = translate.Z;
-					//this.value.M44 = 1;
 
+#if XEN_EXTRA
 					approxScale = 1;
 					isApproxNorm = true;
+#endif
 					isIdentity = false;
-
 					index = ++highpoint;
 				}
 			}
@@ -374,7 +356,9 @@ namespace Xen.Camera
 					stack[top] = this.value;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
+#if XEN_EXTRA
 					stackApproxSize[top] = approxScale;
+#endif
 				}
 
 				if (translate.X != 0 || translate.Y != 0 || translate.Z != 0)
@@ -418,11 +402,13 @@ namespace Xen.Camera
 #endif
 				{
 					this.value = matrix;
+#if XEN_EXTRA
 					if (detectScale)
 					{
 						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
 						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
 					}
+#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -434,7 +420,9 @@ namespace Xen.Camera
 					stack[top] = this.value;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
+#if XEN_EXTRA
 					stackApproxSize[top] = approxScale;
+#endif
 				}
 
 #if TestMatrixEquality
@@ -448,13 +436,50 @@ namespace Xen.Camera
 #if DEBUG
 						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixMultiplyCalculateCount);
 #endif
+#if NO_INLINE
 						Matrix.Multiply(ref matrix, ref this.value, out this.value);
+#else
+						float num16 = (((matrix.M11 * this.value.M11) + (matrix.M12 * this.value.M21)) + (matrix.M13 * this.value.M31)) + (matrix.M14 * this.value.M41);
+						float num15 = (((matrix.M11 * this.value.M12) + (matrix.M12 * this.value.M22)) + (matrix.M13 * this.value.M32)) + (matrix.M14 * this.value.M42);
+						float num14 = (((matrix.M11 * this.value.M13) + (matrix.M12 * this.value.M23)) + (matrix.M13 * this.value.M33)) + (matrix.M14 * this.value.M43);
+						float num13 = (((matrix.M11 * this.value.M14) + (matrix.M12 * this.value.M24)) + (matrix.M13 * this.value.M34)) + (matrix.M14 * this.value.M44);
+						float num12 = (((matrix.M21 * this.value.M11) + (matrix.M22 * this.value.M21)) + (matrix.M23 * this.value.M31)) + (matrix.M24 * this.value.M41);
+						float num11 = (((matrix.M21 * this.value.M12) + (matrix.M22 * this.value.M22)) + (matrix.M23 * this.value.M32)) + (matrix.M24 * this.value.M42);
+						float num10 = (((matrix.M21 * this.value.M13) + (matrix.M22 * this.value.M23)) + (matrix.M23 * this.value.M33)) + (matrix.M24 * this.value.M43);
+						float num9 = (((matrix.M21 * this.value.M14) + (matrix.M22 * this.value.M24)) + (matrix.M23 * this.value.M34)) + (matrix.M24 * this.value.M44);
+						float num8 = (((matrix.M31 * this.value.M11) + (matrix.M32 * this.value.M21)) + (matrix.M33 * this.value.M31)) + (matrix.M34 * this.value.M41);
+						float num7 = (((matrix.M31 * this.value.M12) + (matrix.M32 * this.value.M22)) + (matrix.M33 * this.value.M32)) + (matrix.M34 * this.value.M42);
+						float num6 = (((matrix.M31 * this.value.M13) + (matrix.M32 * this.value.M23)) + (matrix.M33 * this.value.M33)) + (matrix.M34 * this.value.M43);
+						float num5 = (((matrix.M31 * this.value.M14) + (matrix.M32 * this.value.M24)) + (matrix.M33 * this.value.M34)) + (matrix.M34 * this.value.M44);
+						float num4 = (((matrix.M41 * this.value.M11) + (matrix.M42 * this.value.M21)) + (matrix.M43 * this.value.M31)) + (matrix.M44 * this.value.M41);
+						float num3 = (((matrix.M41 * this.value.M12) + (matrix.M42 * this.value.M22)) + (matrix.M43 * this.value.M32)) + (matrix.M44 * this.value.M42);
+						float num2 = (((matrix.M41 * this.value.M13) + (matrix.M42 * this.value.M23)) + (matrix.M43 * this.value.M33)) + (matrix.M44 * this.value.M43);
+						float num = (((matrix.M41 * this.value.M14) + (matrix.M42 * this.value.M24)) + (matrix.M43 * this.value.M34)) + (matrix.M44 * this.value.M44);
+						this.value.M11 = num16;
+						this.value.M12 = num15;
+						this.value.M13 = num14;
+						this.value.M14 = num13;
+						this.value.M21 = num12;
+						this.value.M22 = num11;
+						this.value.M23 = num10;
+						this.value.M24 = num9;
+						this.value.M31 = num8;
+						this.value.M32 = num7;
+						this.value.M33 = num6;
+						this.value.M34 = num5;
+						this.value.M41 = num4;
+						this.value.M42 = num3;
+						this.value.M43 = num2;
+						this.value.M44 = num;
+#endif
 					}
+#if XEN_EXTRA
 					if (detectScale)
 					{
 						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
 						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
 					}
+#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -471,16 +496,20 @@ namespace Xen.Camera
 					value = stack[top];
 					index = stackIndex[top];
 					isIdentity = stackIdentity[top];
+#if XEN_EXTRA
 					approxScale = stackApproxSize[top];
 					isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
+#endif
 				}
 			}
 			else
 			{
 				index = 1;
 				isIdentity = true;
+#if XEN_EXTRA
 				approxScale = 1;
 				isApproxNorm = true;
+#endif
 
 				this.value.M11 = 1;
 				this.value.M12 = 0;
@@ -549,7 +578,27 @@ namespace Xen.Camera
 #if DEBUG
 						System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixMultiplyCalculateCount);
 #endif
+#if NO_INLINE
 						Matrix.Multiply(ref provider.value, ref source.value, out value);
+#else
+						value.M11 = (((provider.value.M11 * source.value.M11) + (provider.value.M12 * source.value.M21)) + (provider.value.M13 * source.value.M31)) + (provider.value.M14 * source.value.M41);
+						value.M12 = (((provider.value.M11 * source.value.M12) + (provider.value.M12 * source.value.M22)) + (provider.value.M13 * source.value.M32)) + (provider.value.M14 * source.value.M42);
+						value.M13 = (((provider.value.M11 * source.value.M13) + (provider.value.M12 * source.value.M23)) + (provider.value.M13 * source.value.M33)) + (provider.value.M14 * source.value.M43);
+						value.M14 = (((provider.value.M11 * source.value.M14) + (provider.value.M12 * source.value.M24)) + (provider.value.M13 * source.value.M34)) + (provider.value.M14 * source.value.M44);
+						value.M21 = (((provider.value.M21 * source.value.M11) + (provider.value.M22 * source.value.M21)) + (provider.value.M23 * source.value.M31)) + (provider.value.M24 * source.value.M41);
+						value.M22 = (((provider.value.M21 * source.value.M12) + (provider.value.M22 * source.value.M22)) + (provider.value.M23 * source.value.M32)) + (provider.value.M24 * source.value.M42);
+						value.M23 = (((provider.value.M21 * source.value.M13) + (provider.value.M22 * source.value.M23)) + (provider.value.M23 * source.value.M33)) + (provider.value.M24 * source.value.M43);
+						value.M24 = (((provider.value.M21 * source.value.M14) + (provider.value.M22 * source.value.M24)) + (provider.value.M23 * source.value.M34)) + (provider.value.M24 * source.value.M44);
+						value.M31 = (((provider.value.M31 * source.value.M11) + (provider.value.M32 * source.value.M21)) + (provider.value.M33 * source.value.M31)) + (provider.value.M34 * source.value.M41);
+						value.M32 = (((provider.value.M31 * source.value.M12) + (provider.value.M32 * source.value.M22)) + (provider.value.M33 * source.value.M32)) + (provider.value.M34 * source.value.M42);
+						value.M33 = (((provider.value.M31 * source.value.M13) + (provider.value.M32 * source.value.M23)) + (provider.value.M33 * source.value.M33)) + (provider.value.M34 * source.value.M43);
+						value.M34 = (((provider.value.M31 * source.value.M14) + (provider.value.M32 * source.value.M24)) + (provider.value.M33 * source.value.M34)) + (provider.value.M34 * source.value.M44);
+						value.M41 = (((provider.value.M41 * source.value.M11) + (provider.value.M42 * source.value.M21)) + (provider.value.M43 * source.value.M31)) + (provider.value.M44 * source.value.M41);
+						value.M42 = (((provider.value.M41 * source.value.M12) + (provider.value.M42 * source.value.M22)) + (provider.value.M43 * source.value.M32)) + (provider.value.M44 * source.value.M42);
+						value.M43 = (((provider.value.M41 * source.value.M13) + (provider.value.M42 * source.value.M23)) + (provider.value.M43 * source.value.M33)) + (provider.value.M44 * source.value.M43);
+						value.M44 = (((provider.value.M41 * source.value.M14) + (provider.value.M42 * source.value.M24)) + (provider.value.M43 * source.value.M34)) + (provider.value.M44 * source.value.M44);
+
+#endif
 						index++;
 					}
 				}
@@ -562,7 +611,27 @@ namespace Xen.Camera
 #if DEBUG
 							System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixTransposeCalculateCount);
 #endif
+#if NO_INLINE
 							Matrix.Transpose(ref provider.value, out this.value);
+#else
+							this.value.M11 = provider.value.M11;
+							this.value.M12 = provider.value.M21;
+							this.value.M13 = provider.value.M31;
+							this.value.M14 = provider.value.M41;
+							this.value.M21 = provider.value.M12;
+							this.value.M22 = provider.value.M22;
+							this.value.M23 = provider.value.M32;
+							this.value.M24 = provider.value.M42;
+							this.value.M31 = provider.value.M13;
+							this.value.M32 = provider.value.M23;
+							this.value.M33 = provider.value.M33;
+							this.value.M34 = provider.value.M43;
+							this.value.M41 = provider.value.M14;
+							this.value.M42 = provider.value.M24;
+							this.value.M43 = provider.value.M34;
+							this.value.M44 = provider.value.M44;
+
+#endif
 							index++;
 						}
 						else
@@ -571,7 +640,49 @@ namespace Xen.Camera
 #if DEBUG
 							System.Threading.Interlocked.Increment(ref state.Application.currentFrame.ShaderConstantMatrixInverseCalculateCount);
 #endif
+#if NO_INLINE
 							Matrix.Invert(ref provider.value, out this.value);
+#else
+							float num23 = (provider.value.M33 * provider.value.M44) - (provider.value.M34 * provider.value.M43);
+							float num22 = (provider.value.M32 * provider.value.M44) - (provider.value.M34 * provider.value.M42);
+							float num21 = (provider.value.M32 * provider.value.M43) - (provider.value.M33 * provider.value.M42);
+							float num20 = (provider.value.M31 * provider.value.M44) - (provider.value.M34 * provider.value.M41);
+							float num19 = (provider.value.M31 * provider.value.M43) - (provider.value.M33 * provider.value.M41);
+							float num18 = (provider.value.M31 * provider.value.M42) - (provider.value.M32 * provider.value.M41);
+							float num39 = ((provider.value.M22 * num23) - (provider.value.M23 * num22)) + (provider.value.M24 * num21);
+							float num38 = -(((provider.value.M21 * num23) - (provider.value.M23 * num20)) + (provider.value.M24 * num19));
+							float num37 = ((provider.value.M21 * num22) - (provider.value.M22 * num20)) + (provider.value.M24 * num18);
+							float num36 = -(((provider.value.M21 * num21) - (provider.value.M22 * num19)) + (provider.value.M23 * num18));
+							float num = 1f / ((((provider.value.M11 * num39) + (provider.value.M12 * num38)) + (provider.value.M13 * num37)) + (provider.value.M14 * num36));
+							this.value.M11 = num39 * num;
+							this.value.M21 = num38 * num;
+							this.value.M31 = num37 * num;
+							this.value.M41 = num36 * num;
+							this.value.M12 = -(((provider.value.M12 * num23) - (provider.value.M13 * num22)) + (provider.value.M14 * num21)) * num;
+							this.value.M22 = (((provider.value.M11 * num23) - (provider.value.M13 * num20)) + (provider.value.M14 * num19)) * num;
+							this.value.M32 = -(((provider.value.M11 * num22) - (provider.value.M12 * num20)) + (provider.value.M14 * num18)) * num;
+							this.value.M42 = (((provider.value.M11 * num21) - (provider.value.M12 * num19)) + (provider.value.M13 * num18)) * num;
+							float num35 = (provider.value.M23 * provider.value.M44) - (provider.value.M24 * provider.value.M43);
+							float num34 = (provider.value.M22 * provider.value.M44) - (provider.value.M24 * provider.value.M42);
+							float num33 = (provider.value.M22 * provider.value.M43) - (provider.value.M23 * provider.value.M42);
+							float num32 = (provider.value.M21 * provider.value.M44) - (provider.value.M24 * provider.value.M41);
+							float num31 = (provider.value.M21 * provider.value.M43) - (provider.value.M23 * provider.value.M41);
+							float num30 = (provider.value.M21 * provider.value.M42) - (provider.value.M22 * provider.value.M41);
+							this.value.M13 = (((provider.value.M12 * num35) - (provider.value.M13 * num34)) + (provider.value.M14 * num33)) * num;
+							this.value.M23 = -(((provider.value.M11 * num35) - (provider.value.M13 * num32)) + (provider.value.M14 * num31)) * num;
+							this.value.M33 = (((provider.value.M11 * num34) - (provider.value.M12 * num32)) + (provider.value.M14 * num30)) * num;
+							this.value.M43 = -(((provider.value.M11 * num33) - (provider.value.M12 * num31)) + (provider.value.M13 * num30)) * num;
+							float num29 = (provider.value.M23 * provider.value.M34) - (provider.value.M24 * provider.value.M33);
+							float num28 = (provider.value.M22 * provider.value.M34) - (provider.value.M24 * provider.value.M32);
+							float num27 = (provider.value.M22 * provider.value.M33) - (provider.value.M23 * provider.value.M32);
+							float num26 = (provider.value.M21 * provider.value.M34) - (provider.value.M24 * provider.value.M31);
+							float num25 = (provider.value.M21 * provider.value.M33) - (provider.value.M23 * provider.value.M31);
+							float num24 = (provider.value.M21 * provider.value.M32) - (provider.value.M22 * provider.value.M31);
+							this.value.M14 = -(((provider.value.M12 * num29) - (provider.value.M13 * num28)) + (provider.value.M14 * num27)) * num;
+							this.value.M24 = (((provider.value.M11 * num29) - (provider.value.M13 * num26)) + (provider.value.M14 * num25)) * num;
+							this.value.M34 = -(((provider.value.M11 * num28) - (provider.value.M12 * num26)) + (provider.value.M14 * num24)) * num;
+							this.value.M44 = (((provider.value.M11 * num27) - (provider.value.M12 * num25)) + (provider.value.M13 * num24)) * num;
+#endif
 							index++;
 						}
 					}
@@ -603,9 +714,6 @@ namespace Xen
 		private static bool renderStackSizeUsed = false;
 
 		private int frame;
-		internal readonly WorldStackProvider worldMatrix;
-		private readonly ViewProjectionProvider viewMatrix;
-		private readonly ViewProjectionProvider projectionMatrix;
 
 		private readonly ICullPrimitive[] preCullers = new ICullPrimitive[RenderStackSize], postCullers = new ICullPrimitive[RenderStackSize];
 		private int preCullerCount = 0, postCullerCount = 0;
@@ -624,6 +732,10 @@ namespace Xen
 			}
 		}
 
+
+		//DrawState.WorldMatrixDetectScale has been removed in xen 1.5, as it really wasn't that well designed
+		//If you'd like it back, define the 'XEN_EXTRA' conditional compilation symbol in the Xen project
+#if XEN_EXTRA
 		/// <summary>
 		/// Auto detect scaled matrices in the world matrix stack. Default to FALSE. Corrects frustum culling logic when scaling, but causes a slight performance loss.
 		/// </summary>
@@ -634,17 +746,17 @@ namespace Xen
 #if DEBUG
 				ValidateProtected(); 
 #endif
-				return worldMatrix.detectScale; 
+				return ms_World.detectScale; 
 			}
 			set 
 			{
 #if DEBUG
 				ValidateProtected(); 
 #endif
-				worldMatrix.detectScale = value; 
+				ms_World.detectScale = value; 
 			}
 		}
-
+#endif
 
 		/// <summary>
 		/// Pushes a culler onto the pre-culling stack (pre-culling cull tests occurs <i>before</i> the default onscreen Culler). Fast cull operations are usually added here
@@ -695,7 +807,7 @@ namespace Xen
 
 		bool ICuller.TestBox(Vector3 min, Vector3 max)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).TestWorldBox(ref min, ref max);
 #if DEBUG
 			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
@@ -706,7 +818,7 @@ namespace Xen
 #endif
 			for (int i = preCullerCount-1; i >=0; i--)
 			{
-				if (!preCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
+				if (!preCullers[i].TestWorldBox(ref min, ref max, ref ms_World.value))
 				{
 #if DEBUG
 					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
@@ -715,7 +827,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref worldMatrix.value, worldMatrix.approxScale))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -725,7 +837,7 @@ namespace Xen
 
 			for (int i = 0; i < postCullerCount; i++)
 			{
-				if (!postCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
+				if (!postCullers[i].TestWorldBox(ref min, ref max, ref ms_World.value))
 				{
 #if DEBUG
 					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
@@ -737,7 +849,7 @@ namespace Xen
 		}
 		bool ICuller.TestBox(ref Vector3 min, ref Vector3 max)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).TestWorldBox(ref min, ref max);
 #if DEBUG
 			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
@@ -749,7 +861,7 @@ namespace Xen
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
-				if (!preCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
+				if (!preCullers[i].TestWorldBox(ref min, ref max, ref ms_World.value))
 				{
 #if DEBUG
 					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPreCulledCount);
@@ -758,7 +870,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref worldMatrix.value, worldMatrix.approxScale))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -768,7 +880,7 @@ namespace Xen
 
 			for (int i = 0; i < postCullerCount; i++)
 			{
-				if (!postCullers[i].TestWorldBox(ref min, ref max, ref worldMatrix.value))
+				if (!postCullers[i].TestWorldBox(ref min, ref max, ref ms_World.value))
 				{
 #if DEBUG
 					System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxPostCulledCount);
@@ -783,11 +895,33 @@ namespace Xen
 
 		bool ICuller.TestBox(Vector3 min, Vector3 max, ref Matrix localMatrix)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).TestWorldBox(ref min, ref max, ref localMatrix);
 
 			Matrix matrix;
+#if NO_INLINE
 			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+#else
+#if XBOX360
+			matrix = new Matrix();
+#endif
+			matrix.M11 = (((localMatrix.M11 * ms_World.value.M11) + (localMatrix.M12 * ms_World.value.M21)) + (localMatrix.M13 * ms_World.value.M31)) + (localMatrix.M14 * ms_World.value.M41);
+			matrix.M12 = (((localMatrix.M11 * ms_World.value.M12) + (localMatrix.M12 * ms_World.value.M22)) + (localMatrix.M13 * ms_World.value.M32)) + (localMatrix.M14 * ms_World.value.M42);
+			matrix.M13 = (((localMatrix.M11 * ms_World.value.M13) + (localMatrix.M12 * ms_World.value.M23)) + (localMatrix.M13 * ms_World.value.M33)) + (localMatrix.M14 * ms_World.value.M43);
+			matrix.M14 = (((localMatrix.M11 * ms_World.value.M14) + (localMatrix.M12 * ms_World.value.M24)) + (localMatrix.M13 * ms_World.value.M34)) + (localMatrix.M14 * ms_World.value.M44);
+			matrix.M21 = (((localMatrix.M21 * ms_World.value.M11) + (localMatrix.M22 * ms_World.value.M21)) + (localMatrix.M23 * ms_World.value.M31)) + (localMatrix.M24 * ms_World.value.M41);
+			matrix.M22 = (((localMatrix.M21 * ms_World.value.M12) + (localMatrix.M22 * ms_World.value.M22)) + (localMatrix.M23 * ms_World.value.M32)) + (localMatrix.M24 * ms_World.value.M42);
+			matrix.M23 = (((localMatrix.M21 * ms_World.value.M13) + (localMatrix.M22 * ms_World.value.M23)) + (localMatrix.M23 * ms_World.value.M33)) + (localMatrix.M24 * ms_World.value.M43);
+			matrix.M24 = (((localMatrix.M21 * ms_World.value.M14) + (localMatrix.M22 * ms_World.value.M24)) + (localMatrix.M23 * ms_World.value.M34)) + (localMatrix.M24 * ms_World.value.M44);
+			matrix.M31 = (((localMatrix.M31 * ms_World.value.M11) + (localMatrix.M32 * ms_World.value.M21)) + (localMatrix.M33 * ms_World.value.M31)) + (localMatrix.M34 * ms_World.value.M41);
+			matrix.M32 = (((localMatrix.M31 * ms_World.value.M12) + (localMatrix.M32 * ms_World.value.M22)) + (localMatrix.M33 * ms_World.value.M32)) + (localMatrix.M34 * ms_World.value.M42);
+			matrix.M33 = (((localMatrix.M31 * ms_World.value.M13) + (localMatrix.M32 * ms_World.value.M23)) + (localMatrix.M33 * ms_World.value.M33)) + (localMatrix.M34 * ms_World.value.M43);
+			matrix.M34 = (((localMatrix.M31 * ms_World.value.M14) + (localMatrix.M32 * ms_World.value.M24)) + (localMatrix.M33 * ms_World.value.M34)) + (localMatrix.M34 * ms_World.value.M44);
+			matrix.M41 = (((localMatrix.M41 * ms_World.value.M11) + (localMatrix.M42 * ms_World.value.M21)) + (localMatrix.M43 * ms_World.value.M31)) + (localMatrix.M44 * ms_World.value.M41);
+			matrix.M42 = (((localMatrix.M41 * ms_World.value.M12) + (localMatrix.M42 * ms_World.value.M22)) + (localMatrix.M43 * ms_World.value.M32)) + (localMatrix.M44 * ms_World.value.M42);
+			matrix.M43 = (((localMatrix.M41 * ms_World.value.M13) + (localMatrix.M42 * ms_World.value.M23)) + (localMatrix.M43 * ms_World.value.M33)) + (localMatrix.M44 * ms_World.value.M43);
+			matrix.M44 = (((localMatrix.M41 * ms_World.value.M14) + (localMatrix.M42 * ms_World.value.M24)) + (localMatrix.M43 * ms_World.value.M34)) + (localMatrix.M44 * ms_World.value.M44);
+#endif
 #if DEBUG
 			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
@@ -806,7 +940,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, this.worldMatrix.detectScale ? 0 : 1))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, this.ms_World.detectScale ? 0 : 1))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -828,11 +962,33 @@ namespace Xen
 		}
 		bool ICuller.TestBox(ref Vector3 min, ref Vector3 max, ref Matrix localMatrix)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).TestWorldBox(ref min, ref max, ref localMatrix);
 
 			Matrix matrix;
+#if NO_INLINE
 			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+#else
+#if XBOX360
+			matrix = new Matrix();
+#endif
+			matrix.M11 = (((localMatrix.M11 * ms_World.value.M11) + (localMatrix.M12 * ms_World.value.M21)) + (localMatrix.M13 * ms_World.value.M31)) + (localMatrix.M14 * ms_World.value.M41);
+			matrix.M12 = (((localMatrix.M11 * ms_World.value.M12) + (localMatrix.M12 * ms_World.value.M22)) + (localMatrix.M13 * ms_World.value.M32)) + (localMatrix.M14 * ms_World.value.M42);
+			matrix.M13 = (((localMatrix.M11 * ms_World.value.M13) + (localMatrix.M12 * ms_World.value.M23)) + (localMatrix.M13 * ms_World.value.M33)) + (localMatrix.M14 * ms_World.value.M43);
+			matrix.M14 = (((localMatrix.M11 * ms_World.value.M14) + (localMatrix.M12 * ms_World.value.M24)) + (localMatrix.M13 * ms_World.value.M34)) + (localMatrix.M14 * ms_World.value.M44);
+			matrix.M21 = (((localMatrix.M21 * ms_World.value.M11) + (localMatrix.M22 * ms_World.value.M21)) + (localMatrix.M23 * ms_World.value.M31)) + (localMatrix.M24 * ms_World.value.M41);
+			matrix.M22 = (((localMatrix.M21 * ms_World.value.M12) + (localMatrix.M22 * ms_World.value.M22)) + (localMatrix.M23 * ms_World.value.M32)) + (localMatrix.M24 * ms_World.value.M42);
+			matrix.M23 = (((localMatrix.M21 * ms_World.value.M13) + (localMatrix.M22 * ms_World.value.M23)) + (localMatrix.M23 * ms_World.value.M33)) + (localMatrix.M24 * ms_World.value.M43);
+			matrix.M24 = (((localMatrix.M21 * ms_World.value.M14) + (localMatrix.M22 * ms_World.value.M24)) + (localMatrix.M23 * ms_World.value.M34)) + (localMatrix.M24 * ms_World.value.M44);
+			matrix.M31 = (((localMatrix.M31 * ms_World.value.M11) + (localMatrix.M32 * ms_World.value.M21)) + (localMatrix.M33 * ms_World.value.M31)) + (localMatrix.M34 * ms_World.value.M41);
+			matrix.M32 = (((localMatrix.M31 * ms_World.value.M12) + (localMatrix.M32 * ms_World.value.M22)) + (localMatrix.M33 * ms_World.value.M32)) + (localMatrix.M34 * ms_World.value.M42);
+			matrix.M33 = (((localMatrix.M31 * ms_World.value.M13) + (localMatrix.M32 * ms_World.value.M23)) + (localMatrix.M33 * ms_World.value.M33)) + (localMatrix.M34 * ms_World.value.M43);
+			matrix.M34 = (((localMatrix.M31 * ms_World.value.M14) + (localMatrix.M32 * ms_World.value.M24)) + (localMatrix.M33 * ms_World.value.M34)) + (localMatrix.M34 * ms_World.value.M44);
+			matrix.M41 = (((localMatrix.M41 * ms_World.value.M11) + (localMatrix.M42 * ms_World.value.M21)) + (localMatrix.M43 * ms_World.value.M31)) + (localMatrix.M44 * ms_World.value.M41);
+			matrix.M42 = (((localMatrix.M41 * ms_World.value.M12) + (localMatrix.M42 * ms_World.value.M22)) + (localMatrix.M43 * ms_World.value.M32)) + (localMatrix.M44 * ms_World.value.M42);
+			matrix.M43 = (((localMatrix.M41 * ms_World.value.M13) + (localMatrix.M42 * ms_World.value.M23)) + (localMatrix.M43 * ms_World.value.M33)) + (localMatrix.M44 * ms_World.value.M43);
+			matrix.M44 = (((localMatrix.M41 * ms_World.value.M14) + (localMatrix.M42 * ms_World.value.M24)) + (localMatrix.M43 * ms_World.value.M34)) + (localMatrix.M44 * ms_World.value.M44);
+#endif
 #if DEBUG
 			System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCount);
 #endif
@@ -852,7 +1008,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, worldMatrix.detectScale ? 0 : 1))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, ms_World.detectScale ? 0 : 1))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -888,9 +1044,9 @@ namespace Xen
 #if XBOX360
 			pos = new Vector3();
 #endif
-			pos.X = worldMatrix.value.M41;
-			pos.Y = worldMatrix.value.M42;
-			pos.Z = worldMatrix.value.M43;
+			pos.X = ms_World.value.M41;
+			pos.Y = ms_World.value.M42;
+			pos.Z = ms_World.value.M43;
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -903,7 +1059,11 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius * worldMatrix.approxScale, ref pos))
+			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius
+#if XEN_EXTRA
+				* ms_World.approxScale
+#endif
+				, ref pos))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
@@ -938,10 +1098,10 @@ namespace Xen
 				throw new ArgumentNullException("DrawState.Camera == null");
 #endif
 			Vector3 pos;
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				pos = position;
 			else
-				Vector3.Transform(ref position, ref worldMatrix.value, out pos);
+				Vector3.Transform(ref position, ref ms_World.value, out pos);
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -954,7 +1114,11 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius * worldMatrix.approxScale, ref pos))
+			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius
+#if XEN_EXTRA
+				* ms_World.approxScale
+#endif
+				, ref pos))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
@@ -980,7 +1144,7 @@ namespace Xen
 
 		ContainmentType ICuller.IntersectBox(Vector3 min, Vector3 max)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).IntersectWorldBox(ref min, ref max);
 
 			ContainmentType type; bool intersect = false;
@@ -993,7 +1157,7 @@ namespace Xen
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
-				type = preCullers[i].IntersectWorldBox(ref min, ref max, ref worldMatrix.value);
+				type = preCullers[i].IntersectWorldBox(ref min, ref max, ref ms_World.value);
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
@@ -1005,7 +1169,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref worldMatrix.value, worldMatrix.approxScale);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1018,7 +1182,7 @@ namespace Xen
 
 			for (int i = 0; i < postCullerCount; i++)
 			{
-				type = postCullers[i].IntersectWorldBox(ref min, ref max, ref worldMatrix.value);
+				type = postCullers[i].IntersectWorldBox(ref min, ref max, ref ms_World.value);
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
@@ -1033,7 +1197,7 @@ namespace Xen
 		}
 		ContainmentType ICuller.IntersectBox(ref Vector3 min, ref Vector3 max)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).IntersectWorldBox(ref min, ref max);
 
 			ContainmentType type; bool intersect = false;
@@ -1047,7 +1211,7 @@ namespace Xen
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
-				type = preCullers[i].IntersectWorldBox(ref min, ref max, ref worldMatrix.value);
+				type = preCullers[i].IntersectWorldBox(ref min, ref max, ref ms_World.value);
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
@@ -1059,7 +1223,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref worldMatrix.value, worldMatrix.approxScale);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1072,7 +1236,7 @@ namespace Xen
 
 			for (int i = 0; i < postCullerCount; i++)
 			{
-				type = postCullers[i].IntersectWorldBox(ref min, ref max, ref worldMatrix.value);
+				type = postCullers[i].IntersectWorldBox(ref min, ref max, ref ms_World.value);
 				if (type == ContainmentType.Disjoint)
 				{
 #if DEBUG
@@ -1090,11 +1254,33 @@ namespace Xen
 
 		ContainmentType ICuller.IntersectBox(Vector3 min, Vector3 max, ref Matrix localMatrix)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).IntersectWorldBox(ref min, ref max, ref localMatrix);
 
 			Matrix matrix;
+#if NO_INLINE
 			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+#else
+#if XBOX360
+			matrix = new Matrix();
+#endif
+			matrix.M11 = (((localMatrix.M11 * ms_World.value.M11) + (localMatrix.M12 * ms_World.value.M21)) + (localMatrix.M13 * ms_World.value.M31)) + (localMatrix.M14 * ms_World.value.M41);
+			matrix.M12 = (((localMatrix.M11 * ms_World.value.M12) + (localMatrix.M12 * ms_World.value.M22)) + (localMatrix.M13 * ms_World.value.M32)) + (localMatrix.M14 * ms_World.value.M42);
+			matrix.M13 = (((localMatrix.M11 * ms_World.value.M13) + (localMatrix.M12 * ms_World.value.M23)) + (localMatrix.M13 * ms_World.value.M33)) + (localMatrix.M14 * ms_World.value.M43);
+			matrix.M14 = (((localMatrix.M11 * ms_World.value.M14) + (localMatrix.M12 * ms_World.value.M24)) + (localMatrix.M13 * ms_World.value.M34)) + (localMatrix.M14 * ms_World.value.M44);
+			matrix.M21 = (((localMatrix.M21 * ms_World.value.M11) + (localMatrix.M22 * ms_World.value.M21)) + (localMatrix.M23 * ms_World.value.M31)) + (localMatrix.M24 * ms_World.value.M41);
+			matrix.M22 = (((localMatrix.M21 * ms_World.value.M12) + (localMatrix.M22 * ms_World.value.M22)) + (localMatrix.M23 * ms_World.value.M32)) + (localMatrix.M24 * ms_World.value.M42);
+			matrix.M23 = (((localMatrix.M21 * ms_World.value.M13) + (localMatrix.M22 * ms_World.value.M23)) + (localMatrix.M23 * ms_World.value.M33)) + (localMatrix.M24 * ms_World.value.M43);
+			matrix.M24 = (((localMatrix.M21 * ms_World.value.M14) + (localMatrix.M22 * ms_World.value.M24)) + (localMatrix.M23 * ms_World.value.M34)) + (localMatrix.M24 * ms_World.value.M44);
+			matrix.M31 = (((localMatrix.M31 * ms_World.value.M11) + (localMatrix.M32 * ms_World.value.M21)) + (localMatrix.M33 * ms_World.value.M31)) + (localMatrix.M34 * ms_World.value.M41);
+			matrix.M32 = (((localMatrix.M31 * ms_World.value.M12) + (localMatrix.M32 * ms_World.value.M22)) + (localMatrix.M33 * ms_World.value.M32)) + (localMatrix.M34 * ms_World.value.M42);
+			matrix.M33 = (((localMatrix.M31 * ms_World.value.M13) + (localMatrix.M32 * ms_World.value.M23)) + (localMatrix.M33 * ms_World.value.M33)) + (localMatrix.M34 * ms_World.value.M43);
+			matrix.M34 = (((localMatrix.M31 * ms_World.value.M14) + (localMatrix.M32 * ms_World.value.M24)) + (localMatrix.M33 * ms_World.value.M34)) + (localMatrix.M34 * ms_World.value.M44);
+			matrix.M41 = (((localMatrix.M41 * ms_World.value.M11) + (localMatrix.M42 * ms_World.value.M21)) + (localMatrix.M43 * ms_World.value.M31)) + (localMatrix.M44 * ms_World.value.M41);
+			matrix.M42 = (((localMatrix.M41 * ms_World.value.M12) + (localMatrix.M42 * ms_World.value.M22)) + (localMatrix.M43 * ms_World.value.M32)) + (localMatrix.M44 * ms_World.value.M42);
+			matrix.M43 = (((localMatrix.M41 * ms_World.value.M13) + (localMatrix.M42 * ms_World.value.M23)) + (localMatrix.M43 * ms_World.value.M33)) + (localMatrix.M44 * ms_World.value.M43);
+			matrix.M44 = (((localMatrix.M41 * ms_World.value.M14) + (localMatrix.M42 * ms_World.value.M24)) + (localMatrix.M43 * ms_World.value.M34)) + (localMatrix.M44 * ms_World.value.M44);
+#endif
 
 			ContainmentType type; bool intersect = false;
 #if DEBUG
@@ -1118,7 +1304,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, worldMatrix.detectScale ? 0 : 1);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, ms_World.detectScale ? 0 : 1);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1146,11 +1332,33 @@ namespace Xen
 		}
 		ContainmentType ICuller.IntersectBox(ref Vector3 min, ref Vector3 max, ref Matrix localMatrix)
 		{
-			if (worldMatrix.IsIdentity)
+			if (ms_World.isIdentity)
 				return ((ICuller)this).IntersectWorldBox(ref min, ref max, ref localMatrix);
 
 			Matrix matrix;
+#if NO_INLINE
 			Matrix.Multiply(ref localMatrix, ref worldMatrix.value, out matrix);
+#else
+#if XBOX360
+			matrix = new Matrix();
+#endif
+			matrix.M11 = (((localMatrix.M11 * ms_World.value.M11) + (localMatrix.M12 * ms_World.value.M21)) + (localMatrix.M13 * ms_World.value.M31)) + (localMatrix.M14 * ms_World.value.M41);
+			matrix.M12 = (((localMatrix.M11 * ms_World.value.M12) + (localMatrix.M12 * ms_World.value.M22)) + (localMatrix.M13 * ms_World.value.M32)) + (localMatrix.M14 * ms_World.value.M42);
+			matrix.M13 = (((localMatrix.M11 * ms_World.value.M13) + (localMatrix.M12 * ms_World.value.M23)) + (localMatrix.M13 * ms_World.value.M33)) + (localMatrix.M14 * ms_World.value.M43);
+			matrix.M14 = (((localMatrix.M11 * ms_World.value.M14) + (localMatrix.M12 * ms_World.value.M24)) + (localMatrix.M13 * ms_World.value.M34)) + (localMatrix.M14 * ms_World.value.M44);
+			matrix.M21 = (((localMatrix.M21 * ms_World.value.M11) + (localMatrix.M22 * ms_World.value.M21)) + (localMatrix.M23 * ms_World.value.M31)) + (localMatrix.M24 * ms_World.value.M41);
+			matrix.M22 = (((localMatrix.M21 * ms_World.value.M12) + (localMatrix.M22 * ms_World.value.M22)) + (localMatrix.M23 * ms_World.value.M32)) + (localMatrix.M24 * ms_World.value.M42);
+			matrix.M23 = (((localMatrix.M21 * ms_World.value.M13) + (localMatrix.M22 * ms_World.value.M23)) + (localMatrix.M23 * ms_World.value.M33)) + (localMatrix.M24 * ms_World.value.M43);
+			matrix.M24 = (((localMatrix.M21 * ms_World.value.M14) + (localMatrix.M22 * ms_World.value.M24)) + (localMatrix.M23 * ms_World.value.M34)) + (localMatrix.M24 * ms_World.value.M44);
+			matrix.M31 = (((localMatrix.M31 * ms_World.value.M11) + (localMatrix.M32 * ms_World.value.M21)) + (localMatrix.M33 * ms_World.value.M31)) + (localMatrix.M34 * ms_World.value.M41);
+			matrix.M32 = (((localMatrix.M31 * ms_World.value.M12) + (localMatrix.M32 * ms_World.value.M22)) + (localMatrix.M33 * ms_World.value.M32)) + (localMatrix.M34 * ms_World.value.M42);
+			matrix.M33 = (((localMatrix.M31 * ms_World.value.M13) + (localMatrix.M32 * ms_World.value.M23)) + (localMatrix.M33 * ms_World.value.M33)) + (localMatrix.M34 * ms_World.value.M43);
+			matrix.M34 = (((localMatrix.M31 * ms_World.value.M14) + (localMatrix.M32 * ms_World.value.M24)) + (localMatrix.M33 * ms_World.value.M34)) + (localMatrix.M34 * ms_World.value.M44);
+			matrix.M41 = (((localMatrix.M41 * ms_World.value.M11) + (localMatrix.M42 * ms_World.value.M21)) + (localMatrix.M43 * ms_World.value.M31)) + (localMatrix.M44 * ms_World.value.M41);
+			matrix.M42 = (((localMatrix.M41 * ms_World.value.M12) + (localMatrix.M42 * ms_World.value.M22)) + (localMatrix.M43 * ms_World.value.M32)) + (localMatrix.M44 * ms_World.value.M42);
+			matrix.M43 = (((localMatrix.M41 * ms_World.value.M13) + (localMatrix.M42 * ms_World.value.M23)) + (localMatrix.M43 * ms_World.value.M33)) + (localMatrix.M44 * ms_World.value.M43);
+			matrix.M44 = (((localMatrix.M41 * ms_World.value.M14) + (localMatrix.M42 * ms_World.value.M24)) + (localMatrix.M43 * ms_World.value.M34)) + (localMatrix.M44 * ms_World.value.M44);
+#endif
 
 			ContainmentType type; bool intersect = false;
 #if DEBUG
@@ -1175,7 +1383,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, worldMatrix.detectScale ? 0 : 1);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, ms_World.detectScale ? 0 : 1);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1217,9 +1425,9 @@ namespace Xen
 #if XBOX360
 			pos = new Vector3();
 #endif
-			pos.X = worldMatrix.value.M41;
-			pos.Y = worldMatrix.value.M42;
-			pos.Z = worldMatrix.value.M43;
+			pos.X = ms_World.value.M41;
+			pos.Y = ms_World.value.M42;
+			pos.Z = ms_World.value.M43;
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1235,7 +1443,11 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius * worldMatrix.approxScale, ref pos);
+			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius
+#if XEN_EXTRA
+				* ms_World.approxScale
+#endif
+				, ref pos);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1277,7 +1489,7 @@ namespace Xen
 				throw new ArgumentNullException("DrawState.Camera == null");
 #endif
 			Vector3 pos;
-			Vector3.Transform(ref position, ref worldMatrix.value, out pos);
+			Vector3.Transform(ref position, ref ms_World.value, out pos);
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1293,7 +1505,12 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius * worldMatrix.approxScale, ref pos);
+			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius
+#if XEN_EXTRA
+				* ms_World.approxScale
+#endif
+				, ref pos);
+
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1324,6 +1541,11 @@ namespace Xen
 
 		#endregion
 
+		//DrawState.WorldMatrixApproximateScale and WorldMatrixApproximateIsNormalised have been removed 
+		//in xen 1.5, as they really wern't that well designed
+		//If you'd like them back, define the 'XEN_EXTRA' conditional compilation symbol in the Xen project
+#if XEN_EXTRA
+
 		/// <summary>
 		/// Gets the approximate scale factor of the current set world matrix. Requires that <see cref="WorldMatrixDetectScale"/> is set to true
 		/// </summary>
@@ -1334,9 +1556,9 @@ namespace Xen
 #if DEBUG
 				ValidateProtected(); 
 #endif
-				if (!worldMatrix.detectScale) 
+				if (!ms_World.detectScale) 
 					throw new InvalidOperationException("WorldMatrixDetectScale must be true"); 
-				return worldMatrix.approxScale; 
+				return ms_World.approxScale; 
 			}
 		}
 		/// <summary>
@@ -1349,12 +1571,12 @@ namespace Xen
 #if DEBUG
 				ValidateProtected(); 
 #endif
-				if (!worldMatrix.detectScale) 
+				if (!ms_World.detectScale) 
 					throw new InvalidOperationException("WorldMatrixDetectScale must be true"); 
-				return worldMatrix.isApproxNorm; 
+				return ms_World.isApproxNorm; 
 			}
 		}
-
+#endif
 		/// <summary>
 		/// Gets an interface to the current Culler (Note the DrawState class implicitly casts to <see cref="ICuller"/>, making this property redundant)
 		/// </summary>
@@ -1387,7 +1609,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1423,7 +1645,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1613,7 +1835,7 @@ namespace Xen
 			}
 
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1659,7 +1881,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world, 0);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref world);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1880,57 +2102,56 @@ namespace Xen
 #if XBOX360
 			position = new Vector3();
 #endif
-			position.X = worldMatrix.value.M41;
-			position.Y = worldMatrix.value.M42;
-			position.Z = worldMatrix.value.M43;
+			position.X = ms_World.value.M41;
+			position.Y = ms_World.value.M42;
+			position.Z = ms_World.value.M43;
 		}
 
 		#region providers
-		MatrixCalc ms_Projection_Inverse;
-		ViewProjectionProvider ms_Projection;
-		MatrixCalc ms_Projection_Transpose;
-		//MatrixSource _ViewDirectionVector3;
-		MatrixCalc ms_View_Inverse;
-		ViewProjectionProvider ms_View;
-		//MatrixSource _ViewPointVector3;
-		MatrixCalc ms_ViewProjection_Inverse;
-		MatrixCalc ms_ViewProjection;
-		MatrixCalc ms_ViewProjection_Transpose;
-		MatrixCalc ms_View_Transpose;
-		//MatrixSource _WindowSizeVector2;
-		MatrixCalc ms_World_Inverse;
-		WorldStackProvider ms_World;
-		MatrixCalc ms_WorldProjection_Inverse;
-		MatrixCalc ms_WorldProjection;
-		MatrixCalc ms_WorldProjection_Transpose;
-		MatrixCalc ms_World_Transpose;
-		MatrixCalc ms_WorldView_Inverse;
-		MatrixCalc ms_WorldView;
-		MatrixCalc ms_WorldViewProjection_Inverse;
-		MatrixCalc ms_WorldViewProjection;
-		MatrixCalc ms_WorldViewProjection_Transpose;
-		MatrixCalc ms_WorldView_Transpose;
 
-		const int psCount = 16, vsCount = 4;
+		internal readonly WorldStackProvider ms_World;
+		private readonly ViewProjectionProvider ms_Projection;
+		private readonly ViewProjectionProvider ms_View;
 
-		readonly Microsoft.Xna.Framework.Graphics.Texture[] 
+		private readonly MatrixCalc ms_Projection_Inverse;
+		private readonly MatrixCalc ms_Projection_Transpose;
+		private readonly MatrixCalc ms_View_Inverse;
+		private readonly MatrixCalc ms_ViewProjection_Inverse;
+		private readonly MatrixCalc ms_ViewProjection;
+		private readonly MatrixCalc ms_ViewProjection_Transpose;
+		private readonly MatrixCalc ms_View_Transpose;
+		private readonly MatrixCalc ms_World_Inverse;
+		private readonly MatrixCalc ms_WorldProjection_Inverse;
+		private readonly MatrixCalc ms_WorldProjection;
+		private readonly MatrixCalc ms_WorldProjection_Transpose;
+		private readonly MatrixCalc ms_World_Transpose;
+		private readonly MatrixCalc ms_WorldView_Inverse;
+		private readonly MatrixCalc ms_WorldView;
+		private readonly MatrixCalc ms_WorldViewProjection_Inverse;
+		private readonly MatrixCalc ms_WorldViewProjection;
+		private readonly MatrixCalc ms_WorldViewProjection_Transpose;
+		private readonly MatrixCalc ms_WorldView_Transpose;
+
+		private const int psCount = 16, vsCount = 4;
+
+		private readonly Microsoft.Xna.Framework.Graphics.Texture[] 
 			psTextures = new Microsoft.Xna.Framework.Graphics.Texture[psCount],
 			vsTextures = new Microsoft.Xna.Framework.Graphics.Texture[vsCount];
 
 #if DEBUG
-		readonly Microsoft.Xna.Framework.Graphics.Texture[]
+		private readonly Microsoft.Xna.Framework.Graphics.Texture[]
 			psTexturesDEBUG = new Microsoft.Xna.Framework.Graphics.Texture[psCount],
 			vsTexturesDEBUG = new Microsoft.Xna.Framework.Graphics.Texture[vsCount];
 #endif
 
-		readonly TextureSamplerState[] 
+		private readonly TextureSamplerState[] 
 			psSamplers = new TextureSamplerState[psCount], 
 			vsSamplers = new TextureSamplerState[vsCount];
-		readonly bool[] 
+		private readonly bool[] 
 			psSamplerDirty = new bool[psCount],
 			vsSamplerDirty = new bool[vsCount];
 
-		readonly Dictionary<string, int> uniqueNameIndex = new Dictionary<string, int>();
+		private readonly Dictionary<string, int> uniqueNameIndex = new Dictionary<string, int>();
 
 		internal void InitShaderCommon()
 		{
@@ -1948,44 +2169,6 @@ namespace Xen
 
 			renderStackSizeUsed = true;
 
-			ms_Projection = projectionMatrix;
-			ms_View = viewMatrix;
-			ms_World = worldMatrix;
-
-			ms_Projection_Inverse = Inverse(projectionMatrix);
-			ms_Projection_Transpose = Transpose(projectionMatrix);
-				
-			ms_View_Transpose = Transpose(viewMatrix);
-			ms_View_Inverse = Inverse(viewMatrix);
-				
-			ms_World_Inverse = Inverse(worldMatrix);
-			ms_World_Transpose = Transpose(worldMatrix);
-			
-			ms_ViewProjection = Mult(viewMatrix,projectionMatrix);
-			ms_WorldProjection = Mult(worldMatrix,projectionMatrix);
-			ms_WorldView = Mult(worldMatrix, viewMatrix);
-
-				
-			ms_ViewProjection_Inverse = Inverse(ms_ViewProjection);
-			ms_ViewProjection_Transpose = Transpose(ms_ViewProjection);
-			ms_WorldProjection_Inverse = Inverse(ms_WorldProjection);
-			ms_WorldProjection_Transpose = Transpose(ms_WorldProjection);
-			ms_WorldView_Transpose = Transpose(ms_WorldView);
-			ms_WorldView_Inverse = Inverse(ms_WorldView);
-
-			ms_WorldViewProjection = Mult(worldMatrix, ms_ViewProjection);
-
-			ms_WorldViewProjection_Inverse = Inverse(ms_WorldViewProjection);
-			ms_WorldViewProjection_Transpose = Transpose(ms_WorldViewProjection);
-
-			/*
-
-		_ViewDirectionVector3
-		_ViewPointVector3
-		_WindowSizeVector2
-			 * 
-			 
-			 */
 		}
 
 		MatrixCalc Inverse(MatrixSource provider)
@@ -2013,7 +2196,7 @@ namespace Xen
 #if DEBUG
 				ValidateProtected(); 
 #endif
-				return worldMatrix.value;
+				return ms_World.value;
 			}
 		}
 		/// <summary>
@@ -2026,7 +2209,7 @@ namespace Xen
 #if DEBUG
 				ValidateProtected();
 #endif
-				return new Vector3(worldMatrix.value.M41, worldMatrix.value.M42, worldMatrix.value.M43);
+				return new Vector3(ms_World.value.M41, ms_World.value.M42, ms_World.value.M43);
 			}
 		}
 		/// <summary>
@@ -2041,7 +2224,23 @@ namespace Xen
 #if XBOX360
 			matrix = new Matrix();
 #endif
-			matrix = worldMatrix.value;
+			matrix = ms_World.value;
+		}
+		/// <summary>
+		/// Gets the current world matrix at the top of the world matrix stack
+		/// </summary>
+		/// <param name="matrix"></param>
+		/// <param name="isIdentity">true if the matrix is guaranteed to be an identity matrix (this value may return a false negative)</param>
+		public void GetWorldMatrix(out Matrix matrix, out bool isIdentity)
+		{
+#if DEBUG
+			ValidateProtected();
+#endif
+//#if XBOX360
+//            matrix = new Matrix();
+//#endif
+			matrix = ms_World.value;
+			isIdentity = ms_World.isIdentity;
 		}
 		/// <summary>
 		/// Gets the translation of the current world matrix at the top of the world matrix stack
@@ -2055,15 +2254,15 @@ namespace Xen
 #if XBOX360
 			translate = new Vector3();
 #endif
-			translate.X = worldMatrix.value.M41;
-			translate.Y = worldMatrix.value.M42;
-			translate.Z = worldMatrix.value.M43;
+			translate.X = ms_World.value.M41;
+			translate.Y = ms_World.value.M42;
+			translate.Z = ms_World.value.M43;
 		}
 
 
 		internal void GetStackHeight(out ushort worldHeight, out ushort stateHeight, out ushort cameraHeight, out ushort preCullerCount, out ushort postCullerCount)
 		{
-			worldHeight = (ushort)worldMatrix.MatrixStackTop;
+			worldHeight = (ushort)ms_World.top;
 			stateHeight = (ushort)renderStateStackIndex;
 			cameraHeight = (ushort)cameraStack.Count;
 			postCullerCount = (ushort)this.postCullerCount;
@@ -2072,7 +2271,7 @@ namespace Xen
 
 		internal void ValidateStackHeight(ushort worldHeight, ushort stateHeight, ushort cameraHeight, ushort preCullerCount, ushort postCullerCount)
 		{
-			if (worldMatrix.MatrixStackTop != worldHeight ||
+			if (ms_World.top != worldHeight ||
 				renderStateStackIndex != stateHeight ||
 				cameraStack.Count != cameraHeight ||
 				preCullerCount != this.preCullerCount ||
@@ -2100,7 +2299,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.PushMult(ref matrix);
+			ms_World.PushMult(ref matrix);
 		}
 
 		/// <summary>
@@ -2112,7 +2311,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.PushMultTrans(ref translate);
+			ms_World.PushMultTrans(ref translate);
 		}
 		/// <summary>
 		/// Optimised equivalent of calling <see cref="PushWorldMatrixMultiply"/>(<see cref="Microsoft.Xna.Framework.Matrix.CreateTranslation(Vector3)"/>(translate))
@@ -2123,7 +2322,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.PushMultTrans(ref translate);
+			ms_World.PushMultTrans(ref translate);
 		}
 
 		/// <summary>
@@ -2135,7 +2334,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			matrix.Set(ref worldMatrix.value);
+			matrix.Set(ref ms_World.value);
 		}
 
 		/// <summary>
@@ -2147,7 +2346,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.Push(ref matrix);
+			ms_World.Push(ref matrix);
 		}
 		/// <summary>
 		/// Sets the top of the current rendering world matrix stack to the matrix
@@ -2158,7 +2357,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.Set(ref matrix);
+			ms_World.Set(ref matrix);
 		}
 		/// <summary>
 		/// Optimised equivalent of calling <see cref="PushWorldMatrix"/>(<see cref="Microsoft.Xna.Framework.Matrix.CreateTranslation(Vector3)"/>(translate))
@@ -2169,7 +2368,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.PushTrans(ref translate);
+			ms_World.PushTrans(ref translate);
 		}
 		/// <summary>
 		/// Optimised equivalent of calling <see cref="PushWorldMatrix"/>(<see cref="Microsoft.Xna.Framework.Matrix.CreateTranslation(Vector3)"/>(translate))
@@ -2180,7 +2379,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.PushTrans(ref translate);
+			ms_World.PushTrans(ref translate);
 		}
 		/// <summary>
 		/// Pops the top of the rendering world matrix stack, Restoring the matrix saved with <see cref="PushWorldMatrix"/>
@@ -2190,7 +2389,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
-			worldMatrix.Pop();
+			ms_World.Pop();
 		}
 
 		private ICamera camera;
@@ -3309,6 +3508,17 @@ namespace Xen
 		private int[] texture3DGlobalsFrame = new int[8];
 		private int[] textureCubeGlobalsFrame = new int[8];
 
+		private Dictionary<byte[], Microsoft.Xna.Framework.Graphics.VertexShader> cachedVShaders = new Dictionary<byte[], Microsoft.Xna.Framework.Graphics.VertexShader>();
+		private Dictionary<byte[], Microsoft.Xna.Framework.Graphics.PixelShader> cachedPShaders = new Dictionary<byte[], Microsoft.Xna.Framework.Graphics.PixelShader>();
+
+		private Microsoft.Xna.Framework.Graphics.VertexShader boundVertexShader;
+		private Microsoft.Xna.Framework.Graphics.PixelShader boundPixelShader;
+		private Microsoft.Xna.Framework.Graphics.VertexShader vertexShaderToBind;
+		private Microsoft.Xna.Framework.Graphics.PixelShader pixelShaderToBind;
+		private Vector4[] vertexShaderConstantsToBind;
+		private Vector4[] pixelShaderConstantsToBind;
+
+
 		private readonly Dictionary<string, int>
 			matrixGlobalLookup = new Dictionary<string, int>(),
 			v4GlobalLookup = new Dictionary<string, int>(),
@@ -3343,7 +3553,6 @@ namespace Xen
 			{
 				TextureSamplerStateInternal.ResetState(samplerState, sampler);
 				psSamplers[index] = sampler;
-			//	sampler.ResetState(samplerState, ref psSamplers[index]);
 
 				graphics.Textures[index] = texture;
 				psTextures[index] = texture;
@@ -3354,7 +3563,6 @@ namespace Xen
 			{
 				if (psSamplers[index] != sampler)
 				{
-				//	sampler.ApplyState(samplerState, ref psSamplers[index]);
 					TextureSamplerStateInternal.ApplyState(sampler, samplerState, ref psSamplers[index]
 #if DEBUG
 					,this
@@ -3380,9 +3588,17 @@ namespace Xen
 			TextureSamplerState sampler = (TextureSamplerState)state;
 			Microsoft.Xna.Framework.Graphics.SamplerState samplerState = graphics.VertexSamplerStates[index];
 
+#if XBOX360
+
+			//no, this isn't a mistake.
+			//a bug in XNA on the xbox means the vertex declaration often needs reset after
+			//a draw call that uses vertex texture samplers
+			this.vertexDecl = null;
+
+#endif
+
 			if (vsSamplerDirty[index])
 			{
-			//	sampler.ResetState(samplerState, ref vsSamplers[index]);
 				TextureSamplerStateInternal.ResetState(samplerState,sampler);
 				vsSamplers[index] = sampler;
 				
@@ -3400,7 +3616,6 @@ namespace Xen
 			, this
 #endif
 			);
-				//	sampler.ApplyState(samplerState, ref vsSamplers[index]);
 				}
 			
 				if (texture != vsTextures[index])
@@ -3447,8 +3662,8 @@ namespace Xen
 				throw new ArgumentException("When pushing a camera, a render target size must be specified if a draw target isn't currently active");
 			}
 
-			projectionMatrix.SetProjectionCamera(camera, ref targetSize);
-			viewMatrix.SetViewCamera(camera);
+			ms_Projection.SetProjectionCamera(camera, ref targetSize);
+			ms_View.SetViewCamera(camera);
 
 			if (cameraInvertsCullMode != camera.ReverseBackfaceCulling)
 			{
@@ -3494,9 +3709,9 @@ namespace Xen
 
 			boundShaderStateDirty = false;
 
-			boundShaderWorldIndex = worldMatrix.index;
-			boundShaderProjectionIndex = projectionMatrix.index;
-			boundShaderViewIndex = viewMatrix.index;
+			boundShaderWorldIndex = ms_World.index;
+			boundShaderProjectionIndex = ms_Projection.index;
+			boundShaderViewIndex = ms_View.index;
 
 			boundShaderUsesWorldMatrix = false;
 			boundShaderUsesProjectionMatrix = false;
@@ -3531,8 +3746,6 @@ namespace Xen
 			return application.graphicsId;
 		}
 
-		private Dictionary<byte[], Microsoft.Xna.Framework.Graphics.VertexShader> cachedVShaders = new Dictionary<byte[], Microsoft.Xna.Framework.Graphics.VertexShader>();
-		private Dictionary<byte[], Microsoft.Xna.Framework.Graphics.PixelShader> cachedPShaders = new Dictionary<byte[], Microsoft.Xna.Framework.Graphics.PixelShader>();
 
 		void IShaderSystem.CreateShaders(
 			out Microsoft.Xna.Framework.Graphics.VertexShader vertexShader, 
@@ -3591,27 +3804,10 @@ namespace Xen
 				}
 			}
 #endif
-			graphics.VertexShader = vertexShader;
-			graphics.PixelShader = pixelShader;
-			
-#if XBOX360
-			boundVertexShader = vertexShader;
-			boundPixelShader = pixelShader;
-			shadersAssigned = true;
-#endif
+			vertexShaderToBind = vertexShader;
+			pixelShaderToBind = pixelShader;
 		}
 
-#if XBOX360
-		//there is a bug with XNA on the 360 that sometimes occurs...
-		//if you change VS constants, but not PS constants, then the 
-		//the pixel shader can need reassigning, even though it's still set.
-		//The same may be true for VS.
-		private bool shadersAssigned;
-		private bool vertexConstantsSet, pixelConstantsSet;
-		
-		Microsoft.Xna.Framework.Graphics.VertexShader boundVertexShader;
-		Microsoft.Xna.Framework.Graphics.PixelShader boundPixelShader;
-#endif
 
 		void IShaderSystem.SetShaderConstants(
 			Vector4[] vertexShaderConstants, 
@@ -3629,28 +3825,18 @@ namespace Xen
 				System.Threading.Interlocked.Increment(ref application.currentFrame.PixelShaderConstantBytesSetCount);
 			}
 #endif
-#if XBOX360
+			if (vertexShaderConstants != null)
+				vertexShaderConstantsToBind = vertexShaderConstants;
 
-			if (vertexShaderConstants != null)
-			{
-				vertexConstantsSet = true;
-				graphics.SetVertexShaderConstant(0, vertexShaderConstants);
-			}
+
 			if (pixelShaderConstants != null)
-			{
-				pixelConstantsSet = true;
-				graphics.SetPixelShaderConstant(0, pixelShaderConstants);
-			}
-			
-#else
-			if (vertexShaderConstants != null)
-				graphics.SetVertexShaderConstant(0, vertexShaderConstants);
-			if (pixelShaderConstants != null)
-				graphics.SetPixelShaderConstant(0, pixelShaderConstants);
-			
-#endif
+				pixelShaderConstantsToBind = pixelShaderConstants;
 		}
 
+
+		//DrawState.DeferDrawCall() has been removed in xen 1.5, as it really wasn't that well designed
+		//If you'd like it back, define the 'XEN_EXTRA' conditional compilation symbol in the Xen project
+#if XEN_EXTRA
 		#region deferred rendering logic
 
 		private DeferredDrawCall[] deferredDrawList = new DeferredDrawCall[0];
@@ -3818,12 +4004,10 @@ namespace Xen
 
 
 		#endregion
+#endif
 
 
 		#region IShaderSystem Members
-
-
-
 
 		void IShaderSystem.SetProjectionInverseMatrix(IValue<Matrix> value, ref int ci)
 		{
@@ -4071,7 +4255,7 @@ namespace Xen
 		public bool ProjectToScreen(ref Vector3 position, out Vector2 screenCoordinate)
 		{
 			Vector3 pos;
-			Vector3.Transform(ref position, ref worldMatrix.value, out pos);
+			Vector3.Transform(ref position, ref ms_World.value, out pos);
 
 			Vector4 worldPositionW = new Vector4(pos, 1.0f);
 

@@ -75,6 +75,7 @@ namespace Xen.Graphics
 	{
 		VertexDeclaration GetVertexDeclaration(Application application);
 		VertexBuffer GetVertexBuffer(DrawState state);
+		bool IsImplementationUserSpecifiedVertexElements(out VertexElement[] elements);
 	}
 
 	/// <summary>
@@ -197,7 +198,7 @@ namespace Xen.Graphics
 #if DEBUG
 					state.Application.currentFrame.VertexBufferByesCopied += Stride * length;
 #endif
-					if (IsRawDataVertices) // raw data buffer
+					if (IsRawDataVertices && typeof(VertexType) == typeof(byte)) // raw data buffer
 						((VertexBuffer)target).SetData(start, data, startIndex * Stride, length * Stride, 1);
 					else
 						((VertexBuffer)target).SetData(start, data, startIndex, length, Stride);
@@ -241,6 +242,36 @@ namespace Xen.Graphics
 			return new Vertices<VertexType>(data, elements, stride);
 		}
 
+		/// <summary>
+		/// <para>Creates a vertex buffer that will map an array of float or vector primitives to a specified Vertex Usage and index</para>
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="elementUsage"></param>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		public static Vertices<VertexType> CreateSingleElementVertices(VertexType[] data, VertexElementUsage elementUsage, int index)
+		{
+			if (typeof(float) != typeof(VertexType) &&
+				typeof(Vector2) != typeof(VertexType) &&
+				typeof(Vector3) != typeof(VertexType) &&
+				typeof(Vector4) != typeof(VertexType) &&
+				typeof(Microsoft.Xna.Framework.Graphics.PackedVector.HalfVector2) != typeof(VertexType) &&
+				typeof(Microsoft.Xna.Framework.Graphics.PackedVector.HalfVector4) != typeof(VertexType))
+				throw new ArgumentException("Only float and vector types are supported for single element vertex buffers");
+
+			if (data == null)
+				throw new ArgumentNullException();
+			if (index >= 16 || index < 0)
+				throw new ArgumentException("index");
+			
+			VertexElementFormat format = VertexDeclarationBuilder.DetermineFormat(typeof(VertexType));
+			VertexElement[] elements = new VertexElement[] { new VertexElement(0, 0, format, VertexElementMethod.Default, elementUsage, (byte)index) };
+
+			int stride = VertexElementAttribute.CalculateVertexStride(elements);
+
+			return new Vertices<VertexType>(data, elements, stride);
+		}
+
 		private Vertices(VertexType[] data, VertexElement[] elements, int stride)
 		{
 			this.usage = ResourceUsage.None;
@@ -251,7 +282,7 @@ namespace Xen.Graphics
 		/// <summary>
 		/// Params Array Constructor
 		/// </summary>
-		/// <param name="vertices">vertex data containin vertices</param>
+		/// <param name="vertices">vertex data containing vertices</param>
 		public Vertices(params VertexType[] vertices)
 			: this(ResourceUsage.None, (IEnumerable<VertexType>)vertices)
 		{
@@ -392,6 +423,12 @@ namespace Xen.Graphics
 		{
 			if (buffer == null)
 				throw new ObjectDisposedException("this");
+		}
+
+		bool IDeviceVertexBuffer.IsImplementationUserSpecifiedVertexElements(out VertexElement[] elements)
+		{
+			elements = buffer.GetVertexElements();
+			return buffer.IsRawDataVertices;
 		}
 
 		VertexDeclaration IDeviceVertexBuffer.GetVertexDeclaration(Application application)
@@ -704,7 +741,7 @@ namespace Xen.Graphics
 				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawIndexedPrimitiveCallCount);
 #endif
 
-				device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, (indices.MaxIndex - indices.MinIndex) + 1, startIndex, primitveCount);
+				device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, (indices.MaxIndex - indices.MinIndex) + 1 - vertexOffset, startIndex, primitveCount);
 			}
 			else
 			{
@@ -754,6 +791,7 @@ namespace Xen.Graphics
 				vb = null;
 			}
 			decl = null;
+			GC.SuppressFinalize(this);
 		}
 
 		#endregion

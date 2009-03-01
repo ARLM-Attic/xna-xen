@@ -79,7 +79,6 @@ namespace Xen
 		private readonly GamePadState[] pads;
 		private UpdateManager manager;
 		private bool async;
-		internal bool validPreFrameContext;
 #if !XBOX360
 		private readonly KeyboardInputState keyboard = new KeyboardInputState();
 		private readonly MouseInputState mouse = new MouseInputState();
@@ -134,13 +133,10 @@ namespace Xen
 
 		/// <summary>
 		/// <para>The the item passed in will be drawn at the start of the next frame, before the main application Draw method is called</para>
-		/// <para>This method may only be called from a <see cref="UpdateFrequency.OncePerFrame"/> context.</para>
 		/// </summary>
 		/// <param name="draw"></param>
 		public void PreFrameDraw(IDraw draw)
 		{
-			if (!validPreFrameContext)
-				throw new InvalidOperationException("PreFrameDraw() may only be called from a UpdateFrequency.OncePerFrame context");
 			if (draw == null)
 				throw new ArgumentNullException();
 
@@ -290,8 +286,8 @@ namespace Xen
 	struct ShaderUID
 	{
 		private static readonly object sync = new object();
-		private static int id = 0;
-		private static int GetId()
+		private static uint id = 0;
+		private static uint GetId()
 		{
 			lock (sync)
 			{
@@ -300,7 +296,7 @@ namespace Xen
 		}
 		public struct Type<T> where T : IShader, new()
 		{
-			public static readonly int ID = GetId();
+			public static readonly uint ID = GetId();
 		}
 	}
 
@@ -350,7 +346,7 @@ namespace Xen
 			ValidateProtected();
 #endif
 
-			int id = ShaderUID.Type<T>.ID;
+			uint id = ShaderUID.Type<T>.ID;
 			if (id == staticShaderCache.Length)
 				Array.Resize(ref staticShaderCache, staticShaderCache.Length * 2);
 
@@ -365,7 +361,7 @@ namespace Xen
 				staticShaderCache[id] = shader;
 			}
 #if DEBUG
-			if (shader.GetType() != typeof(T))
+			if (shader.GetType() != typeof(T)) //sanity check
 				throw new InvalidOperationException();
 #endif
 			return shader;
@@ -409,9 +405,37 @@ namespace Xen
 			this.userValues = userValues;
 			this.application = application;
 			
-			worldMatrix = new WorldStackProvider(renderStackSize,this);
-			viewMatrix = new ViewProjectionProvider(false, this);
-			projectionMatrix = new ViewProjectionProvider(true, this);
+			ms_World = new WorldStackProvider(renderStackSize,this);
+			ms_View = new ViewProjectionProvider(false, this);
+			ms_Projection = new ViewProjectionProvider(true, this);
+
+
+			ms_Projection_Inverse = Inverse(ms_Projection);
+			ms_Projection_Transpose = Transpose(ms_Projection);
+
+			ms_View_Transpose = Transpose(ms_View);
+			ms_View_Inverse = Inverse(ms_View);
+
+			ms_World_Inverse = Inverse(ms_World);
+			ms_World_Transpose = Transpose(ms_World);
+
+			ms_ViewProjection = Mult(ms_View, ms_Projection);
+			ms_WorldProjection = Mult(ms_World, ms_Projection);
+			ms_WorldView = Mult(ms_World, ms_View);
+
+
+			ms_ViewProjection_Inverse = Inverse(ms_ViewProjection);
+			ms_ViewProjection_Transpose = Transpose(ms_ViewProjection);
+			ms_WorldProjection_Inverse = Inverse(ms_WorldProjection);
+			ms_WorldProjection_Transpose = Transpose(ms_WorldProjection);
+			ms_WorldView_Transpose = Transpose(ms_WorldView);
+			ms_WorldView_Inverse = Inverse(ms_WorldView);
+
+			ms_WorldViewProjection = Mult(ms_World, ms_ViewProjection);
+
+			ms_WorldViewProjection_Inverse = Inverse(ms_WorldViewProjection);
+			ms_WorldViewProjection_Transpose = Transpose(ms_WorldViewProjection);
+
 
 			InitDrawFlagCollection();
 		}
@@ -750,8 +774,12 @@ namespace Xen
 			if (application.VSyncEnabled)
 			{
 				//when vsync is on, bias the delta time towards it..
+				//this will have no impact on game speed, but is intended to keep the delta time
+				//as consistent intervals, reducing jitter that results from sampling actual time.
+
+				//this should not have an impact on game timing on a longer term scale
 				long refresh = application.GraphicsDevice.DisplayMode.RefreshRate;
-				if (refresh == 0)
+				if (refresh == 0 || refresh == 59 || refresh == 61)
 					refresh = 60;
 
 
@@ -1084,6 +1112,9 @@ namespace Xen
 			s.BoundTextureCount = a.BoundTextureCount + b.BoundTextureCount * mul;
 			s.BoundVertexTextureCount = a.BoundVertexTextureCount + b.BoundVertexTextureCount * mul;
 			s.BoundTextureCountTotalSamples = a.BoundTextureCountTotalSamples + b.BoundTextureCountTotalSamples * mul;
+#if XBOX360
+			s.XboxPixelFillBias = a.XboxPixelFillBias + b.XboxPixelFillBias * mul;
+#endif
 
 			s.timer = null;
 			return s;
@@ -1270,6 +1301,11 @@ namespace Xen
 		public int BoundVertexTextureCount;
 		/// <summary></summary>
 		public int BoundTextureCountTotalSamples;
+
+#if XBOX360
+		/// <summary>Number of pixels that have been filled by XNA internal render target code</summary>
+		public int XboxPixelFillBias;
+#endif
 	}
 #endif
 }

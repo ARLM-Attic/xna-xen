@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectGuid>ec205c07-79a7-4f36-b94b-be447cffa2ae</ProjectGuid>
     <ProjectTypeGuids>{96E2B04D-8817-42c6-938A-82C39BA4D311};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -30,9 +30,13 @@
     <Reference Include="Microsoft.Xna.Framework.Content.Pipeline.XImporter, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=MSIL">
       <Private>False</Private>
     </Reference>
-    <Reference Include="Xen.Ex.ModelImporter, Version=1.0.0.1, Culture=neutral, processorArchitecture=x86">
+    <Reference Include="Xen.Ex.ModelImporter, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\bin\Xen.Ex.ModelImporter\Xen.Ex.ModelImporter.dll</HintPath>
+    </Reference>
+    <Reference Include="Xen.Ex.ParticleSystemImporter, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\bin\Xen.Ex.ParticleSystemImporter\Xen.Ex.ParticleSystemImporter.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -78,6 +82,41 @@
       <Name>Arial</Name>
       <Importer>FontDescriptionImporter</Importer>
       <Processor>FontDescriptionProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Particles\Fireworks.particles">
+      <Name>Fireworks</Name>
+      <Importer>ParticleSystemDataImporter</Importer>
+      <Processor>ParticleSystemDataProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Particles\Snow.particles">
+      <Name>Snow</Name>
+      <Importer>ParticleSystemDataImporter</Importer>
+      <Processor>ParticleSystemDataProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Particles\Fire.particles">
+      <Name>Fire</Name>
+      <Importer>ParticleSystemDataImporter</Importer>
+      <Processor>ParticleSystemDataProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Particles\Smoke.particles">
+      <Name>Smoke</Name>
+      <Importer>ParticleSystemDataImporter</Importer>
+      <Processor>ParticleSystemDataProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Particles\Burst.particles">
+      <Name>Burst</Name>
+      <Importer>ParticleSystemDataImporter</Importer>
+      <Processor>ParticleSystemDataProcessor</Processor>
     </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\XNA Game Studio\v3.0\Microsoft.Xna.GameStudio.ContentPipeline.targets" />

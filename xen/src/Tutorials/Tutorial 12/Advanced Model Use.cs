@@ -92,21 +92,8 @@ namespace Tutorials.Tutorial_12
 
 			//disable back face culling
 			state.RenderState.DepthColourCull.CullMode = CullMode.None;
-
-
-			//Get the graphics device.
-			//This is the best way to get the graphics device, 
-			//This tells xen that you intend to do something special with the device,
-			//StateFlag.None tells xen that it does not need to dirty any of it's
-			//internal state tracking buffers
-			//
-			//Future versions of xen are may render on multiple threads, 
-			//Using BeginGetGraphicsDevice() and EndGetGraphicsDevice() will 
-			//stay compatible in future versions
-			GraphicsDevice device = state.BeginGetGraphicsDevice(StateFlag.None);
-
-			//change the fill mode to wire frame (directly changing on the device)
-			device.RenderState.FillMode = FillMode.WireFrame;
+			//set to wireframe
+			state.RenderState.DepthColourCull.FillMode = FillMode.WireFrame;
 
 			//loop through all the geometry data in the model..
 			//(note, the sample model has only 1 geometry instance)
@@ -152,12 +139,6 @@ namespace Tutorials.Tutorial_12
 					}
 				}
 			}
-
-			//Reset the fill mode
-			device.RenderState.FillMode = FillMode.Solid;
-
-			//end using the graphics device
-			state.EndGetGraphicsDevice();
 
 			//pop the render state
 			state.PopRenderState();

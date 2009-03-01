@@ -73,6 +73,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Tutorial 25\shader.fx.cs">
+      <DependentUpon>shader.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Tutorial 25\Shadow Mapping.cs" />
+    <Compile Include="Tutorial 23\Advanced Particle System.cs" />
+    <Compile Include="Tutorial 24\BatchModel.cs" />
+    <Compile Include="Tutorial 19\Manual Animation.cs" />
+    <Compile Include="Tutorial 22\Particle System 3D.cs" />
+    <Compile Include="Tutorial 21\Particle System 2D.cs" />
+    <Compile Include="Tutorial 18\DrawPredicate.cs" />
     <Compile Include="Tutorial 17\Keyboard Input.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
@@ -116,6 +128,12 @@
     <Compile Include="TutorialChooser.Designer.cs">
       <DependentUpon>TutorialChooser.cs</DependentUpon>
     </Compile>
+    <Compile Include="WinFormsExample.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="WinFormsExample.Designer.cs">
+      <DependentUpon>WinFormsExample.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Game.ico" />
@@ -140,10 +158,18 @@
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>
+    <None Include="Tutorial 25\shader.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>shader.fx.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="TutorialChooser.resx">
       <DependentUpon>TutorialChooser.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="WinFormsExample.resx">
+      <DependentUpon>WinFormsExample.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>

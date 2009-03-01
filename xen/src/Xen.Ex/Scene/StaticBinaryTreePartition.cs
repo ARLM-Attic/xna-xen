@@ -22,6 +22,8 @@ namespace Xen.Ex.Scene
 		private int childIndex = 0;
 		private IDraw[] allChildren = new IDraw[4*ChildCount];
 		private BinaryNode[] allNodes = new BinaryNode[4];
+		//stores current node index and desired node index when reordering data
+		private ushort[] nodeChildIndex, nodeChildSwapIndex;
 		private ushort nodeCount = 1;
 
 		private ThreadDrawer[] threads;
@@ -76,7 +78,7 @@ namespace Xen.Ex.Scene
 			Matrix world;
 			state.GetWorldMatrix(out world);
 
-			allNodes[0].Draw(state, minBuffer, maxBuffer, 0, allChildren, allNodes, world == Matrix.Identity);
+			allNodes[0].Draw(state, minBuffer, maxBuffer, 0, allChildren, allNodes, world == Matrix.Identity, this.IsOptimizedState);
 		}
 
 
@@ -97,14 +99,13 @@ namespace Xen.Ex.Scene
 			{
 				//create the threads.
 				//must be a power-of-two number of thread tasks
-				threadLevel = 1;
+				threadLevel = 0;
 				int threadCount = 2;
 				while (pool.ThreadCount >= threadCount)
 				{
 					threadCount *= 2;
 					threadLevel++;
 				}
-				threadCount *= 2;
 
 				this.threads = new ThreadDrawer[threadCount];
 				for (int i = 0; i < threadCount; i++)
@@ -126,6 +127,8 @@ namespace Xen.Ex.Scene
 
 				this.threads[i].cullTestInstanceCount = 0;
 				this.threads[i].instanceCount = 0;
+
+				this.threads[i].treeIsOptimized = this.IsOptimizedState;
 			}
 
 			int index = 0;
@@ -141,15 +144,35 @@ namespace Xen.Ex.Scene
 			for (int t = 0; t < this.threads.Length; t++)
 			{
 				//some do not require cull tests
-				for (int i = 0; i < threads[t].instanceCount; i++)
+				if (this.IsOptimizedState)
 				{
-					ThreadDrawnInstance inst = threads[t].instances[i];
+					for (int i = 0; i < threads[t].instanceCount; i++)
+					{
+						ThreadDrawnInstance inst = threads[t].instances[i];
 
-					uint child = inst.firstChild;
-					child <<= ChildCountShift;
+						uint child = inst.firstChild;
+						child <<= ChildCountShift;
 
-					for (ushort c = 0; c < inst.childCount; c++)
-						allChildren[child++].Draw(state);
+						for (ushort c = 0; c < inst.childCount; c++)
+						{
+							IDraw item = allChildren[child++];
+							if (item != null)
+								item.Draw(state);
+						}
+					}
+				}
+				else
+				{
+					for (int i = 0; i < threads[t].instanceCount; i++)
+					{
+						ThreadDrawnInstance inst = threads[t].instances[i];
+
+						uint child = inst.firstChild;
+						child <<= ChildCountShift;
+
+						for (ushort c = 0; c < inst.childCount; c++)
+							allChildren[child++].Draw(state);
+					}
 				}
 
 				//some do.
@@ -196,7 +219,7 @@ namespace Xen.Ex.Scene
 			switch (type)
 			{
 			case ContainmentType.Contains:
-				allNodes[node].Draw(state, allChildren, allNodes);
+				allNodes[node].Draw(state, allChildren, allNodes, IsOptimizedState);
 				break;
 			case ContainmentType.Intersects:
 				if (allNodes[node].left == 0 || depth == threadLevel)
@@ -296,13 +319,129 @@ namespace Xen.Ex.Scene
 		ushort GetNewNodeIndex(ushort firstChild)
 		{
 			if (nodeCount == this.allNodes.Length)
-				Array.Resize(ref this.allNodes, this.allNodes.Length*2);
+				Array.Resize(ref this.allNodes, this.allNodes.Length * 2);
 
 			this.allNodes[nodeCount] = new BinaryNode(firstChild);
 
-			checked { return nodeCount++; };
+			if (nodeCount == ushort.MaxValue)
+				throw new OverflowException();
+
+			return nodeCount++;
 		}
 
+		protected override void OptimizeContents()
+		{
+			//each node leaf stores an index into the allChildren, and a child count
+			//this method runs through the tree, and orders the children stored in allChildren
+			//so they are in the same order the tree would logically be traversed.
+			//this way, when a non-leaf node is fully visible, it can loop through all it's 
+			//children's drawable objects - without having to recurse into the tree.
+
+			int allocCount = 2;
+			while (this.nodeCount >= allocCount)
+				allocCount *= 2;
+			allocCount /= 2;
+
+			if (nodeChildIndex == null ||
+				nodeChildIndex.Length < allocCount)
+			{
+				Array.Resize(ref nodeChildIndex, allocCount);
+				Array.Resize(ref nodeChildSwapIndex, allocCount);
+			}
+
+			for (ushort i = 0; i < this.nodeCount; i++)
+			{
+				if (this.allNodes[i].left == 0)
+					nodeChildIndex[allNodes[i].firstChild] = i;
+			}
+			
+			int order = 0;
+			ushort min = ushort.MaxValue, max = 0;
+			StoreLogicalOrder(0, ref order, ref min, ref max);
+
+			//every second value in nodeChildIndex will now store the logical order, the first is the leaf order
+
+			for (int i = 0; i < order; i++)
+			{
+				//swap into the correct ordering
+
+				ushort target = nodeChildSwapIndex[i];
+
+				if (allNodes[target].firstChild != i && target != 0)
+				{
+					ushort actual = nodeChildIndex[i];
+
+					//swap the actual contents with the target.
+					int start = allNodes[target].firstChild << ChildCountShift;
+					int from = allNodes[actual].firstChild << ChildCountShift;
+
+					ushort fc = allNodes[target].firstChild;
+					nodeChildIndex[i] = target;
+					nodeChildIndex[fc] = actual;
+					//if (allNodes[actual].firstChild != i)
+					//    throw new ArgumentException();
+
+					for (int n = 0; n < ChildCount; n++)
+					{
+						Swap(ref allChildren[from + n], ref allChildren[start + n]);
+					}
+
+					//swap the pointers
+					Swap(ref allNodes[target].firstChild, ref allNodes[actual].firstChild);
+				}
+			}
+		}
+		void Swap<T>(ref T a, ref T b)
+		{
+			T c = a;
+			a = b;
+			b = c;
+		}
+		void StoreLogicalOrder(ushort node, ref int index, ref ushort min, ref ushort max)
+		{
+			if (node != 0 && allNodes[node].left == 0)
+			{
+				ushort child = (ushort)index;
+				this.nodeChildSwapIndex[index++] = node;
+
+				min = Math.Min(min, child);
+				max = Math.Max(max, (ushort)(child+1));
+				return;
+			}
+
+
+			{
+				ushort localMin = ushort.MaxValue, localMax = 0;
+				StoreLogicalOrder(allNodes[node].left, ref index, ref localMin, ref localMax);
+
+				if (localMin != ushort.MaxValue && localMax != 0)
+				{
+					min = Math.Min(min, localMin);
+					max = Math.Max(max, localMax);
+				}
+			}
+			{
+				ushort localMin = ushort.MaxValue, localMax = 0;
+				StoreLogicalOrder(allNodes[node].right, ref index, ref localMin, ref localMax);
+
+				if (localMin != ushort.MaxValue && localMax != 0)
+				{
+					min = Math.Min(min, localMin);
+					max = Math.Max(max, localMax);
+				}
+			}
+
+			if (min != ushort.MaxValue && max != 0)
+			{
+				allNodes[node].firstChild = min;
+				allNodes[node].childCount = max;
+			}
+			else
+			{
+				allNodes[node].firstChild = 0;
+				allNodes[node].childCount = 0;
+			}
+		}
 
 
 		struct ThreadDrawnInstance
@@ -323,10 +462,11 @@ namespace Xen.Ex.Scene
 			public int axis;
 			public bool idenityMatrix;
 			public Threading.WaitCallback callback;
+			public bool treeIsOptimized;
 
 			public void PerformAction(object data)
 			{
-				nodes[startIndex].DrawOnThread(this, (DrawState)data, minBuffer, maxBuffer, axis, children, nodes, idenityMatrix);
+				nodes[startIndex].DrawOnThread(this, (DrawState)data, minBuffer, maxBuffer, axis, children, nodes, idenityMatrix, treeIsOptimized);
 			}
 		}
 
@@ -346,16 +486,16 @@ namespace Xen.Ex.Scene
 			public ushort left, right;
 
 			//bitshifted start index of children
-			public readonly ushort firstChild;
+			public ushort firstChild;
 			public ushort childCount;
 
-			//depth bounds for this node
-			//each node is on the next depth
-			//eg, if this node is bound on x-depth, it's children are bound on y-depth
+			//axis bounds for this node
+			//each node is on the next axis
+			//eg, if this node is bound on x-axis, it's children are bound on y-axis
 			public float min, max;
 
 			//draw without culling
-			public void Draw(DrawState state, IDraw[] children, BinaryNode[] nodes)
+			public void Draw(DrawState state, IDraw[] children, BinaryNode[] nodes, bool treeIsOptimized)
 			{
 				if (left == 0)
 				{
@@ -367,13 +507,30 @@ namespace Xen.Ex.Scene
 				}
 				else
 				{
-					nodes[left].Draw(state, children, nodes);
-					nodes[right].Draw(state, children, nodes);
+					if (treeIsOptimized)
+					{
+						uint firstChild = this.firstChild;
+						firstChild <<= ChildCountShift;
+						uint lastChild = this.childCount;
+						lastChild <<= ChildCountShift; // actually lastChild + 1
+
+						for (uint i = firstChild; i < lastChild; i++)
+						{
+							IDraw item = children[i];
+							if (item != null)
+								item.Draw(state);
+						}
+					}
+					else
+					{
+						nodes[left].Draw(state, children, nodes, treeIsOptimized);
+						nodes[right].Draw(state, children, nodes, treeIsOptimized);
+					}
 				}
 			}
 
 			//draw with culling
-			public void Draw(DrawState state, float[] boundsMin, float[] boundsMax, int axis, IDraw[] children, BinaryNode[] nodes, bool isIdentityMatrix)
+			public void Draw(DrawState state, float[] boundsMin, float[] boundsMax, int axis, IDraw[] children, BinaryNode[] nodes, bool isIdentityMatrix, bool treeIsOptimized)
 			{
 				boundsMin[axis] = min;
 				boundsMax[axis] = max;
@@ -398,7 +555,7 @@ namespace Xen.Ex.Scene
 				switch (type)
 				{
 				case ContainmentType.Contains:
-					Draw(state, children, nodes);
+					Draw(state, children, nodes, treeIsOptimized);
 					return;
 
 				case ContainmentType.Intersects:
@@ -416,7 +573,7 @@ namespace Xen.Ex.Scene
 					}
 					else
 					{
-						nodes[left].Draw(state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix);
+						nodes[left].Draw(state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix, treeIsOptimized);
 
 						boundsMin[0] = localMin.X;
 						boundsMin[1] = localMin.Y;
@@ -426,7 +583,7 @@ namespace Xen.Ex.Scene
 						boundsMax[1] = localMax.Y;
 						boundsMax[2] = localMax.Z;
 
-						nodes[right].Draw(state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix);
+						nodes[right].Draw(state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix, treeIsOptimized);
 
 						boundsMin[0] = localMin.X;
 						boundsMin[1] = localMin.Y;
@@ -442,7 +599,7 @@ namespace Xen.Ex.Scene
 
 
 			//traverses the tree, but on a thread task
-			void DrawOnThread(ThreadDrawer thread, DrawState state, IDraw[] children, BinaryNode[] nodes)
+			void DrawOnThread(ThreadDrawer thread, DrawState state, IDraw[] children, BinaryNode[] nodes, bool treeIsOptimized)
 			{
 				if (left == 0)
 				{
@@ -456,13 +613,50 @@ namespace Xen.Ex.Scene
 				}
 				else
 				{
-					nodes[left].DrawOnThread(thread, state, children, nodes);
-					nodes[right].DrawOnThread(thread, state, children, nodes);
+					if (treeIsOptimized)
+					{
+						uint firstChild = this.firstChild;
+						firstChild <<= ChildCountShift;
+						uint lastChild = this.childCount;
+						lastChild <<= ChildCountShift; // actually lastChild + 1
+
+						uint count = lastChild - firstChild;
+
+						ushort firstChildIndex = this.firstChild;
+						ThreadDrawnInstance inst;
+
+						while (count > ushort.MaxValue)
+						{
+							if (thread.instanceCount == thread.instances.Length)
+								Array.Resize(ref thread.instances, thread.instances.Length * 2);
+
+							firstChildIndex += ushort.MaxValue / ChildCount;
+							count -= ushort.MaxValue;
+
+							inst.childCount = ushort.MaxValue;
+							inst.firstChild = firstChildIndex;
+
+							thread.instances[thread.instanceCount++] = inst;
+						}
+
+						if (thread.instanceCount == thread.instances.Length)
+							Array.Resize(ref thread.instances, thread.instances.Length * 2);
+
+						inst.childCount = (ushort)count;
+						inst.firstChild = firstChildIndex;
+
+						thread.instances[thread.instanceCount++] = inst;
+					}
+					else
+					{
+						nodes[left].DrawOnThread(thread, state, children, nodes, treeIsOptimized);
+						nodes[right].DrawOnThread(thread, state, children, nodes, treeIsOptimized);
+					}
 				}
 			}
 
 			//traverses the tree, but on a thread task
-			public void DrawOnThread(ThreadDrawer thread, DrawState state, float[] boundsMin, float[] boundsMax, int axis, IDraw[] children, BinaryNode[] nodes, bool isIdentityMatrix)
+			public void DrawOnThread(ThreadDrawer thread, DrawState state, float[] boundsMin, float[] boundsMax, int axis, IDraw[] children, BinaryNode[] nodes, bool isIdentityMatrix, bool treeIsOptimized)
 			{
 				boundsMin[axis] = min;
 				boundsMax[axis] = max;
@@ -487,7 +681,7 @@ namespace Xen.Ex.Scene
 				switch (type)
 				{
 					case ContainmentType.Contains:
-						DrawOnThread(thread, state, children, nodes);
+						DrawOnThread(thread, state, children, nodes, treeIsOptimized);
 						break;
 
 					case ContainmentType.Intersects:
@@ -503,7 +697,7 @@ namespace Xen.Ex.Scene
 						}
 						else
 						{
-							nodes[left].DrawOnThread(thread,state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix);
+							nodes[left].DrawOnThread(thread,state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix, treeIsOptimized);
 
 							boundsMin[0] = localMin.X;
 							boundsMin[1] = localMin.Y;
@@ -513,7 +707,7 @@ namespace Xen.Ex.Scene
 							boundsMax[1] = localMax.Y;
 							boundsMax[2] = localMax.Z;
 
-							nodes[right].DrawOnThread(thread, state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix);
+							nodes[right].DrawOnThread(thread, state, boundsMin, boundsMax, axis == 2 ? 0 : axis + 1, children, nodes, isIdentityMatrix, treeIsOptimized);
 
 							boundsMin[0] = localMin.X;
 							boundsMin[1] = localMin.Y;

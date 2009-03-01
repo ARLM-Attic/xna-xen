@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 namespace Xen.Camera
 {
 	/// <summary>
-	/// Class storing a <see cref="Camera3D"/> projection matrix. Maybe a Perspective or Orthographic project
+	/// Class storing a <see cref="Camera3D"/> projection matrix. May be a Perspective or Orthographic project
 	/// </summary>
 	/// <remarks>This class may be extended to implement more complex forms of projection</remarks>
 #if !DEBUG_API

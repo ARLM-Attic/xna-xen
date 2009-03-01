@@ -97,7 +97,7 @@ namespace Xen.Graphics
 		/// <summary>
 		/// A buffer providing more fleixble setup for instancing matrices (for use with DrawState.DrawBatch)
 		/// </summary>
-		public class InstanceBuffer
+		public sealed class InstanceBuffer
 		{
 			internal void Set(object buffer, InstanceMatrix[] instances, int start, int length)
 			{
@@ -137,7 +137,7 @@ namespace Xen.Graphics
 				if (index == instanceLength)
 					throw new IndexOutOfRangeException();
 #endif
-				instances[instanceIndex++].Set(ref state.worldMatrix.value);
+				instances[instanceIndex++].Set(ref state.ms_World.value);
 			}
 
 			/// <summary>
@@ -198,6 +198,32 @@ namespace Xen.Graphics
 				this.position15.Y = mat.M42;
 				this.position15.Z = mat.M43;
 				this.position15.W = mat.M44;
+			}
+			/// <summary>
+			/// Copy the current world matrix into the position values
+			/// </summary>
+			/// <param name="state"></param>
+			public void Set(DrawState state)
+			{
+				this.position12.X = state.ms_World.value.M11;
+				this.position12.Y = state.ms_World.value.M12;
+				this.position12.Z = state.ms_World.value.M13;
+				this.position12.W = state.ms_World.value.M14;
+
+				this.position13.X = state.ms_World.value.M21;
+				this.position13.Y = state.ms_World.value.M22;
+				this.position13.Z = state.ms_World.value.M23;
+				this.position13.W = state.ms_World.value.M24;
+
+				this.position14.X = state.ms_World.value.M31;
+				this.position14.Y = state.ms_World.value.M32;
+				this.position14.Z = state.ms_World.value.M33;
+				this.position14.W = state.ms_World.value.M34;
+
+				this.position15.X = state.ms_World.value.M41;
+				this.position15.Y = state.ms_World.value.M42;
+				this.position15.Z = state.ms_World.value.M43;
+				this.position15.W = state.ms_World.value.M44;
 			}
 			/// <summary>
 			/// Copy the position into the local buffer as a Translation matrix
@@ -510,10 +536,16 @@ namespace Xen.Graphics
 			return null;
 		}
 
+		bool IDeviceVertexBuffer.IsImplementationUserSpecifiedVertexElements(out VertexElement[] elements)
+		{
+			elements = null;
+			return false;
+		}
+
 		VertexDeclaration IDeviceVertexBuffer.GetVertexDeclaration(Application game)
 		{
 			if (decl == null)
-				decl = game.declarationBuilder.GetDeclaration(game.GraphicsDevice, bufferTypes);
+				decl = game.declarationBuilder.GetDeclaration(game.GraphicsDevice, bufferTypes, this.buffers);
 			return decl;
 		}
 
@@ -719,11 +751,12 @@ namespace Xen.Graphics
 #if XBOX360
 				if (frequency != null)
 				{
+					int repeats = frequency.RepeatCount;
 #if DEBUG
 					System.Threading.Interlocked.Increment(ref state.Application.currentFrame.InstancesDrawBatchCount);
 					state.Application.currentFrame.InstancesDrawn += frequency.indexFrequency[0];
+					instances = repeats;
 #endif
-					int repeats = frequency.RepeatCount;
 					int maxInstances = ((IDeviceIndexBuffer)indices).MaxInstances;
 					int offset = 0;
 					VertexBuffer vb = ((IDeviceVertexBuffer)buffers[1]).GetVertexBuffer(state);
@@ -737,14 +770,14 @@ namespace Xen.Graphics
 						}
 
 						int count = Math.Min(repeats - offset, maxInstances);
-						device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, ((indices.MaxIndex) + 1) - indices.MinIndex, startIndex, primitveCount * count);
+						device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, ((indices.MaxIndex) + 1) - indices.MinIndex - vertexOffset, startIndex, primitveCount * count);
 
 						offset += count;
 					}
 				}
 				else
 #endif
-					device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, (indices.MaxIndex - indices.MinIndex) + 1, startIndex, primitveCount);
+				device.DrawIndexedPrimitives(primitiveType, vertexOffset, indices.MinIndex, (indices.MaxIndex - indices.MinIndex) + 1 - vertexOffset, startIndex, primitveCount);
 			}
 			else
 			{

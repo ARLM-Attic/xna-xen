@@ -605,9 +605,9 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="position">position of the sprite</param>
 		/// <param name="size">size of the sprite</param>
 		/// <returns>Index of the added sprite (Index can be used to change the sprite later)</returns>
-		public void AddSprite(Vector2 position, Vector2 size)
+		public int AddSprite(Vector2 position, Vector2 size)
 		{
-			AddSprite(ref position, ref size);
+			return AddSprite(ref position, ref size);
 		}
 
 		/// <summary>
@@ -618,9 +618,9 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="size">size of the sprite</param>
 		/// <param name="colour">colour of the sprite</param>
 		/// <returns>Index of the added sprite (Index can be used to change the sprite later)</returns>
-		public void AddSprite(Vector2 position, Vector2 size, Vector4 colour)
+		public int AddSprite(Vector2 position, Vector2 size, Vector4 colour)
 		{
-			AddSprite(ref position, ref size, ref colour);
+			return AddSprite(ref position, ref size, ref colour);
 		}
 		/// <summary>
 		/// Set the position of a sprite that has been added to this element

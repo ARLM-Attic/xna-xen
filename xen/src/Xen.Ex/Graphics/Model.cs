@@ -15,6 +15,43 @@ using Xen.Threading;
 namespace Xen.Ex.Graphics
 {
 	/// <summary>
+	/// <para>Interface to a class that may modify the transforms of a models animation bone hierarchy, through a <see cref="AnimationController"/></para>
+	/// <para>Note: Methods implemented for this interface should be thread safe</para>
+	/// </summary>
+	public interface IAnimationBoneModifier
+	{
+		/// <summary>
+		/// <para>Modify the bones of the animation before the animation is processed. Returning false will prevent the animation / blending process from starting.</para>
+		/// <para>Use this method to replace the entire animation, and prevent the standard animations from being processed.</para>
+		/// <para>Any modifications to <paramref name="nonAnimatedBones"/> will have no effect unless false is returned.</para>
+		/// </summary>
+		/// <param name="nonAnimatedBones"></param>
+		/// <param name="modelData"></param>
+		/// <param name="boneWorldSpaceIdentityTransforms"><para>The world space transforms of the bones</para><para>If no animations are playing, all bones will be Identity transforms. These transforms are their world space default transforms</para></param>
+		/// <param name="boneWorldSpaceIdentityInverseTransforms"></param>
+		/// <returns></returns>
+		bool PreProcessAnimation(Transform[] nonAnimatedBones, ModelData modelData, ReadOnlyArrayCollection<Transform> boneWorldSpaceIdentityTransforms, ReadOnlyArrayCollection<Transform> boneWorldSpaceIdentityInverseTransforms);
+		/// <summary>
+		/// <para>Modify the animation bones of a mesh, before the bones are transformed into bone-world space hierarchy</para>
+		/// <para>Return true to have the continue with the animation hierarchy transform, return false if the animation is completed processing</para>
+		/// </summary>
+		/// <param name="boneSpaceTransforms"></param>
+		/// <param name="boneWorldSpaceIdentityTransforms"><para>The world space transforms of the bones</para><para>If no animations are playing, all bones will be Identity transforms. These transforms are their world space default transforms</para></param>
+		/// <param name="boneWorldSpaceIdentityInverseTransforms"></param>
+		/// <param name="modelData"></param>
+		/// <returns>Return true to have the continue with the animation hierarchy transform, return false if the animation is completed processing</returns>
+		bool ProcessBonesPreTransform(Transform[] boneSpaceTransforms, ModelData modelData, ReadOnlyArrayCollection<Transform> boneWorldSpaceIdentityTransforms, ReadOnlyArrayCollection<Transform> boneWorldSpaceIdentityInverseTransforms);
+		/// <summary>
+		/// Modify the animation bones of a mesh, after they have been transformed into bone-world space hierarchy
+		/// </summary>
+		/// <param name="boneSpaceTransforms"></param>
+		/// <param name="modelData"></param>
+		/// <param name="boneWorldSpaceIdentityTransforms"><para>The world space transforms of the bones</para><para>If no animations are playing, all bones will be Identity transforms. These transforms are their world space default transforms</para></param>
+		/// <param name="boneWorldSpaceIdentityInverseTransforms"></param>
+		void ProcessBonesPostTransform(Transform[] boneSpaceTransforms, ModelData modelData, ReadOnlyArrayCollection<Transform> boneWorldSpaceIdentityTransforms, ReadOnlyArrayCollection<Transform> boneWorldSpaceIdentityInverseTransforms);
+	}
+
+	/// <summary>
 	/// Controls animation streams and calulate transformed bone structures for a model
 	/// </summary>
 	public sealed class AnimationController : IUpdate, IDisposable, IAction
@@ -22,14 +59,16 @@ namespace Xen.Ex.Graphics
 		internal Transform[] transformedBones;
 		private bool[] transformIdentity;
 		private readonly List<AnimationStreamControl> animations;
+		private readonly List<AnimationStreamControl> threadAnimations;
 		private ModelData modelData;
 		private bool disposed, wasDrawn, wasSkipped;
 		private readonly List<WeakReference> parents;
 		private float deltaTime;
 		private WaitCallback waitCallback;
 		private int frameIndex, boundsFrameIndex;
-		private bool isAsync;
+		private readonly bool isAsync;
 		internal Vector3 boundsMin,boundsMax;
+		private IAnimationBoneModifier boneModifier, boneModifierBuffer;
 
 		internal AnimationController(ModelData model, UpdateManager manager, ModelInstance parent)
 		{
@@ -40,6 +79,8 @@ namespace Xen.Ex.Graphics
 
 				parents = new List<WeakReference>();
 				parents.Add(new WeakReference(parent));
+
+				threadAnimations = new List<AnimationStreamControl>();
 			}
 			animations = new List<AnimationStreamControl>();
 
@@ -69,6 +110,15 @@ namespace Xen.Ex.Graphics
 		public bool IsDisposed
 		{
 			get { return disposed; }
+		}
+
+		/// <summary>
+		/// Gets/Sets an animation modifier that can modify animation bones before and after the bones are transformed into a hierarchy
+		/// </summary>
+		public IAnimationBoneModifier AnimationBoneModifier
+		{
+			get { return boneModifier; }
+			set { boneModifier = value; }
 		}
 
 		internal ModelData ModelData
@@ -171,7 +221,7 @@ namespace Xen.Ex.Graphics
 			if (disposed)
 				throw new ObjectDisposedException("this");
 			AnimationStreamControl control = this.modelData.animations[animationIndex].GetStream();
-			control.Looping = true;
+			control.looping = true;
 			control.fadeInTime = fadeInTime;
 			control.fadeOutTime = 0;
 			control.fadeOutStop = 0;
@@ -207,7 +257,7 @@ namespace Xen.Ex.Graphics
 			if (disposed)
 				throw new ObjectDisposedException("this");
 			AnimationStreamControl control = this.modelData.animations[animationIndex].GetStream();
-			control.Looping = false;
+			control.looping = false;
 			control.fadeOutStop = 0;
 			control.fadeInTime = fadeInTime;
 			control.fadeOutTime = fadeOutTime;
@@ -238,7 +288,10 @@ namespace Xen.Ex.Graphics
 			this.deltaTime = state.DeltaTimeSeconds;
 
 			if (wasDrawn && modelData != null)
+			{
+				BufferAnimationValues();
 				this.waitCallback = state.Application.ThreadPool.QueueTask(this, null);
+			}
 			else
 				wasSkipped = true;
 			wasDrawn = false;
@@ -249,8 +302,8 @@ namespace Xen.Ex.Graphics
 
 		private void ComputeAnimationBounds()
 		{
-			boundsMin = this.modelData.StaticBounds.Minimum;
-			boundsMax = this.modelData.StaticBounds.Maximum;
+			boundsMin = this.modelData.staticBounds.minimum;
+			boundsMax = this.modelData.staticBounds.maximum;
 
 			for (int a = 0; a < animations.Count; a++)
 			{
@@ -259,12 +312,12 @@ namespace Xen.Ex.Graphics
 				{
 					int animIndex = anim.animation.index;
 
-					Vector3 value = modelData.animationStaticBounds[animIndex].Minimum;
+					Vector3 value = modelData.animationStaticBounds[animIndex].minimum;
 					boundsMin.X += value.X * anim.weighting;
 					boundsMin.Y += value.Y * anim.weighting;
 					boundsMin.Z += value.Z * anim.weighting;
 
-					value = modelData.animationStaticBounds[animIndex].Maximum;
+					value = modelData.animationStaticBounds[animIndex].maximum;
 					boundsMax.X += value.X * anim.weighting;
 					boundsMax.Y += value.Y * anim.weighting;
 					boundsMax.Z += value.Z * anim.weighting;
@@ -276,8 +329,8 @@ namespace Xen.Ex.Graphics
 		internal void ComputeMeshBounds(int meshIndex, out Vector3 boundsMin, out Vector3 boundsMax)
 		{
 			MeshData mesh = modelData.meshes[meshIndex];
-			boundsMin = mesh.StaticBounds.Minimum;
-			boundsMax = mesh.StaticBounds.Maximum;
+			boundsMin = mesh.staticBounds.minimum;
+			boundsMax = mesh.staticBounds.maximum;
 
 			for (int a = 0; a < animations.Count; a++)
 			{
@@ -286,12 +339,12 @@ namespace Xen.Ex.Graphics
 				{
 					int animIndex = anim.animation.index;
 
-					Vector3 value = mesh.animationStaticBounds[animIndex].Minimum;
+					Vector3 value = mesh.animationStaticBounds[animIndex].minimum;
 					boundsMin.X += value.X * anim.weighting;
 					boundsMin.Y += value.Y * anim.weighting;
 					boundsMin.Z += value.Z * anim.weighting;
 
-					value = mesh.animationStaticBounds[animIndex].Maximum;
+					value = mesh.animationStaticBounds[animIndex].maximum;
 					boundsMax.X += value.X * anim.weighting;
 					boundsMax.Y += value.Y * anim.weighting;
 					boundsMax.Z += value.Z * anim.weighting;
@@ -302,8 +355,8 @@ namespace Xen.Ex.Graphics
 		internal void ComputeGeometryBounds(int meshIndex, int geometryIndex, out Vector3 boundsMin, out Vector3 boundsMax)
 		{
 			GeometryData geometry = modelData.meshes[meshIndex].geometry[geometryIndex];
-			boundsMin = geometry.StaticBounds.Minimum;
-			boundsMax = geometry.StaticBounds.Maximum;
+			boundsMin = geometry.staticBounds.minimum;
+			boundsMax = geometry.staticBounds.maximum;
 
 			for (int a = 0; a < animations.Count; a++)
 			{
@@ -312,12 +365,12 @@ namespace Xen.Ex.Graphics
 				{
 					int animIndex = anim.animation.index;
 
-					Vector3 value = geometry.animationStaticBounds[animIndex].Minimum;
+					Vector3 value = geometry.animationStaticBounds[animIndex].minimum;
 					boundsMin.X += value.X * anim.weighting;
 					boundsMin.Y += value.Y * anim.weighting;
 					boundsMin.Z += value.Z * anim.weighting;
 
-					value = geometry.animationStaticBounds[animIndex].Maximum;
+					value = geometry.animationStaticBounds[animIndex].maximum;
 					boundsMax.X += value.X * anim.weighting;
 					boundsMax.Y += value.Y * anim.weighting;
 					boundsMax.Z += value.Z * anim.weighting;
@@ -325,8 +378,51 @@ namespace Xen.Ex.Graphics
 			}
 		}
 
+
+		private void BufferAnimationValues()
+		{
+			//buffer the animation values, such as current time, so they are thread safe when used in ProcessAnimation()
+
+			this.boneModifierBuffer = boneModifier;
+
+			for (int a = 0; a < animations.Count; a++)
+			{
+				AnimationStreamControl anim = animations[a];
+
+				if (!anim.InterpolateBuffer(deltaTime))
+				{
+					anim.animation.CacheUnusedStream(anim);
+					animations.RemoveAt(a);
+					a--;
+					continue;
+				}
+			}
+
+			if (!isAsync)
+				return; // no need to go further when not on a thread
+
+			threadAnimations.Clear();
+
+			for (int a = 0; a < animations.Count; a++)
+			{
+				AnimationStreamControl anim = animations[a];
+				if (anim.enabled == false)
+					continue;
+
+				threadAnimations.Add(anim);
+			}
+		}
+
 		private void ProcessAnimation()
 		{
+			if (boneModifierBuffer != null)
+			{
+				if (!boneModifierBuffer.PreProcessAnimation(transformedBones, this.modelData,
+					new ReadOnlyArrayCollection<Transform>(this.modelData.skeleton.boneWorldTransforms),
+					new ReadOnlyArrayCollection<Transform>(this.modelData.skeleton.boneWorldTransformsInverse)))
+					return;
+			}
+
 			float delta = this.deltaTime;
 
 			Transform idenity = Transform.Identity;
@@ -335,20 +431,16 @@ namespace Xen.Ex.Graphics
 			for (int i = 0; i < transformIdentity.Length; i++)
 				transformIdentity[i] = true;
 
+			List<AnimationStreamControl> animations = this.animations ?? this.threadAnimations;
+
 			int index = 0;
 			for (int a = 0; a < animations.Count; a++)
 			{
 				AnimationStreamControl anim = animations[a];
-				if (anim.enabled == false)
+				if (!isAsync && anim.enabled == false)
 					continue;
 
-				if (!anim.Interpolate(delta))
-				{
-					anim.animation.CacheUnusedStream(anim);
-					animations.RemoveAt(a);
-					a--;
-					continue;
-				}
+				anim.Interpolate(delta);
 
 				AnimationStreamControl.AnimationChannel[] channels = anim.channels;
 
@@ -372,13 +464,92 @@ namespace Xen.Ex.Graphics
 							transformedBones[bi] = channels[i].lerpedTransform;
 						}
 						else
+						{
+#if NO_INLINE
 							Transform.Multiply(ref transformedBones[bi], ref channels[i].lerpedTransform, out transformedBones[bi]);
+#else
+							Transform transform1 = transformedBones[bi];
+							Transform transform2 = channels[i].lerpedTransform;
+							Quaternion q;
+							Vector3 t;
+							float s = transform2.Scale * transform1.Scale;;
+
+							if (transform2.Rotation.W == 1 &&
+								(transform2.Rotation.X == 0 && transform2.Rotation.Y == 0 && transform2.Rotation.Z == 0))
+							{
+								q.X = transform1.Rotation.X;
+								q.Y = transform1.Rotation.Y;
+								q.Z = transform1.Rotation.Z;
+								q.W = transform1.Rotation.W;
+								t.X = transform1.Translation.X;
+								t.Y = transform1.Translation.Y;
+								t.Z = transform1.Translation.Z;
+							}
+							else
+							{
+								float num12 = transform2.Rotation.X + transform2.Rotation.X;
+								float num2 = transform2.Rotation.Y + transform2.Rotation.Y;
+								float num = transform2.Rotation.Z + transform2.Rotation.Z;
+								float num11 = transform2.Rotation.W * num12;
+								float num10 = transform2.Rotation.W * num2;
+								float num9 = transform2.Rotation.W * num;
+								float num8 = transform2.Rotation.X * num12;
+								float num7 = transform2.Rotation.X * num2;
+								float num6 = transform2.Rotation.X * num;
+								float num5 = transform2.Rotation.Y * num2;
+								float num4 = transform2.Rotation.Y * num;
+								float num3 = transform2.Rotation.Z * num;
+								t.X = ((transform1.Translation.X * ((1f - num5) - num3)) + (transform1.Translation.Y * (num7 - num9))) + (transform1.Translation.Z * (num6 + num10));
+								t.Y = ((transform1.Translation.X * (num7 + num9)) + (transform1.Translation.Y * ((1f - num8) - num3))) + (transform1.Translation.Z * (num4 - num11));
+								t.Z = ((transform1.Translation.X * (num6 - num10)) + (transform1.Translation.Y * (num4 + num11))) + (transform1.Translation.Z * ((1f - num8) - num5));
+							
+								num12 = (transform2.Rotation.Y * transform1.Rotation.Z) - (transform2.Rotation.Z * transform1.Rotation.Y);
+								num11 = (transform2.Rotation.Z * transform1.Rotation.X) - (transform2.Rotation.X * transform1.Rotation.Z);
+								num10 = (transform2.Rotation.X * transform1.Rotation.Y) - (transform2.Rotation.Y * transform1.Rotation.X);
+								num9 = ((transform2.Rotation.X * transform1.Rotation.X) + (transform2.Rotation.Y * transform1.Rotation.Y)) + (transform2.Rotation.Z * transform1.Rotation.Z);
+								q.X = ((transform2.Rotation.X * transform1.Rotation.W) + (transform1.Rotation.X * transform2.Rotation.W)) + num12;
+								q.Y = ((transform2.Rotation.Y * transform1.Rotation.W) + (transform1.Rotation.Y * transform2.Rotation.W)) + num11;
+								q.Z = ((transform2.Rotation.Z * transform1.Rotation.W) + (transform1.Rotation.Z * transform2.Rotation.W)) + num10;
+								q.W = (transform2.Rotation.W * transform1.Rotation.W) - num9;
+							}
+
+							t.X = t.X * transform2.Scale + transform2.Translation.X;
+							t.Y = t.Y * transform2.Scale + transform2.Translation.Y;
+							t.Z = t.Z * transform2.Scale + transform2.Translation.Z;
+
+
+							transform1.Rotation.X = q.X;
+							transform1.Rotation.Y = q.Y;
+							transform1.Rotation.Z = q.Z;
+							transform1.Rotation.W = q.W;
+
+							transform1.Translation.X = t.X;
+							transform1.Translation.Y = t.Y;
+							transform1.Translation.Z = t.Z;
+							transform1.Scale = s;
+
+							transformedBones[bi] = transform1;
+#endif
+						}
 					}
 				}
 				index++;
 			}
 
+			if (boneModifierBuffer != null)
+			{
+				if (!boneModifierBuffer.ProcessBonesPreTransform(transformedBones, this.modelData, 
+					new ReadOnlyArrayCollection<Transform>(this.modelData.skeleton.boneWorldTransforms),
+					new ReadOnlyArrayCollection<Transform>(this.modelData.skeleton.boneWorldTransformsInverse)))
+					return;
+			}
+
 			modelData.skeleton.TransformHierarchy(transformedBones);
+
+			if (boneModifierBuffer != null)
+				boneModifierBuffer.ProcessBonesPostTransform(transformedBones, this.modelData, 
+					new ReadOnlyArrayCollection<Transform>(this.modelData.skeleton.boneWorldTransforms),
+					new ReadOnlyArrayCollection<Transform>(this.modelData.skeleton.boneWorldTransformsInverse));
 		}
 
 		internal void WaitForAsyncAnimation(IState state, int frameIndex, bool requiresBoneData)
@@ -405,6 +576,8 @@ namespace Xen.Ex.Graphics
 				{
 					this.wasSkipped = false;
 					this.deltaTime = state.DeltaTimeSeconds;
+
+					this.BufferAnimationValues();
 					this.ProcessAnimation();
 				}
 				this.frameIndex = frameIndex;
@@ -459,7 +632,7 @@ namespace Xen.Ex.Graphics
 		/// <summary>
 		/// Current playback time in the duration of this animation instance (seconds)
 		/// </summary>
-		public float Time { get { if (AnimationFinished) return AnimationDuration; return control.AnimationTime; } }
+		public float Time { get { if (AnimationFinished) return AnimationDuration; return control.frameTimer; } }
 		/// <summary>
 		/// <para>Duration of the animation, in seconds</para>
 		/// <para>This value may be slightly larger if <see cref="LoopTransitionEnabled"/> is true</para>
@@ -485,7 +658,7 @@ namespace Xen.Ex.Graphics
 		}
 		public bool Looping
 		{
-			get { if (AnimationFinished) return false; return control.Looping; ; }
+			get { if (AnimationFinished) return false; return control.looping; ; }
 		}
 		/// <summary>
 		/// <para>If true, the animation will smoothly transition from the last frame to the first during a loop.</para>
@@ -493,8 +666,8 @@ namespace Xen.Ex.Graphics
 		/// </summary>
 		public bool LoopTransitionEnabled
 		{
-			get { if (AnimationFinished) return false; return control.LoopTransition; }
-			set { if (AnimationFinished || !control.Looping) return; control.LoopTransition = value; }
+			get { if (AnimationFinished) return false; return control.loopTransition; }
+			set { if (AnimationFinished || !control.looping) return; control.loopTransition = value; }
 		}
 
 		/// <summary>
@@ -537,42 +710,27 @@ namespace Xen.Ex.Graphics
 			public Transform storeTransform, lerpedTransform;
 			public CompressedTransformReader frameReader;
 			public byte[] sourceData;
+			public Transform[] sourceTransformData;
 			public int readIndex;
 			public int boneIndex;
 		}
 
-		internal int storedFrameIndex, readFrameIndex;
-		internal float currentFrameTime, previousFrameTime;
+		private int readFrameIndex;
+		private float currentFrameTime, previousFrameTime;
 		internal readonly AnimationData animation;
-		private float frameTimer, speed;
+		internal float frameTimer, speed;
 		internal readonly AnimationChannel[] channels;
 		internal int usageIndex;
 		internal float weighting;
 		internal bool enabled;
-		private bool looping = true, loopTransition = true, firstFrame = true;
+		internal bool looping = true, loopTransition = true, firstFrame = true;
 		internal float fadeInTime, fadeOutTime, fadeOutStop;
-
-		public bool Looping
-		{
-			get { return looping; }
-			set { looping = value; }
-		}
-		public bool LoopTransition
-		{
-			get { return loopTransition; }
-			set { loopTransition = value; }
-		}
 
 
 		public float AnimationSpeed
 		{
 			get { return speed; }
 			set { if (value < 0) throw new ArgumentException("Negative values are not supported"); speed = value; }
-		}
-
-		public float AnimationTime
-		{
-			get { return frameTimer; } 
 		}
 
 		internal AnimationStreamControl(AnimationData animation)
@@ -598,18 +756,18 @@ namespace Xen.Ex.Graphics
 			readFrameIndex = -1;
 			currentFrameTime = 0;
 			previousFrameTime = 0;
-			storedFrameIndex = -1;
 
 			for (int i = 0; i < channels.Length; i++)
 			{
 				if (!keepStored)
 				{
 					channels[i] = new AnimationChannel();
-					channels[i].storeTransform = new Transform();
+					channels[i].storeTransform = Transform.Identity;
 				}
 				channels[i].frameReader = new CompressedTransformReader();
 				channels[i].lerpedTransform = Transform.Identity;
 				channels[i].sourceData = animation.GetBoneCompressedTransformData(i);
+				channels[i].sourceTransformData = animation.GetBoneDecompressedTransformData(i);
 				channels[i].boneIndex = animation.BoneIndices[i];
 				channels[i].readIndex = 0;
 			}
@@ -620,7 +778,11 @@ namespace Xen.Ex.Graphics
 			this.frameTimer = time;
 		}
 
-		internal bool Interpolate(float deltaTime)
+		//thread buffered values
+		private float frameTimeBuffer, weightingBuffer, durationBuffer, scaleBuffer;
+		private bool loopTransitionBuffer, loopingBuffer;
+
+		internal bool InterpolateBuffer(float deltaTime)
 		{
 			if (!firstFrame)
 			{
@@ -635,7 +797,16 @@ namespace Xen.Ex.Graphics
 
 			float frameTime = 0;
 			float duration = Duration();
-			
+
+
+			//not looping? stop anim
+			if (!looping && frameTimer >= duration)
+			{
+				this.frameTimer = 0;
+				this.usageIndex++;
+				return false;
+			}
+
 			if (duration != 0)
 				frameTime = (float)(frameTimer - Math.Floor(frameTimer / duration) * duration);
 
@@ -661,13 +832,39 @@ namespace Xen.Ex.Graphics
 					return false;
 				}
 			}
+			frameTimeBuffer = frameTime;
+			weightingBuffer = weighting;
+
+			durationBuffer = duration;
+			scaleBuffer = scale;
+
+			loopTransitionBuffer = loopTransition;
+			loopingBuffer = looping;
+
+			return true;
+		}
+
+		//this method potentially runs on a thread task
+		internal void Interpolate(float deltaTime)
+		{
+			float frameTime = frameTimeBuffer;
+			float weighting = weightingBuffer;
+			float duration = durationBuffer;
+			float scale = scaleBuffer;
+			bool loopTransition = loopTransitionBuffer;
+			bool looping = loopingBuffer;
 
 			while (true)
 			{
 				if (readFrameIndex == -1)
 				{
 					for (int i = 0; i < channels.Length; i++)
-						channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+					{
+						if (channels[i].sourceData != null)
+							channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+						else
+							channels[i].frameReader.value = channels[i].sourceTransformData[0];
+					}
 					readFrameIndex = 0;
 					currentFrameTime = 0;
 					previousFrameTime = 0;
@@ -682,20 +879,34 @@ namespace Xen.Ex.Graphics
 					//move to next frame
 					previousFrameTime = currentFrameTime;
 
-					for (int i = 0; i < channels.Length; i++)
+					if (readFrameIndex != animation.KeyFrameCount - 1)
 					{
-						channels[i].storeTransform = channels[i].frameReader.value;
-						channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+						for (int i = 0; i < channels.Length; i++)
+						{
+							channels[i].storeTransform = channels[i].frameReader.value;
+							if (channels[i].sourceData != null)
+								channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+							else
+								channels[i].frameReader.value = channels[i].sourceTransformData[readFrameIndex + 1];
+						}
 					}
 
 					//special case, hit the end of the animation, need to interpolate to the start again
 					if (readFrameIndex == animation.KeyFrameCount - 1 && (loopTransition && looping))
 					{
+						for (int i = 0; i < channels.Length; i++)
+							channels[i].storeTransform = channels[i].frameReader.value;
+
 						//reset now...
 						this.Reset(false,true);
 
 						for (int i = 0; i < channels.Length; i++)
-							channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+						{
+							if (channels[i].sourceData != null)
+								channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+							else
+								channels[i].frameReader.value = channels[i].sourceTransformData[0];
+						}
 						readFrameIndex = 0;
 						currentFrameTime = duration;
 						previousFrameTime = animation.Duration;
@@ -715,14 +926,6 @@ namespace Xen.Ex.Graphics
 					{
 						//gone off the end of the animation
 						this.Reset(false, false);
-
-						//not looping? stop anim
-						if (!looping)
-						{
-							this.frameTimer = 0;
-							this.usageIndex++;
-							return false;
-						}
 					}
 					else
 					{
@@ -733,7 +936,12 @@ namespace Xen.Ex.Graphics
 							this.Reset(false, true);
 
 							for (int i = 0; i < channels.Length; i++)
-								channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+							{
+								if (channels[i].sourceData != null)
+									channels[i].frameReader.MoveNext(channels[i].sourceData, ref channels[i].readIndex);
+								else
+									channels[i].frameReader.value = channels[i].sourceTransformData[0];
+							}
 							readFrameIndex = 0;
 						}
 						currentFrameTime = 0;
@@ -763,9 +971,53 @@ namespace Xen.Ex.Graphics
 				//interpolate the keyframes
 				for (int i = 0; i < channels.Length; i++)
 				{
+					float invInterp = 1f - interp;
+#if NO_INLINE
 					Quaternion.Lerp(ref channels[i].storeTransform.Rotation, ref channels[i].frameReader.value.Rotation, interp, out channels[i].lerpedTransform.Rotation);
 					Vector3.Lerp(ref channels[i].storeTransform.Translation, ref channels[i].frameReader.value.Translation, interp, out channels[i].lerpedTransform.Translation);
-					channels[i].lerpedTransform.Scale = channels[i].frameReader.value.Scale * (1-interp) + channels[i].storeTransform.Scale * interp;
+#else
+
+					Vector3 v1 = channels[i].storeTransform.Translation;
+					Vector3 v2 = channels[i].frameReader.value.Translation;
+					Vector3 v3 = new Vector3();
+
+					v3.X = v1.X * invInterp + v2.X * interp;
+					v3.Y = v1.Y * invInterp + v2.Y * interp;
+					v3.Z = v1.Z * invInterp + v2.Z * interp;
+
+					channels[i].lerpedTransform.Translation = v3;
+
+
+					Quaternion quaternion = new Quaternion(), quaternion1, quaternion2;
+					quaternion1 = channels[i].storeTransform.Rotation;
+					quaternion2 = channels[i].frameReader.value.Rotation;
+					float num5 = interp;
+					if ((((quaternion1.X * quaternion2.X) + (quaternion1.Y * quaternion2.Y)) + (quaternion1.Z * quaternion2.Z)) + (quaternion1.W * quaternion2.W) < 0)
+						num5 = -num5;
+
+					quaternion.X = (invInterp * quaternion1.X) + (num5 * quaternion2.X);
+					quaternion.Y = (invInterp * quaternion1.Y) + (num5 * quaternion2.Y);
+					quaternion.Z = (invInterp * quaternion1.Z) + (num5 * quaternion2.Z);
+					quaternion.W = (invInterp * quaternion1.W) + (num5 * quaternion2.W);
+
+					if (quaternion.W != 1 && (quaternion.X != 0 & quaternion.Y != 0 & quaternion.Z != 0))
+					{
+						//normalize
+						float len = (((quaternion.X * quaternion.X) + (quaternion.Y * quaternion.Y)) + (quaternion.Z * quaternion.Z)) + (quaternion.W * quaternion.W);
+						if (len != 1)
+						{
+							len = 1f / ((float)Math.Sqrt((double)len));
+							quaternion.X *= len;
+							quaternion.Y *= len;
+							quaternion.Z *= len;
+							quaternion.W *= len;
+						}
+					}
+
+					channels[i].lerpedTransform.Rotation = quaternion;
+
+#endif
+					channels[i].lerpedTransform.Scale = channels[i].frameReader.value.Scale * interp + channels[i].storeTransform.Scale * invInterp;
 				}
 			}
 
@@ -775,10 +1027,42 @@ namespace Xen.Ex.Graphics
 			if (scale != 1)
 			{
 				for (int i = 0; i < channels.Length; i++)
+				{
+#if NO_INLINE
 					channels[i].lerpedTransform.InterpolateToIdentity(scale);
-			}
+#else
+					Transform t = channels[i].lerpedTransform;
+					t.Translation.X *= scale;
+					t.Translation.Y *= scale;
+					t.Translation.Z *= scale;
+					t.Scale = t.Scale * scale + (1 - scale);
 
-			return true;
+					t.Rotation.X = (scale * t.Rotation.X);
+					t.Rotation.Y = (scale * t.Rotation.Y);
+					t.Rotation.Z = (scale * t.Rotation.Z);
+
+					if (t.Rotation.W >= 0)
+						t.Rotation.W = (scale * t.Rotation.W) + (1 - scale);
+					else
+						t.Rotation.W = (scale * t.Rotation.W) - (1 - scale);
+
+					if (t.Rotation.W != 1 && (t.Rotation.X != 0 & t.Rotation.Y != 0 & t.Rotation.Z != 0))
+					{
+						//normalize
+						float len = (((t.Rotation.X * t.Rotation.X) + (t.Rotation.Y * t.Rotation.Y)) + (t.Rotation.Z * t.Rotation.Z)) + (t.Rotation.W * t.Rotation.W);
+						if (len != 1)
+						{
+							len = 1f / ((float)Math.Sqrt((double)len));
+							t.Rotation.X *= len;
+							t.Rotation.Y *= len;
+							t.Rotation.Z *= len;
+							t.Rotation.W *= len;
+						}
+					}
+					channels[i].lerpedTransform = t;
+#endif
+				}
+			}
 		}
 
 		internal float Duration()
@@ -855,6 +1139,59 @@ namespace Xen.Ex.Graphics
 	}
 
 	/// <summary>
+	/// A generic implementation of ModelInstanceShaderProvider, storing an instance of a shader
+	/// </summary>
+	public class ModelInstanceShaderProvider<T> : ModelInstanceShaderProvider where T : IShader
+	{
+		private readonly T shader;
+
+		/// <summary>
+		/// Construct the generic ModelInstanceShaderProvider
+		/// </summary>
+		/// <param name="shader"></param>
+		public ModelInstanceShaderProvider(T shader)
+		{
+			if (shader == null)
+				throw new ArgumentNullException();
+			this.shader = shader;
+		}
+
+		/// <summary>
+		/// Gets the shader for this generic ModelInstanceShaderProvider
+		/// </summary>
+		public T Shader
+		{
+			get { return shader; }
+		}
+		/// <summary>
+		/// <para>Returns true if this provider modifies the world matrix in the <see cref="BeginDraw"/> method</para>
+		/// <para>If true, the default CullTest will be skipped until BeginDraw() has been called</para>
+		/// </summary>
+		/// <remarks>Note: This property may be called frequenty, so should not run complex logic - it should simply return either true/false</remarks>
+		public override bool ProviderModifiesWorldMatrixInBeginDraw
+		{
+			get { return false; }
+		}
+		/// <summary>
+		/// <para>Called before drawing geometry</para>
+		/// <para>Return true if the shader has been overridden</para>
+		/// </summary>
+		/// <param name="geometry"></param>
+		/// <param name="lights"></param>
+		/// <returns></returns>
+		/// <remarks>If pushing the world matrix, make sure to pop it in <see cref="EndGeometry"/></remarks>
+		/// <param name="state"></param>
+		public override bool BeginGeometryShaderOverride(DrawState state, GeometryData geometry, MaterialLightCollection lights)
+		{
+			if (typeof(T) == typeof(MaterialShader))
+				((MaterialShader)(IShader)shader).Lights = lights;
+
+			shader.Bind(state);
+			return true;
+		}
+	}
+
+	/// <summary>
 	/// Draws <see cref="ModelData"/> loaded through the content pipeline
 	/// </summary>
 	/// <remarks>
@@ -865,8 +1202,8 @@ namespace Xen.Ex.Graphics
 	/// <example>
 	/// <code>
 	/// //note: blendMatrices format is Matrix4x3 stored in Vector4s
-	/// //in this example, there would be a maximum of 80 bones
-	/// float4 blendMatrices[80*3];
+	/// //in this example, there would be a maximum of 72 bones
+	/// float4 blendMatrices[72*3];
 	/// float4x4 worldViewProj : WORLDVIEWPROJECTION;
 	/// 
 	/// //This shader will be approximately 20 instructions
@@ -894,7 +1231,7 @@ namespace Xen.Ex.Graphics
 	/// </remarks>
 	public sealed class ModelInstance : IDraw, ICullableInstance
 	{
-		private ModelData data;
+		private ModelData modelData;
 		private AnimationController controller;
 		private MaterialLightCollection lights;
 		private MaterialAnimationTransformHierarchy hierarchy;
@@ -913,8 +1250,47 @@ namespace Xen.Ex.Graphics
 		/// <param name="sourceData"></param>
 		public ModelInstance(ModelData sourceData)
 		{
-			this.data = sourceData;
+			this.modelData = sourceData;
 		}
+
+		#region draw flags
+
+		/// <summary>
+		/// <para>A structure that can be used as a Draw Flag to force drawn model instances to use a specific Shader Provider</para>
+		/// </summary>
+		public struct ShaderProviderFlag
+		{
+			private bool overrideShaderProvider;
+			private ModelInstanceShaderProvider shaderProvider;
+
+			/// <summary>
+			/// <para>Force drawn model instances to use <see cref="ShaderProvider"/></para>
+			/// </summary>
+			public bool OverrideShaderProvider { get { return overrideShaderProvider; } set { overrideShaderProvider = value; } }
+			/// <summary></summary>
+			public ModelInstanceShaderProvider ShaderProvider
+			{
+				get { return shaderProvider; }
+				set
+				{
+					if (value != null && value.ProviderModifiesWorldMatrixInBeginDraw)
+						throw new ArgumentException("ShaderProvider.ProviderModifiesWorldMatrixInBeginDraw cannot be true for ShaderProviderFlag");
+					shaderProvider = value;
+				}
+			}
+
+			/// <summary></summary>
+			/// <param name="shaderProvider"></param>
+			public ShaderProviderFlag(ModelInstanceShaderProvider shaderProvider)
+			{
+				this.overrideShaderProvider = true;
+				if (shaderProvider != null && shaderProvider.ProviderModifiesWorldMatrixInBeginDraw)
+					throw new ArgumentException("shaderProvider.ProviderModifiesWorldMatrixInBeginDraw cannot be true for ShaderProviderFlag");
+				this.shaderProvider = shaderProvider;
+			}
+		}
+
+		#endregion
 
 		/// <summary>
 		/// Extend the <see cref="ModelInstanceShaderProvider"/> abstract class to override shaders or world matrices used by this model instance
@@ -931,14 +1307,14 @@ namespace Xen.Ex.Graphics
 		/// <remarks>ModelData may only be assigned once per instance</remarks>
 		public ModelData ModelData
 		{
-			get { return data; }
+			get { return modelData; }
 			set
 			{
 				if (value == null)
 					throw new ArgumentNullException();
-				if (this.data != null && this.data != value)
-					throw new InvalidOperationException("MeshData may only be assigned once");
-				this.data = value;
+				if (this.modelData != null && this.modelData != value)
+					throw new InvalidOperationException("ModelData may only be assigned once");
+				this.modelData = value;
 				if (controller != null)
 					this.controller.SetModelData(value);
 			}
@@ -959,10 +1335,10 @@ namespace Xen.Ex.Graphics
 		/// <returns></returns>
 		public AnimationController GetAnimationController()
 		{
-			if (data != null && data.skeleton == null)
+			if (modelData != null && modelData.skeleton == null)
 				throw new InvalidOperationException("ModelData has no skeleton");
 			if (controller == null)
-				controller = new AnimationController(this.data, null, this);
+				controller = new AnimationController(this.modelData, null, this);
 			return controller;
 		}
 
@@ -976,12 +1352,12 @@ namespace Xen.Ex.Graphics
 		{
 			if (manager == null)
 				throw new ArgumentNullException();
-			if (data == null)
+			if (modelData == null)
 				throw new InvalidOperationException("ModelData is null");
-			if (data.skeleton == null)
+			if (modelData.skeleton == null)
 				throw new InvalidOperationException("ModelData has no skeleton");
 			if (controller == null)
-				controller = new AnimationController(this.data, manager, this);
+				controller = new AnimationController(this.modelData, manager, this);
 			return controller;
 		}
 
@@ -997,7 +1373,7 @@ namespace Xen.Ex.Graphics
 				return;
 			if (this.controller != null)
 				throw new InvalidOperationException("AnimationController already set");
-			if (controller.ModelData != this.data || (this.data == null && controller.ModelData == null))
+			if (controller.ModelData != this.modelData || (this.modelData == null && controller.ModelData == null))
 				throw new ArgumentException("ModelData mismatch");
 			controller.AddParnet(this);
 			this.controller = controller;
@@ -1009,9 +1385,9 @@ namespace Xen.Ex.Graphics
 		/// <param name="state"></param>
 		public void Draw(DrawState state)
 		{
-			if (data == null)
-				return;
-
+			if (modelData == null)
+				throw new InvalidOperationException("ModelData is null");
+			
 			if (controller != null)
 			{
 				controller.WaitForAsyncAnimation(state,state.FrameIndex,true);
@@ -1021,10 +1397,24 @@ namespace Xen.Ex.Graphics
 			}
 
 			if (controller != null && hierarchy == null)
-				hierarchy = new MaterialAnimationTransformHierarchy(data.skeleton);
+				hierarchy = new MaterialAnimationTransformHierarchy(modelData.skeleton);
 
 			if (hierarchy != null)
 				hierarchy.UpdateTransformHierarchy(controller.transformedBones);
+
+			ModelInstanceShaderProvider shaderProvider = this.shaderProvider;
+			MaterialLightCollection lights = this.lights;
+
+			ShaderProviderFlag providerFlag;
+			MaterialLightCollection.LightCollectionFlag lightsFlag;
+
+			state.GetDrawFlag(out providerFlag);
+			if (providerFlag.OverrideShaderProvider)
+				shaderProvider = providerFlag.ShaderProvider;
+
+			state.GetDrawFlag(out lightsFlag);
+			if (lightsFlag.OverrideLightCollection)
+				lights = lightsFlag.LightCollection;
 
 			if (shaderProvider != null)
 			{
@@ -1040,20 +1430,20 @@ namespace Xen.Ex.Graphics
 			if (controller != null)
 				cullModel = state.Culler.IntersectBox(ref controller.boundsMin, ref controller.boundsMax);
 			else
-				cullModel = state.Culler.IntersectBox(data.StaticBounds.Minimum, data.StaticBounds.Maximum);
+				cullModel = state.Culler.IntersectBox(ref modelData.staticBounds.minimum, ref modelData.staticBounds.maximum);
 
 			if (cullModel != ContainmentType.Disjoint)
 			{
-				for (int m = 0; m < data.meshes.Length; m++)
+				for (int m = 0; m < modelData.meshes.Length; m++)
 				{
-					MeshData mesh = data.meshes[m];
+					MeshData mesh = modelData.meshes[m];
 
 					if (shaderProvider != null)
 						shaderProvider.BeginMesh(state, mesh);
 
 					ContainmentType cullMesh = cullModel;
 
-					if (cullModel == ContainmentType.Intersects && data.meshes.Length > 1)
+					if (cullModel == ContainmentType.Intersects && modelData.meshes.Length > 1)
 					{
 						if (controller != null)
 						{
@@ -1061,7 +1451,7 @@ namespace Xen.Ex.Graphics
 							cullMesh = state.Culler.IntersectBox(ref boundsMin, ref boundsMax);
 						}
 						else
-							cullMesh = state.Culler.IntersectBox(mesh.StaticBounds.Minimum, mesh.StaticBounds.Maximum);
+							cullMesh = state.Culler.IntersectBox(ref mesh.staticBounds.minimum, ref mesh.staticBounds.maximum);
 
 					}
 
@@ -1085,7 +1475,7 @@ namespace Xen.Ex.Graphics
 									cullTest = state.Culler.TestBox(ref boundsMin, ref boundsMax);
 								}
 								else
-									cullTest = state.Culler.TestBox(geom.StaticBounds.Minimum, geom.StaticBounds.Maximum);
+									cullTest = state.Culler.TestBox(ref geom.staticBounds.minimum, ref geom.staticBounds.maximum);
 							}
 
 							if (cullTest)
@@ -1093,7 +1483,7 @@ namespace Xen.Ex.Graphics
 								if (shader != null)
 								{
 									shader.AnimationTransforms = hierarchy;
-									shader.Lights = this.lights;
+									shader.Lights = lights;
 									shader.Bind(state);
 								}
 
@@ -1121,14 +1511,14 @@ namespace Xen.Ex.Graphics
 		/// <returns></returns>
 		public bool CullTest(ICuller culler)
 		{
-			if (data == null)
-				return false;
+			if (modelData == null)
+				throw new InvalidOperationException("ModelData is null");
 
 			if (shaderProvider != null && shaderProvider.ProviderModifiesWorldMatrixInBeginDraw)
 				return true;
 
 			if (controller == null)
-				return culler.TestBox(data.StaticBounds.Minimum, data.StaticBounds.Maximum);
+				return culler.TestBox(ref modelData.staticBounds.minimum, ref modelData.staticBounds.maximum);
 			else
 			{
 				controller.WaitForAsyncAnimation(culler.GetState(), culler.FrameIndex,false);
@@ -1144,14 +1534,14 @@ namespace Xen.Ex.Graphics
 		/// <returns></returns>
 		public bool CullTest(ICuller culler, ref Matrix instance)
 		{
-			if (data == null)
+			if (modelData == null)
 				return false;
 
 			if (shaderProvider != null && shaderProvider.ProviderModifiesWorldMatrixInBeginDraw)
 				return true;
 
 			if (controller == null)
-				return culler.TestBox(data.StaticBounds.Minimum, data.StaticBounds.Maximum, ref instance);
+				return culler.TestBox(ref modelData.staticBounds.minimum, ref modelData.staticBounds.maximum, ref instance);
 			else
 			{
 				controller.WaitForAsyncAnimation(culler.GetState(), culler.FrameIndex, false);

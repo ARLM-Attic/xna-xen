@@ -9,6 +9,8 @@ using Xen.Graphics.State;
 
 namespace Xen.Ex.Material
 {
+	#region Shader Merge 
+
 	sealed class ShaderBoundBones
 	{
 		public object boneSource;
@@ -555,12 +557,18 @@ namespace Xen.Ex.Material
 			return shader;
 		}
 	}
+
+	#endregion
+
+	#region Shader Lights
+
 	class ShaderLight : IMaterialLight
 	{
 		internal Vector4 position;
 		internal Vector4 specular;
 		internal Vector4 colour;
 		internal Vector4 attenuation;
+		internal int changeIndex;
 		private bool perPixel, enabled = true;
 
 		public bool PerPixelLighting
@@ -571,7 +579,7 @@ namespace Xen.Ex.Material
 		public bool Enabled
 		{
 			get { return enabled; }
-			set { enabled = value; }
+			set { if (enabled != value) { enabled = value; unchecked { changeIndex++; } } }
 		}
 
 		public Vector3 Colour
@@ -579,7 +587,13 @@ namespace Xen.Ex.Material
 			get { return new Vector3(colour.X, colour.Y, colour.Z); }
 			set
 			{
-				colour.X = value.X; colour.Y = value.Y; colour.Z = value.Z;
+				if (colour.X != value.X ||
+					colour.Y != value.Y ||
+					colour.Z != value.Z)
+				{
+					colour.X = value.X; colour.Y = value.Y; colour.Z = value.Z;
+					unchecked { changeIndex++; }
+				}
 			}
 		}
 
@@ -588,14 +602,27 @@ namespace Xen.Ex.Material
 			get { return new Vector3(specular.X, specular.Y, specular.Z); }
 			set
 			{
-				specular.X = value.X; specular.Y = value.Y; specular.Z = value.Z;
+				if (specular.X != value.X ||
+					specular.Y != value.Y ||
+					specular.Z != value.Z)
+				{
+					specular.X = value.X; specular.Y = value.Y; specular.Z = value.Z;
+					unchecked { changeIndex++; }
+				}
 			}
 		}
 
 		public float SpecularPowerScaler
 		{
 			get { return specular.W; }
-			set { specular.W = value; }
+			set 
+			{
+				if (specular.W != value)
+				{
+					specular.W = value;
+					unchecked { changeIndex++; }
+				}
+			}
 		}
 	}
 
@@ -714,19 +741,40 @@ namespace Xen.Ex.Material
 		public float ConstantAttenuation
 		{
 			get { return attenuation.X; }
-			set { attenuation.X = value; }
+			set 
+			{
+				if (attenuation.X != value)
+				{
+					attenuation.X = value;
+					unchecked { changeIndex++; }
+				}
+			}
 		}
 
 		public float LinearAttenuation
 		{
 			get { return attenuation.Y; }
-			set { attenuation.Y = value; }
+			set 
+			{
+				if (attenuation.Y != value)
+				{
+					attenuation.Y = value;
+					unchecked { changeIndex++; }
+				}
+			}
 		}
 
 		public float QuadraticAttenuation
 		{
 			get { return attenuation.Z; }
-			set { attenuation.Z = value; }
+			set 
+			{
+				if (attenuation.Z != value)
+				{
+					attenuation.Z = value;
+					unchecked { changeIndex++; }
+				}
+			}
 		}
 
 		public Vector3 Position
@@ -734,11 +782,18 @@ namespace Xen.Ex.Material
 			get { return new Vector3(position.X, position.Y, position.Z); }
 			set
 			{
-				position.X = value.X; position.Y = value.Y; position.Z = value.Z;
+				if (position.X != value.X ||
+					position.Y != value.Y ||
+					position.Z != value.Z)
+				{
+					position.X = value.X; position.Y = value.Y; position.Z = value.Z;
+					unchecked { changeIndex++; }
+				}
 			}
 		}
 
 	}
+
 	sealed class MaterialShaderDirectionalLight : ShaderLight, IMaterialDirectionalLight
 	{
 		public MaterialShaderDirectionalLight(Vector3 direction, Vector3 colour)
@@ -755,13 +810,19 @@ namespace Xen.Ex.Material
 			get { return new Vector3(position.X, position.Y, position.Z); }
 			set
 			{
-				position.X = value.X; position.Y = value.Y; position.Z = value.Z;
+				if (position.X != value.X ||
+					position.Y != value.Y ||
+					position.Z != value.Z)
+				{
+					position.X = value.X; position.Y = value.Y; position.Z = value.Z;
+					unchecked { changeIndex++; }
+				}
 			}
 		}
 
 	}
 
-	sealed class WhiteTexture : IContentOwner
+	internal sealed class WhiteTexture : IContentOwner
 	{
 		static WhiteTexture instance;
 		Texture2D texture;
@@ -804,13 +865,42 @@ namespace Xen.Ex.Material
 	}
 
 	/// <summary>
-	/// Stores a collection of lights used by one or more <see cref="MaterialShader"/> instances
+	/// Stores a collection of lights used by one or more <see cref="MaterialShader"/> instance
 	/// </summary>
 	public sealed class MaterialLightCollection
 	{
 		internal readonly List<ShaderLight> vlights = new List<ShaderLight>(), plights = new List<ShaderLight>();
 		internal Vector3 ambient = new Vector3(0, 0, 0);
+		internal int vchangeIndex, pchangeIndex;
 		private bool enabled;
+
+		/// <summary>
+		/// <para>A structure that can be used as a Draw Flag to have compatible classes (model instance, model batch) to use a specific <see cref="MaterialLightCollection"/></para>
+		/// </summary>
+		public struct LightCollectionFlag
+		{
+			private bool overrideLightCollection;
+			private MaterialLightCollection lightCollection;
+
+			/// <summary>
+			/// <para>Force drawn objects to use <see cref="LightCollection"/></para>
+			/// </summary>
+			public bool OverrideLightCollection { get { return overrideLightCollection; } set { overrideLightCollection = value; } }
+			/// <summary></summary>
+			public MaterialLightCollection LightCollection
+			{
+				get { return lightCollection; }
+				set { lightCollection = value; }
+			}
+
+			/// <summary></summary>
+			/// <param name="lightCollection"></param>
+			public LightCollectionFlag(MaterialLightCollection lightCollection)
+			{
+				this.overrideLightCollection = true;
+				this.lightCollection = lightCollection;
+			}
+		}
 
 		/// <summary>
 		/// Gets/Sets if lighting is enabled
@@ -818,7 +908,18 @@ namespace Xen.Ex.Material
 		public bool LightingEnabled
 		{
 			get { return enabled; }
-			set { enabled = value; }
+			set
+			{
+				if (enabled != value)
+				{
+					enabled = value;
+					unchecked
+					{
+						vchangeIndex++;
+						pchangeIndex++;
+					}
+				}
+			}
 		}
 
 		/// <summary>
@@ -879,7 +980,16 @@ namespace Xen.Ex.Material
 			get { return ambient; }
 			set
 			{
-				ambient = value;
+				if (ambient.X != value.X ||
+					ambient.Y != value.Y ||
+					ambient.Z != value.Z)
+				{
+					ambient = value;
+					unchecked
+					{
+						vchangeIndex++;
+					}
+				}
 			}
 		}
 		/// <summary>
@@ -895,6 +1005,10 @@ namespace Xen.Ex.Material
 			IMaterialPointLight light = new MaterialShaderPointLight(position, colour, halfFalloffDistance);
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 		/// <summary>
@@ -910,6 +1024,10 @@ namespace Xen.Ex.Material
 			IMaterialPointLight light = new MaterialShaderPointLight(position, colour.ToVector3(), halfFalloffDistance);
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 
@@ -925,6 +1043,10 @@ namespace Xen.Ex.Material
 			IMaterialDirectionalLight light = new MaterialShaderDirectionalLight(direction, colour);
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 		/// <summary>
@@ -939,6 +1061,10 @@ namespace Xen.Ex.Material
 			IMaterialDirectionalLight light = new MaterialShaderDirectionalLight(direction, colour.ToVector3());
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 
@@ -958,6 +1084,10 @@ namespace Xen.Ex.Material
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
 			light.SpecularColour = specularColour;
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 		/// <summary>
@@ -975,6 +1105,10 @@ namespace Xen.Ex.Material
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
 			light.SpecularColour = specularColour.ToVector3();
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 
@@ -992,6 +1126,10 @@ namespace Xen.Ex.Material
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
 			light.SpecularColour = specularColour;
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 		/// <summary>
@@ -1008,6 +1146,10 @@ namespace Xen.Ex.Material
 			((ShaderLight)light).PerPixelLighting = perPixelLighting;
 			(perPixelLighting ? this.plights : this.vlights).Add((ShaderLight)light);
 			light.SpecularColour = specularColour.ToVector3();
+			unchecked
+			{
+				if (perPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return light;
 		}
 
@@ -1017,6 +1159,8 @@ namespace Xen.Ex.Material
 		/// <param name="light"></param>
 		public void AddLight(IMaterialLight light)
 		{
+			if (light == null)
+				throw new ArgumentNullException();
 			(light.PerPixelLighting ? plights : vlights).Add((ShaderLight)light);
 		}
 		/// <summary>
@@ -1028,7 +1172,10 @@ namespace Xen.Ex.Material
 		{
 			if (light == null)
 				return false;
-
+			unchecked
+			{
+				if (light.PerPixelLighting) pchangeIndex++; else vchangeIndex++;
+			};
 			return (light.PerPixelLighting ? plights : vlights).Remove((ShaderLight)light);
 		}
 		/// <summary>
@@ -1038,8 +1185,17 @@ namespace Xen.Ex.Material
 		{
 			this.vlights.Clear();
 			this.plights.Clear();
+			unchecked
+			{
+				vchangeIndex++;
+				pchangeIndex++;
+			}
 		}
 	}
+
+	#endregion
+
+	#region Shader Animation
 
 	/// <summary>
 	/// Stores a list of animation transforms, converting them to a format used by a <see cref="MaterialShader"/>
@@ -1110,7 +1266,7 @@ namespace Xen.Ex.Material
 		}
 	}
 
-
+	#endregion
 
 	/// <summary>
 	/// <para>A shader that implements a simple lighting model that supporting a large number of point and directional lights.</para>
@@ -1118,6 +1274,7 @@ namespace Xen.Ex.Material
 	/// </summary>
 	public sealed class MaterialShader : IShader
 	{
+
 		sealed class AppMaterialID
 		{
 			public Application application;
@@ -1139,6 +1296,8 @@ namespace Xen.Ex.Material
 		private short vsLightCount, psLightCount;
 		private Vector4 emissive = new Vector4(0,0,0,1);
 		private MaterialAnimationTransformHierarchy animationTransforms;
+
+		private int vlightIndex, plightIndex, vlightsIndex, plightsIndex;
 
 		/// <summary>
 		/// Gets/Sets the animation transform object
@@ -1172,7 +1331,7 @@ namespace Xen.Ex.Material
 		/// <param name="lights"></param>
 		public MaterialShader(MaterialLightCollection lights)
 		{
-			this.lightCollection = lights;
+			this.Lights = lights;
 		}
 
 
@@ -1182,7 +1341,24 @@ namespace Xen.Ex.Material
 		public MaterialLightCollection Lights
 		{
 			get { return lightCollection; }
-			set { lightCollection = value; }
+			set 
+			{
+				if (lightCollection != value)
+				{
+					lightCollection = value;
+					if (value != null)
+					{
+						vlightIndex = value.vchangeIndex - 1;
+						plightIndex = value.pchangeIndex - 1;
+						vlightsIndex = -1;
+						plightsIndex = -1;
+						foreach (ShaderLight light in value.vlights)
+							vlightsIndex += light.changeIndex;
+						foreach (ShaderLight light in value.plights)
+							plightsIndex += light.changeIndex;
+					}
+				}
+			}
 		}
 
 		/// <summary>
@@ -1421,6 +1597,7 @@ namespace Xen.Ex.Material
 		public void Bind(IShaderSystem state)
 		{
 			DrawState _state = (DrawState)state;
+
 			if (appId == null)
 			{
 				if (_state.UserValues.Contains(typeof(AppMaterialID).FullName))
@@ -1452,6 +1629,8 @@ namespace Xen.Ex.Material
 			int vsLightCount = 0;
 			int psLightCount = 0;
 			Vector3 ambient = diffuseColour;
+			bool plightsChanged = false, vlightsChanged = false;
+
 
 			if (lightCollection != null &&
 				lightCollection.LightingEnabled)
@@ -1460,6 +1639,7 @@ namespace Xen.Ex.Material
 				psLightCount = lightCollection.plights.Count;
 				ambient = lightCollection.ambient * diffuseColour;
 
+				int vindex = 0, pindex = 0;
 
 				if (vsLightCount > 0)
 				{
@@ -1468,6 +1648,7 @@ namespace Xen.Ex.Material
 					for (int i = 0; i < lightCollection.vlights.Count; i++)
 					{
 						ShaderLight light = lightCollection.vlights[i];
+						vindex += light.changeIndex;
 
 						if (light.Enabled == false)
 						{
@@ -1524,6 +1705,7 @@ namespace Xen.Ex.Material
 					for (int i = 0, j = 0; i < lightCollection.plights.Count; i++)
 					{
 						ShaderLight light = lightCollection.plights[i];
+						pindex += light.changeIndex;
 
 						if (light.Enabled == false)
 						{
@@ -1554,6 +1736,22 @@ namespace Xen.Ex.Material
 						ligthDataBufferPS[j++] = v;
 					}
 				}
+
+				vlightsChanged |=
+					this.vlightIndex != lightCollection.vchangeIndex ||
+					this.vlightsIndex != vindex;
+				plightsChanged |=
+					this.plightIndex != lightCollection.pchangeIndex ||
+					this.plightsIndex != pindex;
+
+
+				this.vlightIndex  = lightCollection.vchangeIndex;
+				this.vlightsIndex = vindex;
+
+				this.plightIndex  = lightCollection.pchangeIndex;
+				this.plightsIndex = pindex;
+
+				//vlightIndex
 			}
 
 			if (vsLightCount != this.vsLightCount ||
@@ -1582,11 +1780,15 @@ namespace Xen.Ex.Material
 					out shaderBoundBones);
 
 				dirty = false;
+				vlightsChanged = true;
+				plightsChanged = true;
+				this.plightsIndex--;
+				this.vlightsIndex--;
 			}
 
-			if (vsLightCount > 0)
+			if (vsLightCount > 0 && vlightsChanged)
 				shader.SetAttribute(state, appId.v_lights_id, ligthDataBufferVS);
-			if (psLightCount > 0)
+			if (psLightCount > 0 && plightsChanged)
 				shader.SetAttribute(state, appId.p_lights_id, ligthDataBufferPS);
 
 

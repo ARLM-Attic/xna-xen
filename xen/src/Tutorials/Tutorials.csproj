@@ -59,12 +59,9 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml.Linq">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Xen, Version=1.0.2.0, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\x86\Debug\Xen.dll</HintPath>
@@ -115,12 +112,31 @@
       <DependentUpon>shader.fx</DependentUpon>
     </Compile>
     <Compile Include="Tutorial 17\Keyboard Input.cs" />
+    <Compile Include="Tutorial 18\DrawPredicate.cs" />
+    <Compile Include="Tutorial 19\Manual Animation.cs" />
     <Compile Include="Tutorial 20\Animation Stress Test.cs" />
+    <Compile Include="Tutorial 21\Particle System 2D.cs" />
+    <Compile Include="Tutorial 22\Particle System 3D.cs" />
+    <Compile Include="Tutorial 23\Advanced Particle System.cs" />
+    <Compile Include="Tutorial 24\BatchModel.cs" />
+    <Compile Include="Tutorial 25\shader.fx.cs">
+      <SubType>Code</SubType>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>shader.fx</DependentUpon>
+    </Compile>
+    <Compile Include="Tutorial 25\Shadow Mapping.cs" />
     <Compile Include="TutorialChooser.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="TutorialChooser.Designer.cs">
       <DependentUpon>TutorialChooser.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WinFormsExample.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="WinFormsExample.Designer.cs">
+      <DependentUpon>WinFormsExample.cs</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -146,11 +162,18 @@
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>
+    <None Include="Tutorial 25\shader.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>shader.fx.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="TutorialChooser.resx">
       <DependentUpon>TutorialChooser.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="WinFormsExample.resx">
+      <DependentUpon>WinFormsExample.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

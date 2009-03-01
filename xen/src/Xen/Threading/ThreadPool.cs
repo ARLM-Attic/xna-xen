@@ -26,7 +26,7 @@ namespace Xen.Threading
 		public readonly ThreadPool pool;
 		public IAction action;
 		public object data;
-		public volatile int id;
+		public int id;
 	}
 
 	/// <summary>
@@ -44,18 +44,26 @@ namespace Xen.Threading
 		}
 
 		/// <summary>
-		/// Wait for the task to complete
+		/// Wait for the task to complete, where possible another task will be performed while waiting
 		/// </summary>
 		public void WaitForCompletion()
 		{
 			if (task == null)
 				return;
 
-			while (task.id == this.id)
+			//is task still active?
+			if (task.id == this.id)
 			{
-				//do something else if possible
-				if (!task.pool.RunQueueTask())
-					Thread.Sleep(0);
+				//try and run the task now..
+				if (task.pool.RunQueueTask(task))
+					return;
+
+				while (task.id == this.id)
+				{
+					//if so, do something else if possible
+					if (!task.pool.RunQueueTask())
+						Thread.Sleep(0); // otherwise sleep.
+				}
 			}
 
 			//nullify
@@ -75,12 +83,12 @@ namespace Xen.Threading
 	}
 
 	/// <summary>
-	/// A thread pool for running tasks on threads at varying priority
+	/// A thread pool for running tasks on threads at varying priority (such as the <see cref="Application.ThreadPool"/> instance)
 	/// </summary>
 #if !DEBUG_API
 	[System.Diagnostics.DebuggerStepThrough]
 #endif
-	public class ThreadPool : IDisposable
+	public sealed class ThreadPool : IDisposable
 	{
 		private readonly object sync = new object();
 		private readonly WaitHandle[] waitHandles;
@@ -95,7 +103,7 @@ namespace Xen.Threading
 		private int taskIndex;
 
 		/// <summary>
-		/// Constructs a thread pool with <see cref="Environment.ProcessorCount"/> threads
+		/// Constructs a thread pool with <see cref="Environment.ProcessorCount"/>-1 threads
 		/// </summary>
 		public ThreadPool() : 
 #if XBOX360
@@ -202,11 +210,11 @@ namespace Xen.Threading
 		}
 
 		/// <summary>
-		/// Run a task on a thread. If no threads are free then the task will be run immediately
+		/// Run a task on a thread. If no threads are free then the task will be buffered and run at a later time. On single threaded systems the task will run immediately
 		/// </summary>
 		/// <param name="task">Task to run</param>
 		/// <param name="taskData">Optional data to pass to the task</param>
-		/// <returns>Returns a callback to wait for task completion</returns>
+		/// <returns>Returns a callback that can be used to wait for task completion</returns>
 		public WaitCallback QueueTask(IAction task, object taskData)
 		{
 			if (disposed)
@@ -257,15 +265,33 @@ namespace Xen.Threading
 
 			if (source != null)
 			{
-				RunTask(source);
+				IAction acton = Interlocked.Exchange(ref source.action, null);
+
+				if (acton != null)
+				{
+					acton.PerformAction(source.data);
+					ClearTask(source);
+				}
 				return true;
 			}
 			return false;
 		}
 
-		internal void RunTask(TaskSource source)
+		internal bool RunQueueTask(TaskSource source)
 		{
-			source.action.PerformAction(source.data);
+			IAction acton = Interlocked.Exchange(ref source.action, null);
+
+			if (acton != null) // action gets nulled when the task is being run...
+			{
+				acton.PerformAction(source.data);
+				ClearTask(source);
+				return true;
+			}
+			return false;
+		}
+
+		internal void ClearTask(TaskSource source)
+		{
 			Monitor.Enter(sync);
 			this.PushSource(source);
 			Monitor.Exit(sync);
@@ -349,15 +375,17 @@ namespace Xen.Threading
 		{
 			readonly private AutoResetEvent start, running;
 			readonly private ManualResetEvent complete;
-			private volatile TaskSource task;
+			private TaskSource task;
 			private readonly Thread thread;
 			private bool temporary;
 			private ThreadPool parent;
-
 #if XBOX360
 			private int threadAffinity;
 			private static int[] threadIds = new int[] { 3, 4, 5 };
+#else
+			private System.Globalization.CultureInfo culture; 
 #endif
+
 			public WorkUnit(ThreadPriority priority, bool background, int index, ThreadPool parent)
 			{
 				this.parent = parent;
@@ -371,8 +399,9 @@ namespace Xen.Threading
 
 #if XBOX360
 				threadAffinity = threadIds[index % threadIds.Length];
+#else
+				culture = Thread.CurrentThread.CurrentCulture;
 #endif
-
 				thread.Start();
 			}
 
@@ -428,7 +457,11 @@ namespace Xen.Threading
 			{
 #if XBOX360
 				thread.SetProcessorAffinity(new int[] { threadAffinity });
+#else
+				//match culture with the creation thread
+				Thread.CurrentThread.CurrentCulture = culture;
 #endif
+
 				while (!temporary)
 				{
 					start.WaitOne();
@@ -443,7 +476,13 @@ namespace Xen.Threading
 					complete.Reset();
 					running.Set();
 
-					parent.RunTask(task);
+					IAction action = Interlocked.Exchange(ref task.action, null);
+
+					if (action != null) // set action to null when a task in in flight
+					{
+						action.PerformAction(task.data);
+						parent.ClearTask(task);
+					}
 
 					if (!temporary)
 					{

@@ -1,7 +1,7 @@
 Xen: Graphics API for XNA
 www.codeplex.com/xen
 
-version 1.4 (XNA 3.0)
+version 1.5 (XNA 3.0)
 
 
 
@@ -12,12 +12,8 @@ version 1.4 (XNA 3.0)
 2.) Open ./xen/Tutorials.sln
 
 
-Tutorials.sln contains 17 small tutorial applications.
-These show step by step ways to use xen features.
-
+Tutorials.sln contains 25 small tutorial applications.
 Reading these will make learning xen a lot easier!
-
-Remember to run the prebuild anytime you update to a new version of xen!
 
 
 
@@ -33,15 +29,44 @@ Remember to run the prebuild anytime you update to a new version of xen!
 -- Copyright & Contact
 
 
-Xen is Copyright (C) 2008 Graham Aldridge
+Xen is Copyright (C) 2008-2009 Graham Aldridge
 graham.aldridge@gmail.com
 XboxLive: StatusUnknown
 
 
 
-
 -----------------------------------------------------------------------------------------------------
 -- Change Log
+
+----------------
+-- 1/MAR/09
+
+Major update to many parts of the API
+
+[Added] The Xen.Ex ParticleSystem 1.0 has been added, this is the largest addition to Xen.Ex yet
+[Added] Particle System drawers for both 2D, 3D, billboard, lines and velocity based particle drawing
+[Added] Particle System CPU and GPU processors and content builders
+[Added] Xen Particle System content processor, including Particle System XML schema
+[Added] Animation Override support (Manual Animation)
+[Added] OcclusionQuery 'DrawPredicate' class
+[Added] CullTestVisualizer class
+[Added] Tutorials 18,19,21,22,23,24,25 added
+[Added] BETA WinForms Tutorial mode (may be buggy if run many times)
+[Added] Depth output shaders in Xen.Ex.Shaders (replaces the older, broken depth shaders)
+[Added] ShaderOverride and LightCollection Draw Flags for forcing all models to use a specific shaders / lights,
+[Added] BatchModel class for drawing non-animated models in large batches
+[Removed] DeferredDraw() and Matrix Scaling detection have been compiled out of Xen, define XEN_EXTRA to get them back
+[Improved] Animation Max Bone Count has been increased from 71 to 72 (due to Xbox compatibility improvements)
+[Improved] Blur filters are now significantly more felixble (ranging from 3 sample to 31 sample filters)
+[Improved] The DrawStatistics overlay has had a major facelift, it's now much simpler and colour coded
+[Improved] Most Scene classes have had improvements or overhauls
+[Improved] The shader compiler has seen significant upgrades and fixes
+[Improved] The shader compiler works around bugs in Xbox 'AssembleFromSource()' (provided flow control isn't used)
+[Improved] The animation system is now upto 30% faster on the Xbox and has better thread safety
+[Fixed] Some preshader bugs with the shader compiler have been fixed
+[Fixed] A number of minor bugs in the Animation System have been fixed
+[Fixed] Two major bugs relating to low frequency updating in the UpdateManager have been fixed
+[Fixed] Many, many minor fixes, performance improvements and tweaks throughout the API
 
 -- 25/NOV/08
 -- Version 1.4
@@ -157,7 +182,7 @@ Zune support is not planned.
 -----------------------------------------------------------------------------------------------------
 -- Xen Dlls:
 
-There are 5 parts to xen:
+There are 6 parts to xen:
 
 
 Xen.dll 					-- the main API .dll
@@ -166,11 +191,12 @@ Xen.Graphics.ShaderSystem.dll 			-- shader interfaces
 
 
 Xen.Ex.ModelImporter.dll 			-- Content pipeline model importer for Xen.Ex
+Xen.Ex.ParticleSystem.dll 			-- Content pipeline particle system importer for Xen.Ex
 Xen.Graphics.ShaderSystem.CustomTool.dll 	-- Visual Studio 2005/2008 CustomTool plugin
 
 
 
-Most applications will use all three xen runtime .dlls and the content importer.
+Most applications will use all three xen runtime .dlls and the content importers.
 However if you are very brave the ShaderSystem could be used on its own.
 
 

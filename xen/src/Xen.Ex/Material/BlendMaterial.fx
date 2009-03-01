@@ -1,4 +1,4 @@
-//CompilerOptions = NoPreShader, InternalClass, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace
+//CompilerOptions = NoPreShader, InternalClass, UseAsmToHlslXboxConverter, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace
 //ConstantOverride = vs0tcb:vs0b,vs0tb,vs0cb;vs1tcb:vs1b,vs1tb,vs1cb;vs3tcb:vs3b,vs3tb,vs3cb;vs6tcb:vs6b,vs6tb,vs6cb;	vs0ncb:vs0nb;vs1ncb:vs1nb;vs3ncb:vs3nb;vs6ncb:vs6nb;	vs0ps0tcb:vs0ps0b,vs0ps0cb,vs0ps0tb;
 
 /*
@@ -23,22 +23,13 @@ vs0ps0tcb:vs0ps0b,vs0ps0cb,vs0ps0tb;
 //most registers/samplers etc are enforced to keep registers consistent between shaders, so they can be merged.
 
 
-#ifdef XBOX360
-		
-//bug? for some reason can't use register 8-11 on xbox
-float4 viewPoint : VIEWPOINT : register(c12);
-float4 ambient : register(c13);
-
-#else
+float4x4 world : WORLD : register(c0);
+float4x4 worldViewProj : WORLDVIEWPROJECTION : register(c4);
+float4x4 viewProj : VIEWPROJECTION : register(c4);
 
 float4 viewPoint : VIEWPOINT : register(c8);
 float4 ambient : register(c9);
 
-#endif
-
-float4x4 world : WORLD : register(c0);
-float4x4 worldViewProj : WORLDVIEWPROJECTION : register(c4);
-float4x4 viewProj : VIEWPROJECTION : register(c4);
 
 texture2D CustomTexture : register(t0);
 sampler2D CustomTextureSampler : register(s0) = sampler_state
@@ -54,21 +45,14 @@ sampler2D CustomNormalMapSampler : register(s1) = sampler_state
 
 //format is position,specular,diffuse,attenuation
 
-#ifdef XBOX360
-float4 v_lights[24] : register(c14); //max 6
-#else
 float4 v_lights[24] : register(c10); //max 6
-#endif
-
 float4 p_lights[16] : register(c0); //max 4
 
 //blend matrices, stored at the end of the VS, max is 71. stored as float4x3
 
-#ifdef XBOX360
-float4 blendMatrices[71*3] : register(c38);
-#else
-float4 blendMatrices[71*3] : register(c34);
-#endif
+float4 blendMatrices[72*3] : register(c34);
+
+
 
 void DudVS(out float4 pos_out : POSITION)
 {

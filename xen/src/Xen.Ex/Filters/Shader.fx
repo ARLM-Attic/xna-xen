@@ -232,7 +232,7 @@ void VS_Filter16(float4 pos : POSITION, out float4 o_pos : POSITION,
 {
 	o_pos = mul(pos,worldViewProj);
 	
-	float2 size = 1.0f/textureSize;
+	float2 size = textureSize;
 	
 	tex0.xy = tex + kernel[0].xy * size;
 	tex1.xy = tex + kernel[1].xy * size;
@@ -271,7 +271,7 @@ void VS_Filter8(float4 pos : POSITION, out float4 o_pos : POSITION,
 {
 	o_pos = mul(pos,worldViewProj);
 	
-	float2 size = 1.0f/textureSize;
+	float2 size = textureSize;
 	
 	tex0.xy = tex + kernel[0].xy * size;
 	tex1.xy = tex + kernel[1].xy * size;
@@ -296,7 +296,7 @@ void VS_Filter4(float4 pos : POSITION, out float4 o_pos : POSITION,
 {
 	o_pos = mul(pos,worldViewProj);
 	
-	float2 size = 1.0f/textureSize;
+	float2 size = textureSize;
 	
 	tex0.xy = tex + kernel[0].xy * size;
 	tex1.xy = tex + kernel[1].xy * size;
@@ -314,7 +314,7 @@ void VS_Filter2(float4 pos : POSITION, out float4 o_pos : POSITION,
 {
 	o_pos = mul(pos,worldViewProj);
 	
-	float2 size = 1.0f/textureSize;
+	float2 size = textureSize;
 	
 	tex0.xy = tex + kernel[0].xy * size;
 	
@@ -353,6 +353,36 @@ float4 PS_Filter16(
 		tex2D(TextureSampler,tex7.zw) * kernel[15].z;
 }
 
+float4 PS_Filter15(
+	float4 tex0 : TEXCOORD0,
+	float4 tex1 : TEXCOORD1,
+	float4 tex2 : TEXCOORD2,
+	float4 tex3 : TEXCOORD3,
+	float4 tex4 : TEXCOORD4,
+	float4 tex5 : TEXCOORD5,
+	float4 tex6 : TEXCOORD6,
+	float2 tex7 : TEXCOORD7
+	)   : COLOR 
+{
+	return 
+		tex2D(TextureSampler,tex0.xy) * kernel[0].z + 
+		tex2D(TextureSampler,tex1.xy) * kernel[1].z + 
+		tex2D(TextureSampler,tex2.xy) * kernel[2].z + 
+		tex2D(TextureSampler,tex3.xy) * kernel[3].z + 
+		tex2D(TextureSampler,tex4.xy) * kernel[4].z + 
+		tex2D(TextureSampler,tex5.xy) * kernel[5].z + 
+		tex2D(TextureSampler,tex6.xy) * kernel[6].z + 
+		tex2D(TextureSampler,tex7.xy) * kernel[7].z
+		+
+		tex2D(TextureSampler,tex0.zw) * kernel[8].z + 
+		tex2D(TextureSampler,tex1.zw) * kernel[9].z + 
+		tex2D(TextureSampler,tex2.zw) * kernel[10].z + 
+		tex2D(TextureSampler,tex3.zw) * kernel[11].z + 
+		tex2D(TextureSampler,tex4.zw) * kernel[12].z + 
+		tex2D(TextureSampler,tex5.zw) * kernel[13].z + 
+		tex2D(TextureSampler,tex6.zw) * kernel[14].z;
+}
+
 
 float4 PS_Filter8(
 	float2 tex0 : TEXCOORD0,
@@ -377,6 +407,27 @@ float4 PS_Filter8(
 		tex2D(TextureSampler,tex7.xy) * kernel[7].z;
 }
 
+float4 PS_Filter7(
+	float2 tex0 : TEXCOORD0,
+	float2 tex1 : TEXCOORD1,
+	float2 tex2 : TEXCOORD2,
+	float2 tex3 : TEXCOORD3,
+	float2 tex4 : TEXCOORD4,
+	float2 tex5 : TEXCOORD5,
+	float2 tex6 : TEXCOORD6
+	)   : COLOR 
+{
+	return 
+		tex2D(TextureSampler,tex0.xy) * kernel[0].z + 
+		tex2D(TextureSampler,tex1.xy) * kernel[1].z + 
+		tex2D(TextureSampler,tex2.xy) * kernel[2].z + 
+		tex2D(TextureSampler,tex3.xy) * kernel[3].z
+		+
+		tex2D(TextureSampler,tex4.xy) * kernel[4].z + 
+		tex2D(TextureSampler,tex5.xy) * kernel[5].z + 
+		tex2D(TextureSampler,tex6.xy) * kernel[6].z;
+}
+
 float4 PS_Filter4(
 	float2 tex0 : TEXCOORD0,
 	float2 tex1 : TEXCOORD1,
@@ -390,6 +441,19 @@ float4 PS_Filter4(
 		+
 		tex2D(TextureSampler,tex2.xy) * kernel[2].z + 
 		tex2D(TextureSampler,tex3.xy) * kernel[3].z;
+}
+
+float4 PS_Filter3(
+	float2 tex0 : TEXCOORD0,
+	float2 tex1 : TEXCOORD1,
+	float2 tex2 : TEXCOORD2
+	)   : COLOR 
+{
+	return 
+		tex2D(TextureSampler,tex0.xy) * kernel[0].z + 
+		tex2D(TextureSampler,tex1.xy) * kernel[1].z
+		+
+		tex2D(TextureSampler,tex2.xy) * kernel[2].z;
 }
 
 float4 PS_Filter2(
@@ -429,6 +493,31 @@ technique Kernel4
 		PixelShader = compile ps_2_0 PS_Filter4();
    }
 }
+
+technique Kernel15
+{
+   pass
+   {
+		VertexShader = compile vs_2_0 VS_Filter16();
+		PixelShader = compile ps_2_0 PS_Filter15();
+   }
+}
+technique Kernel7
+{
+   pass
+   {
+		VertexShader = compile vs_2_0 VS_Filter8();
+		PixelShader = compile ps_2_0 PS_Filter7();
+   }
+}
+technique Kernel3
+{
+   pass
+   {
+		VertexShader = compile vs_2_0 VS_Filter4();
+		PixelShader = compile ps_2_0 PS_Filter3();
+   }
+}
 technique Kernel2
 {
    pass
@@ -461,109 +550,5 @@ technique Downsample2
    {
 		VertexShader = compile vs_2_0 VS_Down2();
 		PixelShader = compile ps_2_0 PS_Down2(false,4);
-   }
-}
-
-technique Downsample8LogRGBA
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down8();
-		PixelShader = compile ps_2_0 PS_Down8(true,4);
-   }
-}
-technique Downsample4LogRGBA
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down4();
-		PixelShader = compile ps_2_0 PS_Down4(true,4);
-   }
-}
-technique Downsample2LogRGBA
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down2();
-		PixelShader = compile ps_2_0 PS_Down2(true,4);
-   }
-}
-
-
-
-
-
-technique Downsample8LogRGB
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down8();
-		PixelShader = compile ps_2_0 PS_Down8(true,3);
-   }
-}
-technique Downsample4LogRGB
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down4();
-		PixelShader = compile ps_2_0 PS_Down4(true,3);
-   }
-}
-technique Downsample2LogRGB
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down2();
-		PixelShader = compile ps_2_0 PS_Down2(true,3);
-   }
-}
-
-technique Downsample8LogRG
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down8();
-		PixelShader = compile ps_2_0 PS_Down8(true,2);
-   }
-}
-technique Downsample4LogRG
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down4();
-		PixelShader = compile ps_2_0 PS_Down4(true,2);
-   }
-}
-technique Downsample2LogRG
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down2();
-		PixelShader = compile ps_2_0 PS_Down2(true,2);
-   }
-}
-
-technique Downsample8LogR
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down8();
-		PixelShader = compile ps_2_0 PS_Down8(true,1);
-   }
-}
-technique Downsample4LogR
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down4();
-		PixelShader = compile ps_2_0 PS_Down4(true,1);
-   }
-}
-technique Downsample2LogR
-{
-   pass
-   {
-		VertexShader = compile vs_2_0 VS_Down2();
-		PixelShader = compile ps_2_0 PS_Down2(true,1);
    }
 }

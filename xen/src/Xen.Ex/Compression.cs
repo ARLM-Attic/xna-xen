@@ -1043,7 +1043,7 @@ namespace Xen.Ex.Compression
 	/// <remarks>
 	/// <para>Tolerance values may be changed at will, this will not corrupt data already written/about to be written</para>
 	/// </remarks>
-	public class CompressedTransformWriter
+	public sealed class CompressedTransformWriter
 	{
 		#region members
 
@@ -1793,7 +1793,7 @@ namespace Xen.Ex.Compression
 	/// <para>Tolerance values may be changed at will, this will not corrupt data already written/about to be written</para>
 	/// <para>The <see cref="CompressedTransformAccelerationWriter"/> and <see cref="CompressedTransformAccelerationReader"/> have higher overhead than the <see cref="CompressedTransformWriter"/> and <see cref="CompressedTransformReader"/></para>
 	/// </remarks>
-	public class CompressedTransformAccelerationWriter
+	public sealed class CompressedTransformAccelerationWriter
 	{
 		#region members
 

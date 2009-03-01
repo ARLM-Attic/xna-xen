@@ -60,6 +60,7 @@ namespace Xen
 		private readonly object syncMinor = new object();
 		private long updateTimer, totalTime;
 		private bool pauseIfAppInactive;
+		private float updateSpeed = 1;
 
 		/// <summary>
 		/// <para>If true, the update manager will pause all updating when <see cref="Application.IsActive"/> is false</para>
@@ -69,6 +70,15 @@ namespace Xen
 		{
 			get { return pauseIfAppInactive; }
 			set { pauseIfAppInactive = value; }
+		}
+
+		/// <summary>
+		/// <para>Update Speed scale factor, 1.0 represents full update speed, 0.5 represents halved update speed, etc.</para>
+		/// </summary>
+		public float UpdateSpeed
+		{
+			get { return updateSpeed; }
+			set { if (value < 0) throw new ArgumentException(); updateSpeed = value; }
 		}
 
 		/// <summary>
@@ -180,7 +190,10 @@ namespace Xen
 			if (!pauseIfAppInactive || state.Application.IsActive)
 				updateTimer += state.DeltaTimeTicks;
 
-			long delta = UpdateState.TicksInOneSecond / 60;
+			long delta = long.MaxValue;
+			if (updateSpeed != 0)
+				delta = Convert.ToInt64((double)UpdateState.TicksInOneSecond / (60.0 * updateSpeed));
+
 			bool resetUpdate = false;
 
 			float currentHz = state.DeltaTimeFrequency;
@@ -190,8 +203,6 @@ namespace Xen
 			long currentTotalTime = state.TotalTimeTicks;
 			long currentRealTime = state.TotalRealTimeTicks;
 
-			bool preDrawState = state.validPreFrameContext;
-			state.validPreFrameContext = false;
 
 			int count = 0;
 			while (updateTimer >= delta)
@@ -248,7 +259,6 @@ namespace Xen
 				if (addList.Count > 0)
 				{
 					state.UpdateDelta(0, 0, 0);
-					state.validPreFrameContext = true;
 
 					for (int i = 0; i < addList.Count; i++)
 					{
@@ -256,8 +266,6 @@ namespace Xen
 						if (frequency != UpdateFrequency.Terminate)
 							AddItem(addList[i].Key, frequency, addList[i].Value);
 					}
-
-					state.validPreFrameContext = false;
 
 					addList.Clear();
 
@@ -272,8 +280,6 @@ namespace Xen
 			{
 				state.Update(currentDts, currentHz, currentSeconds, currentDeltaTime, currentTotalTime, currentRealTime);
 			}
-
-			state.validPreFrameContext = true;
 
 			//update the OncePerFrame
 			{
@@ -314,8 +320,6 @@ namespace Xen
 
 			state.UpdateManager = parent;
 			updating = false;
-
-			state.validPreFrameContext = preDrawState;
 
 			return UpdateFrequency.OncePerFrame;
 		}
@@ -371,6 +375,9 @@ namespace Xen
 		}
 	}
 
+#if !DEBUG_API
+	[System.Diagnostics.DebuggerStepThrough]
+#endif
 	sealed class UpdateFrequencyAttribute : Attribute
 	{
 		private int interval;
@@ -390,6 +397,9 @@ namespace Xen
 		}
 	}
 
+#if !DEBUG_API
+	[System.Diagnostics.DebuggerStepThrough]
+#endif
 	sealed class UpdateEntry
 	{
 		public UpdateEntry(IUpdate item, Updater updater, int index)
@@ -403,6 +413,9 @@ namespace Xen
 		public int index;
 	}
 
+#if !DEBUG_API
+	[System.Diagnostics.DebuggerStepThrough]
+#endif
 	sealed class Updater
 	{
 		struct Action
@@ -540,9 +553,6 @@ namespace Xen
 
 		public void Update(int index, UpdateState state, List<UpdateEntry>[] moveList)
 		{
-			if (index % (interval + this.index) != 0)
-				return;
-
 			if (entriesHighIndex == 0 && 
 				actionList.Count == 0)
 				return;
@@ -651,7 +661,7 @@ namespace Xen
 		{
 			Xen.Threading.ThreadPool pool = state.Application.ThreadPool;
 
-			if (entriesHighIndex <= pool.ThreadCount)
+			if (entriesHighIndex < 2)
 				return UpdateEntries(state, moveList);
 
 			if (asyncProcessors == null)

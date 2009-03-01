@@ -526,7 +526,7 @@ namespace Xen.Graphics
 			vertexFormatSupported[VertexElementFormat.UInt101010] = caps.DeclarationTypeCapabilities.SupportsUInt101010;
 		}
 
-		public VertexDeclaration GetDeclaration(GraphicsDevice device, Type[] streamTypes)
+		public VertexDeclaration GetDeclaration(GraphicsDevice device, Type[] streamTypes, IVertices[] buffers)
 		{
 			ValidateDevice(device);
 			VertexDeclaration declaration;
@@ -543,6 +543,11 @@ namespace Xen.Graphics
 			int i = 0;
 			for (i = 0; i < streamTypes.Length; i++)
 			{
+				//buffer provides the vertex elements itself
+				if (buffers[i] is IDeviceVertexBuffer &&
+					(buffers[i] as IDeviceVertexBuffer).IsImplementationUserSpecifiedVertexElements(out mappings[i]))
+					continue;
+
 				mappings[i] = GetDeclaration(streamTypes[i]);
 			}
 
@@ -695,6 +700,11 @@ namespace Xen.Graphics
 			throw new ArgumentException("Field (" + field.FieldType.Name + ") " + field.DeclaringType.Name + "." + field.Name + " value mapping cannot be determined. Either set the VertexElementFormat with a [VertexElement()] attribute, or change the declaration to a supported type.");
 		}
 
+		public static VertexElementFormat DetermineFormat(Type type)
+		{
+			return formatMapping[type];
+		}
+
 		static VertexElementUsage DetermineUsage(List<VertexElement> elements, FieldInfo field, out int index)
 		{
 			string name = field.Name.ToLower().Replace("_", "");
@@ -711,7 +721,7 @@ namespace Xen.Graphics
 
 			index = 0;
 			if (number.Length > 0)
-				index = int.Parse(number);
+				index = int.Parse(number, System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
 
 			VertexElementUsage usage;
 			if (usageMapping.TryGetValue(name, out usage))

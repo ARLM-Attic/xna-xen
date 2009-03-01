@@ -151,11 +151,16 @@ technique Tutorial03Technique
 //Advanced use:
 //---------------------------------------------------------------------------------------------------
 
+//The following covers advanced uses of the shader system
+
 //Sometimes an attribute must be set through an IShader interface - where the class type is unknown.
 //For performance reasons, you cannot set an attribute by string name. The overhead would be very high.
 //All attribute names have a unique integer ID.
 //The DrawState object can get a unique ID using 'GetShaderAttributeNameUniqueID("name")'.
 //This ID will never change for the entire life of the application.
+//The value returned will always be a positive integer.
+//A good time to call GetShaderAttributeNameUniqueID() would be in a ContentLoad, keeping a local copy
+//of the index.
 //Every shader instance will implement 'SetAttribute(...)' methods, which will return true if the
 //attribute was set correctly.
 
@@ -178,7 +183,7 @@ technique Tutorial03Technique
 //useful, in larger projects having shaders changing render state can cause a *lot* of very
 //subtle bugs that can be very difficult to fix.
 
-//An shader is intended to only change shader state, not render state.
+//A shader is intended to only change shader state, not render state.
 //By extension of this restriction, multi-pass shaders are not supported by the plugin.
 
 //Although, there is one exception. Texture sampler states may be set by the shader.
@@ -198,12 +203,13 @@ technique Tutorial03Technique
 
 //And the generated shader class will be an internal class, not accessible outside the project.
 //The following options are supported (in the following format):
-//CompilerOptions = NoPreShader, InternalClass, AvoidFlowControl, PreferFlowControl, PartialPrecision, DefinePlatform
+//CompilerOptions = NoPreShader, InternalClass, ParentNamespace, AvoidFlowControl, PreferFlowControl, PartialPrecision, DefinePlatform
 
 //If your shader requires XBOX specific logic, then use the 'DefinePlatform' compiler option.
 //When used, the shader will be defined for each platform.
 //(the shader will be generated once for windows and once for xbox).
-//The macro 'XBOX' or 'XBOX360' will be defined, allowing:
+//
+//The macro 'XBOX360' will be defined, allowing:
 //
 //#ifdef XBOX360
 //...
@@ -215,7 +221,6 @@ technique Tutorial03Technique
 
 //If you wish to use the Xbox special assembly instruction 'vfetch', see Tutorial 16.
 //(Vfetch must be used through a macro in xen shaders)
-
 
 //---------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------

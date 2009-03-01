@@ -138,7 +138,7 @@ namespace Xen.Ex.Camera
 			this.Position = startPosition;
 		}
 
-		private Vector2 rotAcceleration, move, viewRot;
+		private Vector2 rotAcceleration, move, viewRotation;
 
 		private float v_cap = (float)Math.PI / 2.05f;
 		private bool zUp;
@@ -169,14 +169,14 @@ namespace Xen.Ex.Camera
 		{
 			Vector2 r = input.ThumbSticks.RightStick * (rotAcceleration * rotAcceleration * 0.05f + new Vector2(1, 1));
 
-			viewRot += r * RotationSensitivity * 0.04f;
+			viewRotation += r * RotationSensitivity * 0.04f;
 
 			float cap = v_cap;
 
-			if (viewRot.Y > cap)
-				viewRot.Y = cap;
-			if (viewRot.Y < -cap)
-				viewRot.Y = -cap;
+			if (viewRotation.Y > cap)
+				viewRotation.Y = cap;
+			if (viewRotation.Y < -cap)
+				viewRotation.Y = -cap;
 
 			rotAcceleration += input.ThumbSticks.RightStick * (new Vector2(0.5f, 0.25f) * (1.5f - move.Length() * 0.5f)) * 1.25f;
 			rotAcceleration *= 0.9f;
@@ -206,15 +206,15 @@ namespace Xen.Ex.Camera
 			if (zUp)
 			{
 				//z is up, so rotate left/right is around z.
-				Matrix.CreateRotationZ(-viewRot.X, out rotation);
+				Matrix.CreateRotationZ(-viewRotation.X, out rotation);
 				//x is always left to right, so rotate up/down is around x
-				Matrix.CreateRotationX(viewRot.Y + MathHelper.PiOver2, out m1);
+				Matrix.CreateRotationX(viewRotation.Y + MathHelper.PiOver2, out m1);
 			}
 			else
 			{
 				//y is up, so rotate left/right is around y.
-				Matrix.CreateRotationY(-viewRot.X, out rotation);
-				Matrix.CreateRotationX(viewRot.Y, out m1);
+				Matrix.CreateRotationY(-viewRotation.X, out rotation);
+				Matrix.CreateRotationX(viewRotation.Y, out m1);
 			}
 
 			Matrix.Multiply(ref m1, ref rotation, out rotation);
@@ -226,6 +226,27 @@ namespace Xen.Ex.Camera
 			Matrix.Multiply(ref rotation, ref m1, out rotation);
 
 			CameraMatrix = rotation;
+		}
+
+		public override void LookAt(ref Vector3 lookAtTarget, ref Vector3 cameraPosition, ref Vector3 upVector)
+		{
+			base.LookAt(ref lookAtTarget, ref cameraPosition, ref upVector);
+
+			//update viewRotation
+			Matrix matrix = this.CameraMatrix;
+			Vector3 dir = new Vector3(matrix.M31, matrix.M32, matrix.M33);
+
+			//this should be correct... :-)
+			if (zUp)
+			{
+				viewRotation.X = (float)Math.Atan2(-dir.X, -dir.Y);
+				viewRotation.Y = -(float)Math.Asin(dir.Z);
+			}
+			else
+			{
+				viewRotation.X = -(float)Math.Atan2(dir.X, dir.Z);
+				viewRotation.Y = -(float)Math.Asin(dir.Y);
+			}
 		}
 	}
 }

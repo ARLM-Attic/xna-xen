@@ -33,6 +33,7 @@ namespace Tutorials
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TutorialChooser));
 			this.tutorialList = new System.Windows.Forms.ComboBox();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
+			this.winFormsHost = new System.Windows.Forms.CheckBox();
 			button1 = new System.Windows.Forms.Button();
 			button2 = new System.Windows.Forms.Button();
 			this.groupBox1.SuspendLayout();
@@ -53,13 +54,14 @@ namespace Tutorials
 			button2.Location = new System.Drawing.Point(246, 48);
 			button2.Name = "button2";
 			button2.Size = new System.Drawing.Size(75, 23);
-			button2.TabIndex = 2;
+			button2.TabIndex = 3;
 			button2.Text = "&Cancel";
 			button2.UseVisualStyleBackColor = true;
 			button2.Click += new System.EventHandler(this.Cancel);
 			// 
 			// tutorialList
 			// 
+			this.tutorialList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.tutorialList.FormattingEnabled = true;
 			this.tutorialList.Location = new System.Drawing.Point(22, 19);
 			this.tutorialList.Name = "tutorialList";
@@ -68,6 +70,7 @@ namespace Tutorials
 			// 
 			// groupBox1
 			// 
+			this.groupBox1.Controls.Add(this.winFormsHost);
 			this.groupBox1.Controls.Add(button2);
 			this.groupBox1.Controls.Add(button1);
 			this.groupBox1.Controls.Add(this.tutorialList);
@@ -77,6 +80,16 @@ namespace Tutorials
 			this.groupBox1.TabIndex = 0;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Select a tutorial to run:";
+			// 
+			// winFormsHost
+			// 
+			this.winFormsHost.AutoSize = true;
+			this.winFormsHost.Location = new System.Drawing.Point(22, 46);
+			this.winFormsHost.Name = "winFormsHost";
+			this.winFormsHost.Size = new System.Drawing.Size(176, 17);
+			this.winFormsHost.TabIndex = 2;
+			this.winFormsHost.Text = "Run in a WinForms host (BETA)";
+			this.winFormsHost.UseVisualStyleBackColor = true;
 			// 
 			// TutorialChooser
 			// 
@@ -92,6 +105,7 @@ namespace Tutorials
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 			this.Text = "Tutorial Chooser";
 			this.groupBox1.ResumeLayout(false);
+			this.groupBox1.PerformLayout();
 			this.ResumeLayout(false);
 
 		}
@@ -100,5 +114,6 @@ namespace Tutorials
 
 		private System.Windows.Forms.ComboBox tutorialList;
 		private System.Windows.Forms.GroupBox groupBox1;
+		private System.Windows.Forms.CheckBox winFormsHost;
 	}
 }

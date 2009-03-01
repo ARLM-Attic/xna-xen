@@ -56,8 +56,10 @@ namespace Tutorials
 			Close();
 		}
 
-		public static Type ChooseTutorial()
+		public static Type ChooseTutorial(out bool useWinForms)
 		{
+			useWinForms = false;
+
 			SortedList<string, Type> tutorials = new SortedList<string, Type>();
 			FindTutorials(tutorials);
 
@@ -71,6 +73,7 @@ namespace Tutorials
 			tutorials.TryGetValue(chooser.SelectedTutorial, out type);
 
 			chosenTutorial = chooser.SelectedTutorial;
+			useWinForms = chooser.winFormsHost.Checked;
 			return type;
 		}
 

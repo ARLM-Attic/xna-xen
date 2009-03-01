@@ -8,7 +8,6 @@ namespace Xen.Ex.Scene
 	/// <summary>
 	/// <para>This class will draw a list of objects in sorted order, drawing them in either back-to-front or front-to-back order</para>
 	/// <para>NOTE: Sorting order is based on the CullTests performed by the items. Items that do not perform a CullTest through an <see cref="ICuller"/> will not be sorted</para>
-	/// <para>NOTE: The post culler used by this class is somewhat inefficient on the Xbox right now - and may slow rendering down when heavily CPU limited. (This will be improved in a future version)</para>
 	/// </summary>
 	public sealed class DepthDrawSorter : IDraw
 	{
@@ -19,17 +18,28 @@ namespace Xen.Ex.Scene
 		}
 
 		private DepthSortMode sortMode;
-		private int itemCount = 0;
-		private float addCount = 0;
+		private int itemCount, previousFrameVisibleCount;
+		private float addCount;
 		private Entry[] items = new Entry[32];
 		private float[] depths = new float[32];
+		private uint sortEvery, sortFrameIndex;
+		private bool visible = true;
 
 		//actually used as a post-culler here
-		private BoundsCalculatingPreCuller postCuller = new BoundsCalculatingPreCuller();
+		private PositionCalculatingPreCuller postCuller = new PositionCalculatingPreCuller();
 
 		public DepthDrawSorter(DepthSortMode sortMode)
 		{
 			this.sortMode = sortMode;
+		}
+
+		/// <summary>
+		/// Gets/Sets if this sorter, and it's children, shall be drawn
+		/// </summary>
+		public bool Visible
+		{
+			get { return visible; }
+			set { visible = value; }
 		}
 
 		/// <summary>
@@ -39,6 +49,24 @@ namespace Xen.Ex.Scene
 		{
 			get { return sortMode; }
 			set { sortMode = value; }
+		}
+
+		/// <summary>
+		/// <para>Set this value to 5 to perform the sort once every 6 frames (sort is delayed by 5 frames)</para>
+		/// <para>Set this value to 0 to sort every frame (default), etc.</para>
+		/// <para>This can be used to reduce the CPU load of the sorter</para>
+		/// </summary>
+		public uint SortDelayFrameCount
+		{
+			get { return sortEvery; }
+			set 
+			{
+				if (sortEvery != value)
+				{
+					sortEvery = value;
+					sortFrameIndex = sortEvery;
+				}
+			}
 		}
 
 		/// <summary>
@@ -57,6 +85,8 @@ namespace Xen.Ex.Scene
 			}
 
 			items[itemCount++] = new Entry() { item = item, addIndex = this.addCount++ };
+
+			sortFrameIndex = sortEvery;
 		}
 
 		/// <summary>
@@ -90,6 +120,7 @@ namespace Xen.Ex.Scene
 						items[itemCount].item = null;
 					}
 
+					sortFrameIndex = sortEvery;
 					return true;
 				}
 			}
@@ -105,6 +136,50 @@ namespace Xen.Ex.Scene
 			if (itemCount == 0)
 				return;
 
+			sortFrameIndex++;
+
+			//sortEvery so many frames...
+			if (sortFrameIndex > sortEvery)
+				sortFrameIndex = 0; // ok, time to sort
+			else
+			{
+				//otherwise,
+				//draw using the previous frame sorting...
+
+				if (sortMode == DepthSortMode.FrontToBack)
+				{
+					for (int i = 0; i < previousFrameVisibleCount; i++)
+					{
+						IDraw item = items[i].item;
+						if (item.CullTest(state))
+							item.Draw(state);
+					}
+				}
+				else
+				{
+					for (int i = previousFrameVisibleCount - 1; i >= 0; i--)
+					{
+						IDraw item = items[i].item;
+						if (item.CullTest(state))
+							item.Draw(state);
+					}
+				}
+				int drawn = 0;
+				//draw the rest...
+				for (int i = previousFrameVisibleCount; i < this.itemCount; i++)
+				{
+					IDraw item = items[i].item;
+					if (item.CullTest(state))
+					{
+						item.Draw(state);
+						drawn++;
+					}
+				}
+				return;
+			}
+
+			//sort and draw...
+
 			ICuller culler = state;
 
 			state.PushPostCuller(postCuller);
@@ -117,7 +192,7 @@ namespace Xen.Ex.Scene
 			int backIndexCulled = itemCount - 1;
 			int unsortedItems = 0;
 
-			Vector3 min, max, dif, camera, direction;
+			Vector3 position, camera, direction;
 
 			state.Camera.GetCameraPosition(out camera);
 			state.Camera.GetCameraViewDirection(out direction);
@@ -130,23 +205,22 @@ namespace Xen.Ex.Scene
 
 				bool cullTest = item.item.CullTest(culler);
 
-				if (cullTest && postCuller.TryGetBounds(out min, out max))
+				if (cullTest && postCuller.TryGetPosition(out position))
 				{
 					//keep item in the list
 					items[index] = items[visible];
 
-					dif.X = max.X - min.X;
-					dif.Y = max.Y - min.Y;
-					dif.Z = max.Z - min.Z;
-
 					//centre of cull tests
-					min.X += dif.X * 0.5f - camera.X;
-					min.Y += dif.Y * 0.5f - camera.Y;
-					min.Z += dif.Z * 0.5f - camera.Z;
+					position.X -= camera.X;
+					position.Y -= camera.Y;
+					position.Z -= camera.Z;
 
-					depths[visible] = direction.X * min.X + direction.Y * min.Y + direction.Z * min.Z -
-						Math.Max(dif.X,Math.Max(dif.Y,dif.Z))*0.5f;
+					float depth = direction.X * position.X + direction.Y * position.Y + direction.Z * position.Z;
 
+					if (depth > 0)
+						depth = position.X * position.X + position.Y * position.Y + position.Z * position.Z;
+
+					depths[visible] = depth;
 					items[visible] = item;
 
 					visible++;
@@ -183,9 +257,9 @@ namespace Xen.Ex.Scene
 
 				//so put the last element first, and check if they are out of order
 
-				bool outOfOrder = false;
 				float lastD = this.depths[this.itemCount - 1];
 				Entry lastE = this.items[this.itemCount - 1];
+				bool outOfOrder = lastD > this.depths[backIndex];
 
 				for (int i = this.itemCount - 2; i >= backIndex; i--)
 				{
@@ -209,23 +283,19 @@ namespace Xen.Ex.Scene
 
 			if (visible > 0)
 			{
-				//if the frame hasn't change, the items should already be in sorted order,
-				//so this sort should be very fast
+				//if the frame hasn't changed, the items should already be in sorted order,
+				//so this sort should be quick
 
 				//test if the values are already sorted...
 				float depth = this.depths[0];
-				bool soted = true;
+				bool outOfOrder = false;
 				for (int i = 1; i < visible; i++)
 				{
-					if (depths[i] < depth)
-					{
-						soted = false;
-						break;
-					}
+					outOfOrder |= depths[i] < depth;
 					depth = depths[i];
 				}
 
-				if (!soted)
+				if (outOfOrder)
 					Array.Sort(this.depths, this.items, 0, visible);
 
 				if (sortMode == DepthSortMode.FrontToBack)
@@ -239,11 +309,12 @@ namespace Xen.Ex.Scene
 						items[i].item.Draw(state);
 				}
 			}
+			previousFrameVisibleCount = visible;
 		}
 
 		bool ICullable.CullTest(ICuller culler)
 		{
-			return itemCount > 0;
+			return itemCount > 0 && visible;
 		}
 	}
 

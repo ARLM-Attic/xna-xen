@@ -121,9 +121,24 @@ namespace Xen
 		/// <returns>number of instances drawn</returns>
 		public int DrawBatch(Xen.Graphics.IVertices vertices, Graphics.IIndices indices, PrimitiveType primitiveType, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances, int instancesLength)
 		{
+			return DrawBatch(vertices, indices, primitiveType, CanDrawItem, instances, instancesLength, 0);
+		}
+		/// <summary>
+		/// [Requires <see cref="SupportsHardwareInstancing"/>] Draws multiple instances of a vertex buffer in an efficient way, using an optional callback to determine if an instance should be drawn. Using Shader Instancing is highly recommended for smaller batches of simple geometry.
+		/// </summary>
+		/// <param name="vertices">Vertex buffer of the instances to be drawn</param>
+		/// <param name="indices">Index buffer of the instances to be drawn</param>
+		/// <param name="primitiveType">Primitive type to be drawn</param>
+		/// <param name="CanDrawItem">[optional] callback to determine if an instance index should be drawn or not (may be null)</param>
+		/// <param name="instances">Array of instances to draw</param>
+		/// <param name="instancesLength">Number of instances in the array to draw</param>
+		/// <returns>number of instances drawn</returns>
+		/// <param name="startIndex">start read index in the <paramref name="instances"/> array</param>
+		public int DrawBatch(Xen.Graphics.IVertices vertices, Graphics.IIndices indices, PrimitiveType primitiveType, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances, int instancesLength, int startIndex)
+		{
 			ValidateProtected();
 
-			if (instancesLength == 0)
+			if (instancesLength <= 0)
 				return 0;
 
 			StreamBuffer buffer = GetBuffer(instancesLength);
@@ -137,11 +152,11 @@ namespace Xen
 				ICuller culler = this;
 				for (int i = 0; i < instancesLength; i++)
 				{
-					PushWorldMatrixMultiply(ref instances[i]);
+					PushWorldMatrixMultiply(ref instances[i + startIndex]);
 
-					if (CanDrawItem(i, culler))
+					if (CanDrawItem(i + startIndex, culler))
 					{
-						instanceMartixData[start].Set(ref worldMatrix.value);
+						instanceMartixData[start].Set(ref ms_World.value);
 						start++;
 						count++;
 					}
@@ -151,18 +166,20 @@ namespace Xen
 			}
 			else
 			{
-				if (worldMatrix.IsIdentity || (instancesLength > 4 && worldMatrix.value == Matrix.Identity))
+				if (ms_World.isIdentity || ms_World.value == Matrix.Identity)
 				{
 					for (int i = 0; i < instancesLength; i++)
-						instanceMartixData[start++].Set(ref instances[i]);
+					{
+						instanceMartixData[start++].Set(ref instances[i + startIndex]);
+					}
 					count = instancesLength;
 				}
 				else
 				{
 					for (int i = 0; i < instancesLength; i++)
 					{
-						PushWorldMatrixMultiply(ref instances[i]);
-						instanceMartixData[start].Set(ref worldMatrix.value);
+						PushWorldMatrixMultiply(ref instances[i + startIndex]);
+						instanceMartixData[start].Set(ref ms_World.value);
 						start++;
 						count++;
 						PopWorldMatrix();
@@ -250,6 +267,22 @@ namespace Xen
 		/// <returns>number of instances drawn</returns>
 		public int DrawBatch(Xen.Graphics.IVertices vertices, Graphics.IIndices indices, PrimitiveType primitiveType, Callback<bool, int, ICuller> CanDrawItem, Vector3[] instances, int instancesLength)
 		{
+			return DrawBatch(vertices, indices, primitiveType, CanDrawItem, instances, instancesLength, 0);
+		}
+
+		/// <summary>
+		/// [Requires <see cref="SupportsHardwareInstancing"/>] Draws multiple instances of a vertex buffer in an efficient way, using an optional callback to determine if an instance should be drawn. Using Shader Instancing is highly recommended for smaller batches of simple geometry.
+		/// </summary>
+		/// <param name="vertices">Vertex buffer of the instances to be drawn</param>
+		/// <param name="indices">Index buffer of the instances to be drawn</param>
+		/// <param name="primitiveType">Primitive type to be drawn</param>
+		/// <param name="CanDrawItem">[optional] callback to determine if an instance index should be drawn or not (may be null)</param>
+		/// <param name="instances">Array of instances to draw</param>
+		/// <param name="instancesLength">Number of instances in the array to draw</param>
+		/// <returns>number of instances drawn</returns>
+		/// <param name="startIndex">starting index in the <paramref name="instances"/> array</param>
+		public int DrawBatch(Xen.Graphics.IVertices vertices, Graphics.IIndices indices, PrimitiveType primitiveType, Callback<bool, int, ICuller> CanDrawItem, Vector3[] instances, int instancesLength, int startIndex)
+		{
 			ValidateProtected();
 
 			if (instancesLength == 0)
@@ -265,9 +298,9 @@ namespace Xen
 				ICuller culler = this;
 				for (int i = 0; i < instancesLength; i++)
 				{
-					PushWorldTranslateMultiply(ref instances[i]);
+					PushWorldTranslateMultiply(ref instances[i + startIndex]);
 
-					if (CanDrawItem(i, culler))
+					if (CanDrawItem(i + startIndex, culler))
 					{
 						GetWorldMatrix(ref instanceMartixData[start++]);
 						count++;
@@ -278,18 +311,18 @@ namespace Xen
 			}
 			else
 			{
-				if (worldMatrix.IsIdentity || (instancesLength > 4 && worldMatrix.value == Matrix.Identity))
+				if (ms_World.isIdentity || (instancesLength > 4 && ms_World.value == Matrix.Identity))
 				{
 					for (int i = 0; i < instancesLength; i++)
-						instanceMartixData[start++].Set(ref instances[i]);
+						instanceMartixData[start++].Set(ref instances[i + startIndex]);
 					count = instancesLength;
 				}
 				else
 				{
 					for (int i = 0; i < instancesLength; i++)
 					{
-						PushWorldTranslateMultiply(ref instances[i]);
-						instanceMartixData[start].Set(ref worldMatrix.value);
+						PushWorldTranslateMultiply(ref instances[i + startIndex]);
+						instanceMartixData[start].Set(ref ms_World.value);
 						start++;
 						count++;
 						PopWorldMatrix();

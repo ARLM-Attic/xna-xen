@@ -130,13 +130,15 @@ namespace Xen
 		/// <summary></summary>
 		public void Run()
 		{
-			xnaGame.Run();
+			if (xnaGame != null)
+				xnaGame.Run();
 		}
 
 		/// <summary></summary>
 		public void Exit()
 		{
-			xnaGame.Exit();
+			if (xnaGame != null)
+				xnaGame.Exit();
 		}
 
 		/// <summary></summary>
@@ -552,7 +554,7 @@ namespace Xen
 		bool CullTest(ICuller culler);
 	}
 	/// <summary>
-	/// Interface for an object that can cull instances using an <see cref="ICuller"/>. An example use may be off-screen culling
+	/// Interface for an object that can cull world matrix defined instances using an <see cref="ICuller"/>. An example use may be off-screen culling
 	/// </summary>
 	public interface ICullableInstance
 	{
@@ -687,7 +689,7 @@ namespace Xen
 		/// <summary>
 		/// XNA Service that returns the <see cref="Application"/>. Useful for warming resources when loading through the content pipeline.
 		/// </summary>
-		public class ApplicationProviderService
+		public sealed class ApplicationProviderService
 		{
 			Application app;
 			internal ApplicationProviderService(Application application)
@@ -932,7 +934,9 @@ namespace Xen
 
 			Draw(state);
 
+#if XEN_EXTRA
 			state.RunDeferredDrawCalls();
+#endif
 
 			state.ValidateStackHeight(stackHeight, stateHeight, cameraHeight, preCull, postCull);
 

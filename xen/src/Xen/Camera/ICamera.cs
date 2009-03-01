@@ -48,6 +48,12 @@ namespace Xen.Camera
 		/// <param name="matrix"></param>
 		void GetProjectionMatrix(out Matrix matrix, ref Vector2 drawTargetSize);
 		/// <summary>
+		/// Gets the projection matrix for this camera
+		/// </summary>
+		/// <param name="drawTargetSize">Size of the current draw target (some projections may automatically calculate aspect ratio based on the size of the draw target)</param>
+		/// <param name="matrix"></param>
+		void GetProjectionMatrix(out Matrix matrix, Vector2 drawTargetSize);
+		/// <summary>
 		/// Gets the view matrix for this camera, with a change index. Returns true if the matrix has changed
 		/// </summary>
 		/// <remarks>The view matrix is the <see cref="Matrix.Invert(Matrix)">inverse</see> of the <see cref="GetCameraMatrix(out Matrix)">camera matrix</see></remarks>

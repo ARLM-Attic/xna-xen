@@ -14,80 +14,70 @@ using Xen.Threading;
 
 namespace Xen.Ex.Graphics.Content
 {
+	/// <summary>
+	/// A structure storing bounding box and bounding sphere data
+	/// </summary>
 	public struct GeometryBounds
 	{
-		public readonly Vector3 Minimum,Maximum;
-		public readonly Vector3 RadiusCentre;
-		public readonly float Radius;
+		internal Vector3 minimum, maximum;
+		internal Vector3 radiusCentre;
+		internal float radius;
 
-#if DEBUG
+		/// <summary>
+		/// Bounding Box Minimum extents
+		/// </summary>
+		public Vector3 Minimum { get { return minimum; } }
+		/// <summary>
+		/// Bounding Box Maximum extents
+		/// </summary>
+		public Vector3 Maximum { get { return maximum; } }
+		/// <summary>
+		/// Bounding sphere centre point
+		/// </summary>
+		public Vector3 RadiusCentre { get { return radiusCentre; } }
+		/// <summary>
+		/// Bounding sphere radius
+		/// </summary>
+		public float Radius { get { return radius; } }
+
+#if DEBUG && !XBOX360
 
 		public GeometryBounds(Vector3 max, Vector3 min, float radius, Vector3 radiusCentre)
 		{
-			this.Maximum = max;
-			this.Minimum = min;
-			this.Radius = radius;
-			this.RadiusCentre = radiusCentre;
-		}
-
-		public GeometryBounds Transform(ref Matrix transform)
-		{
-			Vector3 RadiusCentre = this.RadiusCentre;
-			Vector3 Minimum = this.Minimum;
-			Vector3 Maximum = this.Maximum;
-			float Radius = this.Radius;
-
-			Vector3.Transform(ref RadiusCentre, ref transform, out RadiusCentre);
-			Vector3 min,max;
-			Vector3.Transform(ref Minimum, ref transform, out min);
-			max = min;
-
-			Vector3 point = new Vector3();
-			for (int x = 0; x < 2; x++)
-			for (int y = 0; y < 2; y++)
-			for (int z = 0; z < 2; z++)
-			{
-				point.X = x == 0 ? this.Minimum.X : this.Maximum.X;
-				point.Y = y == 0 ? this.Minimum.Y : this.Maximum.Y;
-				point.Z = z == 0 ? this.Minimum.Z : this.Maximum.Z;
-				Vector3.Transform(ref point, ref transform, out point);
-
-				Vector3.Min(ref min, ref point, out min);
-				Vector3.Max(ref max, ref point, out max);
-			}
-
-			Minimum = min;
-			Maximum = max;
-			return new GeometryBounds(Maximum, Minimum, Radius, RadiusCentre);
+			this.maximum = max;
+			this.minimum = min;
+			this.radius = radius;
+			this.radiusCentre = radiusCentre;
 		}
 
 #endif
 
 		public GeometryBounds(BinaryReader reader)
 		{
-			this.Maximum = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-			this.Minimum = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-			this.Radius = reader.ReadSingle();
-			this.RadiusCentre = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+			this.maximum = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+			this.minimum = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+			this.radius = reader.ReadSingle();
+			this.radiusCentre = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 		}
 
+		//builds a geometry bounds that encompasses a set of bounds
 		internal GeometryBounds(GeometryBounds[] bounds)
 		{
-			Maximum = new Vector3();
-			Minimum = new Vector3();
+			maximum = new Vector3();
+			minimum = new Vector3();
 			Vector3 v;
 
 			if (bounds.Length != 0)
 				this = bounds[0];
 			for (int i = 1; i < bounds.Length; i++)
 			{
-				v = bounds[i].Maximum;
-				Vector3.Max(ref v, ref this.Maximum, out Maximum);
-				v = bounds[i].Minimum;
-				Vector3.Min(ref v, ref this.Minimum, out Minimum);
+				v = bounds[i].maximum;
+				Vector3.Max(ref v, ref this.maximum, out maximum);
+				v = bounds[i].minimum;
+				Vector3.Min(ref v, ref this.minimum, out minimum);
 			}
-			this.RadiusCentre = Minimum + (Maximum - Minimum) * 0.5f;
-			this.Radius = 0;
+			this.radiusCentre = minimum + (maximum - minimum) * 0.5f;
+			this.radius = 0;
 			for (int i = 0; i < bounds.Length; i++)
 			{
 				Vector3 point = new Vector3();
@@ -95,24 +85,24 @@ namespace Xen.Ex.Graphics.Content
 				for (int y = 0; y < 2; y++)
 				for (int z = 0; z < 2; z++)
 				{
-					point.X = x == 0 ? bounds[i].Minimum.X : bounds[i].Maximum.X;
-					point.Y = y == 0 ? bounds[i].Minimum.Y : bounds[i].Maximum.Y;
-					point.Z = z == 0 ? bounds[i].Minimum.Z : bounds[i].Maximum.Z;
-					this.Radius = Math.Max(this.Radius, (this.RadiusCentre - point).LengthSquared());
+					point.X = x == 0 ? bounds[i].minimum.X : bounds[i].maximum.X;
+					point.Y = y == 0 ? bounds[i].minimum.Y : bounds[i].maximum.Y;
+					point.Z = z == 0 ? bounds[i].minimum.Z : bounds[i].maximum.Z;
+					this.radius = Math.Max(this.radius, (this.radiusCentre - point).LengthSquared());
 				}
 			}
-			this.Radius = (float)Math.Sqrt(this.Radius);
+			this.radius = (float)Math.Sqrt(this.radius);
 		}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		private GeometryBounds Add(GeometryBounds bound)
 		{
-			return new GeometryBounds(this.Maximum + bound.Maximum, this.Minimum + bound.Minimum, this.Radius + bound.Radius, this.RadiusCentre + bound.RadiusCentre);
+			return new GeometryBounds(this.maximum + bound.maximum, this.minimum + bound.minimum, this.radius + bound.Radius, this.radiusCentre + bound.radiusCentre);
 		}
 		internal GeometryBounds Difference(GeometryBounds bounds)
 		{
-			return new GeometryBounds(this.Maximum - bounds.Maximum, this.Minimum - bounds.Minimum, this.Radius - bounds.Radius, this.RadiusCentre - bounds.RadiusCentre);
+			return new GeometryBounds(this.maximum - bounds.maximum, this.minimum - bounds.minimum, this.radius - bounds.Radius, this.radiusCentre - bounds.radiusCentre);
 		}
 
 		internal GeometryBounds(GeometryBounds staticBound, GeometryBounds[] offsets)
@@ -128,15 +118,15 @@ namespace Xen.Ex.Graphics.Content
 		{
 			GeometryBounds previous = this;
 			Vector3 v;
-			Vector3 RadiusCentre = this.RadiusCentre;
-			Vector3 Minimum = this.Minimum;
-			Vector3 Maximum = this.Maximum;
-			float Radius = this.Radius;
+			Vector3 RadiusCentre = this.radiusCentre;
+			Vector3 Minimum = this.minimum;
+			Vector3 Maximum = this.maximum;
+			float Radius = this.radius;
 
 
-			v = bound.Maximum;
+			v = bound.maximum;
 			Vector3.Max(ref v, ref Maximum, out Maximum);
-			v = bound.Minimum;
+			v = bound.minimum;
 			Vector3.Min(ref v, ref Minimum, out Minimum);
 
 			RadiusCentre = Minimum + (Maximum - Minimum) * 0.5f;
@@ -147,18 +137,18 @@ namespace Xen.Ex.Graphics.Content
 			for (int y = 0; y < 2; y++)
 			for (int z = 0; z < 2; z++)
 			{
-				point.X = x == 0 ? bound.Minimum.X : bound.Maximum.X;
-				point.Y = y == 0 ? bound.Minimum.Y : bound.Maximum.Y;
-				point.Z = z == 0 ? bound.Minimum.Z : bound.Maximum.Z;
+				point.X = x == 0 ? bound.minimum.X : bound.maximum.X;
+				point.Y = y == 0 ? bound.minimum.Y : bound.maximum.Y;
+				point.Z = z == 0 ? bound.minimum.Z : bound.maximum.Z;
 				Radius = Math.Max(Radius, (RadiusCentre - point).LengthSquared());
 			}
 			for (int x = 0; x < 2; x++)
 			for (int y = 0; y < 2; y++)
 			for (int z = 0; z < 2; z++)
 			{
-				point.X = x == 0 ? previous.Minimum.X : previous.Maximum.X;
-				point.Y = y == 0 ? previous.Minimum.Y : previous.Maximum.Y;
-				point.Z = z == 0 ? previous.Minimum.Z : previous.Maximum.Z;
+				point.X = x == 0 ? previous.minimum.X : previous.maximum.X;
+				point.Y = y == 0 ? previous.minimum.Y : previous.maximum.Y;
+				point.Z = z == 0 ? previous.minimum.Z : previous.maximum.Z;
 				Radius = Math.Max(Radius, (RadiusCentre - point).LengthSquared());
 			}
 
@@ -167,24 +157,81 @@ namespace Xen.Ex.Graphics.Content
 		}
 		internal void Write(BinaryWriter writer)
 		{
-			writer.Write(Maximum.X);
-			writer.Write(Maximum.Y);
-			writer.Write(Maximum.Z);
+			writer.Write(maximum.X);
+			writer.Write(maximum.Y);
+			writer.Write(maximum.Z);
 
-			writer.Write(Minimum.X);
-			writer.Write(Minimum.Y);
-			writer.Write(Minimum.Z);
+			writer.Write(minimum.X);
+			writer.Write(minimum.Y);
+			writer.Write(minimum.Z);
 
-			writer.Write(Radius);
+			writer.Write(radius);
 
-			writer.Write(RadiusCentre.X);
-			writer.Write(RadiusCentre.Y);
-			writer.Write(RadiusCentre.Z);
+			writer.Write(radiusCentre.X);
+			writer.Write(radiusCentre.Y);
+			writer.Write(radiusCentre.Z);
 		}
 
 #endif
+
+		/// <summary>
+		/// <para>Transforms the bounds by a matrix, generating a new bounds</para>
+		/// <para>The output bounds is axis aligned</para>
+		/// </summary>
+		/// <param name="transform"></param>
+		/// <returns></returns>
+		public GeometryBounds Transform(ref Matrix transform)
+		{
+			Vector3 RadiusCentre = this.radiusCentre;
+			Vector3 Minimum = this.minimum;
+			Vector3 Maximum = this.maximum;
+			float Radius = this.radius;
+
+			Vector3.Transform(ref RadiusCentre, ref transform, out RadiusCentre);
+			Vector3 min, max;
+			Vector3.Transform(ref Minimum, ref transform, out min);
+			max = min;
+
+			Vector3 point = new Vector3();
+			for (int x = 0; x < 2; x++)
+			for (int y = 0; y < 2; y++)
+			for (int z = 0; z < 2; z++)
+			{
+				point.X = x == 0 ? this.minimum.X : this.maximum.X;
+				point.Y = y == 0 ? this.minimum.Y : this.maximum.Y;
+				point.Z = z == 0 ? this.minimum.Z : this.maximum.Z;
+				Vector3.Transform(ref point, ref transform, out point);
+
+				Vector3.Min(ref min, ref point, out min);
+				Vector3.Max(ref max, ref point, out max);
+			}
+
+			Minimum = min;
+			Maximum = max;
+
+			GeometryBounds result = new GeometryBounds();
+			result.minimum = Minimum;
+			result.maximum = Maximum;
+
+			Vector3 dif = new Vector3();
+			dif.X = Minimum.X - Maximum.X;
+			dif.Y = Minimum.Y - Maximum.Y;
+			dif.Z = Minimum.Z - Maximum.Z;
+
+			result.radius = (float)Math.Sqrt(dif.X*dif.X+dif.Y*dif.Y+dif.Z*dif.Z) * 0.5f; // Radius;
+
+			result.radiusCentre.X = (Minimum.X + Maximum.X) * 0.5f;
+			result.radiusCentre.Y = (Minimum.Y + Maximum.Y) * 0.5f;
+			result.radiusCentre.Z = (Minimum.Z + Maximum.Z) * 0.5f;
+			//result.radiusCentre = RadiusCentre;
+			return result;
+		}
 	}
-	public class ModelData
+
+	/// <summary>
+	/// Content class for a model imported using the xen model importer
+	/// </summary>
+	public sealed class ModelData
 	{
 		private const int version = 1;
 		readonly private string name;
@@ -192,11 +239,12 @@ namespace Xen.Ex.Graphics.Content
 		readonly internal SkeletonData skeleton;
 		readonly internal AnimationData[] animations;
 		internal readonly GeometryBounds[] animationStaticBounds;
+		internal GeometryBounds staticBounds;
 
 		/// <summary>
 		/// Gets the bounding box for the non-animated model data
 		/// </summary>
-		public readonly GeometryBounds StaticBounds;
+		public GeometryBounds StaticBounds { get { return staticBounds; } }
 
 		internal class RuntimeReader : ContentTypeReader<ModelData>
 		{
@@ -214,7 +262,7 @@ namespace Xen.Ex.Graphics.Content
 			get { return typeof(RuntimeReader).AssemblyQualifiedName; }
 		}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		public ModelData(string name, MeshData[] meshes, SkeletonData skeleton, AnimationData[] animations)
 		{
@@ -225,9 +273,9 @@ namespace Xen.Ex.Graphics.Content
 
 			GeometryBounds[] bounds = new GeometryBounds[meshes.Length];
 			for (int i = 0; i < bounds.Length; i++)
-				bounds[i] = meshes[i].StaticBounds;
+				bounds[i] = meshes[i].staticBounds;
 
-			this.StaticBounds = new GeometryBounds(bounds);
+			this.staticBounds = new GeometryBounds(bounds);
 
 			this.animationStaticBounds = new GeometryBounds[animations.Length];
 			for (int i = 0; i < animations.Length; i++)
@@ -235,7 +283,7 @@ namespace Xen.Ex.Graphics.Content
 				GeometryBounds[] children = new GeometryBounds[meshes.Length];
 				for (int n = 0; n < meshes.Length; n++)
 					children[n] = meshes[n].AnimationStaticBoundsOffset[i];
-				this.animationStaticBounds[i] = new GeometryBounds(this.StaticBounds, children);
+				this.animationStaticBounds[i] = new GeometryBounds(this.staticBounds, children);
 			}
 		}
 
@@ -252,9 +300,21 @@ namespace Xen.Ex.Graphics.Content
 			}
 		}
 
+		/// <summary>
+		/// Name of the model
+		/// </summary>
 		public string Name { get { return name; } }
+		/// <summary>
+		/// Gets a readonly array of <see cref="MeshData"/> instances stored in the model data
+		/// </summary>
 		public ReadOnlyArrayCollection<MeshData> Meshes { get { return new ReadOnlyArrayCollection<MeshData>(meshes); } }
+		/// <summary>
+		/// Gets a readonly array of animations stored in the model
+		/// </summary>
 		public ReadOnlyArrayCollection<AnimationData> Animations { get { return new ReadOnlyArrayCollection<AnimationData>(animations); } }
+		/// <summary>
+		/// Gets the skeleton used by this model (this value may be null)
+		/// </summary>
 		public SkeletonData Skeleton { get { return skeleton; } }
 		/// <summary>
 		/// <para>Gets bounds offsets for each animation (assuming animation has a weighting of 1.0f)</para>
@@ -285,9 +345,9 @@ namespace Xen.Ex.Graphics.Content
 
 			GeometryBounds[] bounds = new GeometryBounds[meshes.Length];
 			for (int i = 0; i < bounds.Length; i++)
-				bounds[i] = meshes[i].StaticBounds;
+				bounds[i] = meshes[i].staticBounds;
 
-			this.StaticBounds = new GeometryBounds(bounds);
+			this.staticBounds = new GeometryBounds(bounds);
 
 			count = (int)reader.ReadInt16();
 			animationStaticBounds = new GeometryBounds[count];
@@ -295,7 +355,7 @@ namespace Xen.Ex.Graphics.Content
 				animationStaticBounds[i] = new GeometryBounds(reader);
 		}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		internal void Write(BinaryWriter writer)
 		{
@@ -319,17 +379,17 @@ namespace Xen.Ex.Graphics.Content
 #endif
 	}
 
-	public class MeshData
+	/// <summary>
+	/// Stores content data for a mesh defined within a model
+	/// </summary>
+	public sealed class MeshData
 	{
 		readonly private string name;
 		readonly internal GeometryData[] geometry;
-		/// <summary>
-		/// Gets the bounding box for the non-animated mesh data
-		/// </summary>
-		public readonly GeometryBounds StaticBounds;
 		internal readonly GeometryBounds[] animationStaticBounds;
+		internal GeometryBounds staticBounds;
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		public MeshData(string name, GeometryData[] data, AnimationData[] animations)
 		{
@@ -338,9 +398,9 @@ namespace Xen.Ex.Graphics.Content
 
 			GeometryBounds[] bounds = new GeometryBounds[data.Length];
 			for (int i = 0; i < bounds.Length; i++)
-				bounds[i] = data[i].StaticBounds;
+				bounds[i] = data[i].staticBounds;
 
-			this.StaticBounds = new GeometryBounds(bounds);
+			this.staticBounds = new GeometryBounds(bounds);
 
 			this.animationStaticBounds = new GeometryBounds[animations.Length];
 			for (int i = 0; i < animations.Length; i++)
@@ -348,16 +408,28 @@ namespace Xen.Ex.Graphics.Content
 				GeometryBounds[] children = new GeometryBounds[data.Length];
 				for (int n = 0; n < data.Length; n++)
 					children[n] = data[n].AnimationStaticBoundsOffset[i];
-				this.animationStaticBounds[i] = new GeometryBounds(this.StaticBounds, children);
+				this.animationStaticBounds[i] = new GeometryBounds(this.staticBounds, children);
 			}
 		}
 
 #endif
 
+
+		/// <summary>
+		/// Gets the bounding box for the non-animated mesh data
+		/// </summary>
+		public GeometryBounds StaticBounds { get { return staticBounds; } }
+
+		/// <summary>
+		/// Gets a readonly array of the geometry stored in this mesh
+		/// </summary>
 		public ReadOnlyArrayCollection<GeometryData> Geometry
 		{
 			get { return new ReadOnlyArrayCollection<GeometryData>(geometry); }
 		}
+		/// <summary>
+		/// Gets the name of this mesh
+		/// </summary>
 		public string Name { get { return name; } }
 
 		/// <summary>
@@ -369,7 +441,7 @@ namespace Xen.Ex.Graphics.Content
 			get { return new ReadOnlyArrayCollection<GeometryBounds>(animationStaticBounds); }
 		}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		internal void Write(BinaryWriter writer)
 		{
@@ -397,9 +469,9 @@ namespace Xen.Ex.Graphics.Content
 
 			GeometryBounds[] bounds = new GeometryBounds[geometry.Length];
 			for (int i = 0; i < bounds.Length; i++)
-				bounds[i] = geometry[i].StaticBounds;
+				bounds[i] = geometry[i].staticBounds;
 
-			this.StaticBounds = new GeometryBounds(bounds);
+			this.staticBounds = new GeometryBounds(bounds);
 
 			count = (int)reader.ReadInt16();
 			animationStaticBounds = new GeometryBounds[count];
@@ -408,6 +480,9 @@ namespace Xen.Ex.Graphics.Content
 		}
 	}
 
+	/// <summary>
+	/// Structure storing the material properties of a <see cref="GeometryData"/> instance
+	/// </summary>
 	public struct MaterialData
 	{
 		internal readonly float alpha, specularPower;
@@ -425,7 +500,7 @@ namespace Xen.Ex.Graphics.Content
 		public Texture2D Texture { get { return textureMap; } }
 		public Texture2D NormalMap { get { return normalMap; } }
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		public MaterialData(
 			float alpha, float specularPower,
@@ -464,7 +539,7 @@ namespace Xen.Ex.Graphics.Content
 			UpdateTextures(reader.ContentManager, Path.GetDirectoryName(reader.AssetName));
 		}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		public void Write(BinaryWriter writer)
 		{
@@ -503,7 +578,10 @@ namespace Xen.Ex.Graphics.Content
 		}
 	}
 
-	public class GeometryData
+	/// <summary>
+	/// This class stores geometry data, such as vertex buffers and material
+	/// </summary>
+	public sealed class GeometryData
 	{
 		readonly private string name;
 		readonly private VertexElement[] vertexElements;
@@ -513,13 +591,10 @@ namespace Xen.Ex.Graphics.Content
 		private MaterialShader shader;
 		private readonly int[] boneIndices;
 		private readonly GeometryBounds[] boneLocalBounds;
-		/// <summary>
-		/// Gets the bounding box for the non-animated geometry data
-		/// </summary>
-		public readonly GeometryBounds StaticBounds;
 		internal readonly GeometryBounds[] animationStaticBounds;
+		internal GeometryBounds staticBounds;
 
-#if DEBUG
+#if DEBUG && !XBOX360
 		readonly private byte[] vertexData;
 		readonly private int maxIndex;
 		readonly private int[] indexData;
@@ -536,7 +611,7 @@ namespace Xen.Ex.Graphics.Content
 				maxIndex = Math.Max(indexData[i], maxIndex);
 			this.material = material;
 
-			ComputeBoneBounds(skeleton, ExtractBounds(out this.StaticBounds, targetXbox), out boneIndices, out boneLocalBounds);
+			ComputeBoneBounds(skeleton, ExtractBounds(out this.staticBounds, targetXbox), out boneIndices, out boneLocalBounds);
 
 			if (animations != null)
 			{
@@ -603,11 +678,16 @@ namespace Xen.Ex.Graphics.Content
 					}
 				}
 
-				animationStaticBounds[animIndex] = bounds.Difference(StaticBounds);
+				animationStaticBounds[animIndex] = bounds.Difference(staticBounds);
 			}
 		}
 
 		#region compute bounds
+
+		/// <summary>
+		/// Gets the bounding box for the non-animated model data
+		/// </summary>
+		public GeometryBounds StaticBounds { get { return staticBounds; } }
 
 		struct BlendedVertex
 		{
@@ -820,6 +900,10 @@ namespace Xen.Ex.Graphics.Content
 		#endregion
 
 #endif
+		/// <summary>
+		/// Get the material structure for this geometry instance
+		/// </summary>
+		/// <param name="material"></param>
 		public void GetMaterial(out MaterialData material)
 		{
 			material = this.material;
@@ -882,17 +966,26 @@ namespace Xen.Ex.Graphics.Content
 				BuildMaterialShader();
 		}
 
+		/// <summary>
+		/// Gets the vertices used to draw this geometry
+		/// </summary>
 		public IVertices Vertices
 		{
 			get { return vertices; }
 		}
+		/// <summary>
+		/// Gets the indicies used to draw this geometry
+		/// </summary>
 		public IIndices Indices
 		{
 			get { return indices; }
 		}
+		/// <summary>
+		/// Gets the name of this geometry
+		/// </summary>
 		public string Name { get { return name; } }
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		internal void Write(BinaryWriter writer)
 		{
@@ -924,7 +1017,7 @@ namespace Xen.Ex.Graphics.Content
 					writer.Write(this.indexData[i]);
 			this.material.Write(writer);
 
-			this.StaticBounds.Write(writer);
+			this.staticBounds.Write(writer);
 
 			if (boneIndices == null)
 				writer.Write((short)0);
@@ -993,7 +1086,7 @@ namespace Xen.Ex.Graphics.Content
 
 			this.material = new MaterialData(reader);
 
-			this.StaticBounds = new GeometryBounds(reader);
+			this.staticBounds = new GeometryBounds(reader);
 
 			count = (int)reader.ReadInt16();
 
@@ -1034,17 +1127,21 @@ namespace Xen.Ex.Graphics.Content
 		}
 	}
 
-	public class AnimationData
+	/// <summary>
+	/// Stores animation data for a model
+	/// </summary>
+	public sealed class AnimationData
 	{
 		private readonly string name;
 		private readonly int[] boneIndices;
 		private readonly float[] keyframeTimes;
-		private readonly byte[][] keyframeChannels;
+		private readonly byte[][] keyframeChannels; // not used at runtime
+		private readonly Transform[][] keyframeChannelTransforms;
 		private readonly float duration;
 		internal readonly int index;
 		private Stack<AnimationStreamControl> streamCache;
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		public AnimationData(string name, int[] indices, KeyFrameData[] keyframes, float duration, float tollerance)
 		{
@@ -1094,22 +1191,37 @@ namespace Xen.Ex.Graphics.Content
 
 #endif
 
+		/// <summary>
+		/// Get the number of keyframes stored within this animation
+		/// </summary>
 		public int KeyFrameCount
 		{
 			get { return keyframeTimes.Length; }
 		}
+		/// <summary>
+		/// Get the index of this animation (eg, 0 if this is the first animation in the model)
+		/// </summary>
 		public int AnimationIndex
 		{
 			get { return index; }
 		}
+		/// <summary>
+		/// Get the number of bones used in this animation
+		/// </summary>
 		public int BoneCount
 		{
 			get { return boneIndices.Length; }
 		}
+		/// <summary>
+		/// Gets a readonly array of bone indices for each of the bones used by this model (this array will have a length of <see cref="BoneCount"/>)
+		/// </summary>
 		public ReadOnlyArrayCollection<int> BoneIndices
 		{
 			get { return new ReadOnlyArrayCollection<int>(boneIndices); }
 		}
+		/// <summary>
+		/// Gets a readonly array of time values for keyframes in the animation
+		/// </summary>
 		public ReadOnlyArrayCollection<float> KeyFrameTime
 		{
 			get { return new ReadOnlyArrayCollection<float>(keyframeTimes); }
@@ -1143,28 +1255,60 @@ namespace Xen.Ex.Graphics.Content
 			streamCache.Clear();
 		}
 		/// <summary>
-		/// Read bone transform data using a <see cref="CompressedTransformReader"/>
+		/// <para>Returns a stream for reading compressed <see cref="Transform"/> data for an animation stream. Read bone transform data using a <see cref="CompressedTransformReader"/></para>
+		/// <para>NOTE: Xen 1.5 decodes some complex animation streams at load time. If this method returns null, the <see cref="Transform"/> stream has already been decompressed (see <see cref="TryGetBoneDecompressedTransforms"/>).</para>
 		/// </summary>
 		/// <param name="boneId"></param>
 		/// <returns></returns>
 		public Stream GetBoneCompressedTransformStream(int boneIndex)
 		{
+			if (keyframeChannels[boneIndex] == null)
+				return null;
 			return new MemoryStream(keyframeChannels[boneIndex], false);
 		}
 
+		/// <summary>
+		/// <para>Gets bone transform data that was decompressed at load time (simple animation streams are not decompressed at load time)</para>
+		/// <para>Returns true if the stream was decompressed. Use <see cref="GetBoneCompressedTransformStream"/> to get the compressed transform stream</para>
+		/// </summary>
+		/// <param name="boneId"></param>
+		/// <returns></returns>
+		public bool TryGetBoneDecompressedTransforms(int boneIndex, out ReadOnlyArrayCollection<Transform> transforms)
+		{
+			transforms = ReadOnlyArrayCollection<Transform>.Empty;
+			if (keyframeChannelTransforms[boneIndex] != null)
+			{
+				transforms = new ReadOnlyArrayCollection<Transform>(keyframeChannelTransforms[boneIndex]);
+				return true;
+			}
+			return false;
+		}
+
+		//may be null if the keyframes were decompressed at loadtime
 		internal byte[] GetBoneCompressedTransformData(int boneIndex)
 		{
 			return keyframeChannels[boneIndex];
 		}
+		//may be null if the keyframes were not decompressed at loadtime
+		internal Transform[] GetBoneDecompressedTransformData(int boneIndex)
+		{
+			return keyframeChannelTransforms[boneIndex];
+		}
 
+		/// <summary>
+		/// Gets the duration of the animation, in seconds
+		/// </summary>
 		public float Duration
 		{
 			get { return duration; }
 		}
 
+		/// <summary>
+		/// Gets the name of the animation
+		/// </summary>
 		public string Name { get { return name; } }
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		internal void Write(BinaryWriter writer)
 		{
@@ -1197,6 +1341,7 @@ namespace Xen.Ex.Graphics.Content
 			int count = reader.ReadInt32();
 
 			this.keyframeChannels = new byte[count][];
+			this.keyframeChannelTransforms = new Transform[count][];
 			this.boneIndices = new int[count];
 
 			for (int i = 0; i < count; i++)
@@ -1210,21 +1355,48 @@ namespace Xen.Ex.Graphics.Content
 			for (int i = 0; i < count; i++)
 				this.keyframeTimes[i] = reader.ReadSingle();
 
-			for (int i = 0; i < this.keyframeChannels.Length; i++)
+			List<Transform> keyframes = new List<Transform>();
+			
+			//decode the animation streams into transforms
+
+			for (int i = 0; i < this.keyframeChannelTransforms.Length; i++)
 			{
-				count = reader.ReadInt32();
-				keyframeChannels[i] = reader.ReadBytes(count);
+				count = reader.ReadInt32(); // number of bytes...
+
+#if XBOX360
+				if (count > 128)
+#else
+				if (count > 1024)
+#endif
+				{
+					//if the stream is complex, decode it right now
+
+					CompressedTransformReader transformReader = new CompressedTransformReader();
+					while (transformReader.MoveNext(reader))
+						keyframes.Add(transformReader.value);
+
+					//keyframeChannels[i] = reader.ReadBytes(count);
+					this.keyframeChannelTransforms[i] = keyframes.ToArray();
+					keyframes.Clear();
+				}
+				else
+				{
+					//otherwise, keep it compressed
+					//lots of streams store the same transform for the entire stream (usually ~50% of them)
+					this.keyframeChannels[i] = reader.ReadBytes(count);
+				}
+
 			}
 		}
 
 	}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 	/// <summary>
 	/// DEBUG ONLY
 	/// </summary>
-	public class KeyFrameData
+	public sealed class KeyFrameData
 	{
 		readonly float time;
 		readonly Transform[] transforms;
@@ -1253,13 +1425,16 @@ namespace Xen.Ex.Graphics.Content
 
 #endif
 
-	public class SkeletonData
+	/// <summary>
+	/// Stores data about a skeleton structure used by an animated model
+	/// </summary>
+	public sealed class SkeletonData
 	{
-		internal readonly Transform[] boneLocalTransforms, boneWorldTransforms;
+		internal readonly Transform[] boneLocalTransforms, boneWorldTransforms, boneWorldTransformsInverse;
 		private readonly BoneData[] boneData;
 		private readonly int[] hierarchy;
 
-#if DEBUG
+#if DEBUG && !XBOX360
 		internal readonly Matrix[] boneLocalMatrices;
 
 		public SkeletonData(Matrix[] boneTransforms, BoneData[] bones)
@@ -1291,10 +1466,76 @@ namespace Xen.Ex.Graphics.Content
 				int index = hierarchy[i+1];
 
 				if (parent != -1)
+				{
+#if NO_INLINE
 					Transform.Multiply(ref transforms[index], ref transforms[parent], out transforms[index]);
+#else
+					Transform transform1 = transforms[index];
+					Transform transform2 = transforms[parent];
+					Quaternion q;
+					Vector3 t;
+					float s = transform2.Scale * transform1.Scale; ;
+
+					if (transform2.Rotation.W == 1 &&
+						(transform2.Rotation.X == 0 && transform2.Rotation.Y == 0 && transform2.Rotation.Z == 0))
+					{
+						q.X = transform1.Rotation.X;
+						q.Y = transform1.Rotation.Y;
+						q.Z = transform1.Rotation.Z;
+						q.W = transform1.Rotation.W;
+						t.X = transform1.Translation.X;
+						t.Y = transform1.Translation.Y;
+						t.Z = transform1.Translation.Z;
+					}
+					else
+					{
+						float num12 = transform2.Rotation.X + transform2.Rotation.X;
+						float num2 = transform2.Rotation.Y + transform2.Rotation.Y;
+						float num = transform2.Rotation.Z + transform2.Rotation.Z;
+						float num11 = transform2.Rotation.W * num12;
+						float num10 = transform2.Rotation.W * num2;
+						float num9 = transform2.Rotation.W * num;
+						float num8 = transform2.Rotation.X * num12;
+						float num7 = transform2.Rotation.X * num2;
+						float num6 = transform2.Rotation.X * num;
+						float num5 = transform2.Rotation.Y * num2;
+						float num4 = transform2.Rotation.Y * num;
+						float num3 = transform2.Rotation.Z * num;
+						t.X = ((transform1.Translation.X * ((1f - num5) - num3)) + (transform1.Translation.Y * (num7 - num9))) + (transform1.Translation.Z * (num6 + num10));
+						t.Y = ((transform1.Translation.X * (num7 + num9)) + (transform1.Translation.Y * ((1f - num8) - num3))) + (transform1.Translation.Z * (num4 - num11));
+						t.Z = ((transform1.Translation.X * (num6 - num10)) + (transform1.Translation.Y * (num4 + num11))) + (transform1.Translation.Z * ((1f - num8) - num5));
+
+						num12 = (transform2.Rotation.Y * transform1.Rotation.Z) - (transform2.Rotation.Z * transform1.Rotation.Y);
+						num11 = (transform2.Rotation.Z * transform1.Rotation.X) - (transform2.Rotation.X * transform1.Rotation.Z);
+						num10 = (transform2.Rotation.X * transform1.Rotation.Y) - (transform2.Rotation.Y * transform1.Rotation.X);
+						num9 = ((transform2.Rotation.X * transform1.Rotation.X) + (transform2.Rotation.Y * transform1.Rotation.Y)) + (transform2.Rotation.Z * transform1.Rotation.Z);
+						q.X = ((transform2.Rotation.X * transform1.Rotation.W) + (transform1.Rotation.X * transform2.Rotation.W)) + num12;
+						q.Y = ((transform2.Rotation.Y * transform1.Rotation.W) + (transform1.Rotation.Y * transform2.Rotation.W)) + num11;
+						q.Z = ((transform2.Rotation.Z * transform1.Rotation.W) + (transform1.Rotation.Z * transform2.Rotation.W)) + num10;
+						q.W = (transform2.Rotation.W * transform1.Rotation.W) - num9;
+					}
+
+					t.X = t.X * transform2.Scale + transform2.Translation.X;
+					t.Y = t.Y * transform2.Scale + transform2.Translation.Y;
+					t.Z = t.Z * transform2.Scale + transform2.Translation.Z;
+
+
+					transform1.Rotation.X = q.X;
+					transform1.Rotation.Y = q.Y;
+					transform1.Rotation.Z = q.Z;
+					transform1.Rotation.W = q.W;
+
+					transform1.Translation.X = t.X;
+					transform1.Translation.Y = t.Y;
+					transform1.Translation.Z = t.Z;
+					transform1.Scale = s;
+
+					transforms[index] = transform1;
+#endif
+				}
 			}
 		}
-#if DEBUG
+#if DEBUG && !XBOX360
 		/// <summary>
 		/// Transforms a hierarchy of local bone transforms into world space bone transforms
 		/// </summary>
@@ -1311,7 +1552,6 @@ namespace Xen.Ex.Graphics.Content
 			}
 		}
 #endif
-
 		/// <summary>
 		/// Applies the inverse of the <see cref="TransformHierarchy"/> method. (This operation is considerably slower and should not be performed at runtime)
 		/// </summary>
@@ -1334,7 +1574,7 @@ namespace Xen.Ex.Graphics.Content
 				}
 			}
 		}
-#if DEBUG
+#if DEBUG && !XBOX360
 		/// <summary>
 		/// Applies the inverse of the <see cref="TransformHierarchy"/> method. (This operation is considerably slower and should not be performed at runtime)
 		/// </summary>
@@ -1375,19 +1615,35 @@ namespace Xen.Ex.Graphics.Content
 				FillChildren(ref start, boneData[index].Children[i], index);
 		}
 
+		/// <summary>
+		/// Gets the bone count of this skeleton
+		/// </summary>
 		public int BoneCount
 		{
 			get { return boneData.Length; }
 		}
+		/// <summary>
+		/// Gets a readonly array of Transforms representing the local bone space transform of each bone in the skeleton
+		/// </summary>
 		public ReadOnlyArrayCollection<Transform> BoneLocalTransform
 		{
 			get { return new ReadOnlyArrayCollection<Transform>(boneLocalTransforms); }
 		}
+		/// <summary>
+		/// Gets a readonly array of Transforms representing the world space transform of each bone in the skeleton
+		/// </summary>
 		public ReadOnlyArrayCollection<Transform> BoneWorldTransforms
 		{
 			get { return new ReadOnlyArrayCollection<Transform>(boneWorldTransforms); }
 		}
-#if DEBUG
+		/// <summary>
+		/// Gets a readonly array of Transforms representing the inverse world space transform of each bone in the skeleton
+		/// </summary>
+		public ReadOnlyArrayCollection<Transform> BoneWorldInverseTransforms
+		{
+			get { return new ReadOnlyArrayCollection<Transform>(boneWorldTransformsInverse); }
+		}
+#if DEBUG && !XBOX360
 		/// <summary>
 		/// This value will be null at runtime, and is only used at content build time
 		/// </summary>
@@ -1396,9 +1652,27 @@ namespace Xen.Ex.Graphics.Content
 			get { return new ReadOnlyArrayCollection<Matrix>(boneLocalMatrices); }
 		}
 #endif
+		/// <summary>
+		/// Gets a readonly array of BoneData for each bone (eg, data storing names and children)
+		/// </summary>
 		public ReadOnlyArrayCollection<BoneData> BoneData
 		{
 			get { return new ReadOnlyArrayCollection<BoneData>(boneData); }
+		}
+
+		/// <summary>
+		/// Performs a linear search to find the bone matching the given name, -1 if not found.
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns></returns>
+		public int GetBoneIndexByName(string name)
+		{
+			for (int i = 0; i < boneData.Length; i++)
+			{
+				if (boneData[i].Name == name)
+					return i;
+			}
+			return -1;
 		}
 
 		internal Vector4[] GetBoneHierarchyAsMatrix4x3(Transform[] source, Vector4[] transforms)
@@ -1458,7 +1732,7 @@ namespace Xen.Ex.Graphics.Content
 			return transforms;
 		}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 		internal void Write(BinaryWriter writer)
 		{
 			writer.Write(boneLocalTransforms.Length);
@@ -1488,9 +1762,21 @@ namespace Xen.Ex.Graphics.Content
 
 			boneWorldTransforms = BoneLocalTransform.ToArray();
 			TransformHierarchy(boneWorldTransforms);
+
+			boneWorldTransformsInverse = new Transform[boneWorldTransforms.Length];
+			for (int i = 0; i < boneWorldTransformsInverse.Length; i++)
+			{
+				Matrix matrix;
+				boneWorldTransforms[i].GetMatrix(out matrix);
+				Matrix.Invert(ref matrix, out matrix);
+				boneWorldTransformsInverse[i] = new Transform(ref matrix);
+			}
 		}
 	}
 
+	/// <summary>
+	/// Stores data about a skeleton bone
+	/// </summary>
 	public struct BoneData
 	{
 		private readonly string name;
@@ -1498,7 +1784,7 @@ namespace Xen.Ex.Graphics.Content
 		private readonly int[] children;
 		private readonly int parent;
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		public BoneData(string name, int boneIndex, int parent, int[] children)
 		{
@@ -1509,26 +1795,37 @@ namespace Xen.Ex.Graphics.Content
 		}
 
 #endif
-
+		/// <summary>
+		/// Gets the name of this bone
+		/// </summary>
 		public string Name
 		{
 			get { return name; }
 		}
+		/// <summary>
+		/// Gets the index of this bone in the skeleton
+		/// </summary>
 		public int Index
 		{
 			get { return boneIndex; }
 		}
+		/// <summary>
+		/// Gets the index of this bone's parent in the skeleton
+		/// </summary>
 		public int Parent
 		{
 			get { return parent; }
 		}
 
+		/// <summary>
+		/// Gets a readonly array of the indices of each child connected to this bone
+		/// </summary>
 		public ReadOnlyArrayCollection<int> Children
 		{
 			get { return new ReadOnlyArrayCollection<int>(children); }
 		}
 
-#if DEBUG
+#if DEBUG && !XBOX360
 
 		internal void Write(BinaryWriter writer)
 		{

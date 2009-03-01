@@ -429,6 +429,23 @@ namespace Xen.Graphics.State
 		internal int mode;
 
 		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static explicit operator AlphaBlendState(int state)
+		{
+			AlphaBlendState value;
+			value.mode = state;
+			return value;
+		}
+		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static implicit operator int(AlphaBlendState state)
+		{
+			return state.mode;
+		}
+
+		/// <summary></summary>
 		/// <param name="a"></param>
 		/// <param name="b"></param>
 		/// <returns></returns>
@@ -476,7 +493,7 @@ namespace Xen.Graphics.State
 		public static AlphaBlendState None { get { return _None; } }
 		/// <summary>State that enables standard Alpha Blending (blending based on the alpha value of the source component, desitination colour is interpolated to the source colour based on source alpha)</summary>
 		public static AlphaBlendState Alpha { get { return _Alpha; } }
-		/// <summary>State that enables Premodulated Alpha Blending (Assumes the source colour data has been premodulated with the inverse of the alpha value, useful for reducing colour bleeding and accuracy problems at alpha edges)</summary>
+		/// <summary>State that enables Premodulated Alpha Blending (Assumes the source colour data has been premodulated with the source alpha value, useful for reducing colour bleeding and accuracy problems at alpha edges)</summary>
 		public static AlphaBlendState PremodulatedAlpha { get { return _PremodulatedAlpha; } }
 		/// <summary>State that enables Additive Alpha Blending (blending based on the alpha value of the source component, the desitination colour is added to the source colour modulated by alpha)</summary>
 		public static AlphaBlendState AlphaAdditive { get { return _AlphaAdditive; } }
@@ -584,11 +601,11 @@ namespace Xen.Graphics.State
 		{
 			get
 			{
-				return (Blend)(((mode >> 8) & 15) + 1);
+				return (Blend)((((mode >> 8) & 15) ^ 1) + 1);
 			}
 			set
 			{
-				mode = (mode & ~(15 << 8)) | (15 & ((int)value - 1)) << 8;
+				mode = (mode & ~(15 << 8)) | (15 & ((int)value - 1) ^ 1) << 8;
 			}
 		}
 
@@ -614,11 +631,11 @@ namespace Xen.Graphics.State
 		{
 			get
 			{
-				return (Blend)(((mode >> 16) & 15) + 1);
+				return (Blend)((((mode >> 16) & 15) ^ 1) + 1);
 			}
 			set
 			{
-				mode = (mode & ~(15 << 16)) | (15 & ((int)value - 1)) << 16;
+				mode = (mode & ~(15 << 16)) | (15 & ((int)value - 1) ^ 1) << 16;
 			}
 		}
 
@@ -726,6 +743,24 @@ namespace Xen.Graphics.State
 			BitWiseTypeValidator.Validate<AlphaTestState>();
 		}
 #endif
+
+		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static explicit operator AlphaTestState(ushort state)
+		{
+			AlphaTestState value;
+			value.mode = state;
+			return value;
+		}
+		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static implicit operator ushort(AlphaTestState state)
+		{
+			return state.mode;
+		}
+
 		/// <summary></summary>
 		/// <param name="a"></param>
 		/// <param name="b"></param>
@@ -820,7 +855,7 @@ namespace Xen.Graphics.State
 #endif
 
 				if (!current.Enabled)
-					device.RenderState.AlphaBlendEnable = true;
+					device.RenderState.AlphaTestEnable = true;
 
 				if (this.AlphaTestFunction != current.AlphaTestFunction)
 					device.RenderState.AlphaFunction = this.AlphaTestFunction;
@@ -846,7 +881,7 @@ namespace Xen.Graphics.State
 	}
 
 	/// <summary>
-	/// Packed representation of Depth Testing, Colour buffer masking and FrustumCull mode states. 2 bytes
+	/// Packed representation of Depth Testing, Colour buffer masking and Backface Cull mode states. 2 bytes
 	/// </summary>
 	[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 2)]
 #if !DEBUG_API
@@ -863,6 +898,23 @@ namespace Xen.Graphics.State
 			BitWiseTypeValidator.Validate<DepthColourCullState>();
 		}
 #endif
+
+		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static explicit operator DepthColourCullState(ushort state)
+		{
+			DepthColourCullState value;
+			value.mode = state;
+			return value;
+		}
+		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static implicit operator ushort(DepthColourCullState state)
+		{
+			return state.mode;
+		}
 
 		/// <summary></summary>
 		/// <param name="a"></param>
@@ -939,7 +991,7 @@ namespace Xen.Graphics.State
 				mode = (ushort)((mode & ~(15 << 2)) | (15 & (((int)value)) ^ 4) << 2);
 			}
 		}
-
+		
 		/// <summary>
 		/// Gets/Sets the backface culling render state. Default value of <see cref="Microsoft.Xna.Framework.Graphics.CullMode.CullCounterClockwiseFace">CullCounterClockwiseFace</see>
 		/// </summary>
@@ -986,6 +1038,21 @@ namespace Xen.Graphics.State
 			}
 		}
 
+		/// <summary>
+		/// Gets/Sets a mask for the <see cref="FillMode"/> for the device (eg, <see cref="Microsoft.Xna.Framework.Graphics.FillMode.WireFrame"/> or <see cref="Microsoft.Xna.Framework.Graphics.FillMode.Solid"/>)
+		/// </summary>
+		public FillMode FillMode
+		{
+			get
+			{
+				return (FillMode)(((((mode >> 12) & 3) ^ 2)) + 1);
+			}
+			set
+			{
+				mode = (ushort)((mode & ~(3 << 12)) | (3 & ((((int)value)) - 1)^2) << 12);
+			}
+		}
+
 		internal void ResetState(ref DepthColourCullState current, GraphicsDevice device, bool reverseCull)
 		{
 			device.RenderState.DepthBufferEnable = this.DepthTestEnabled;
@@ -993,6 +1060,7 @@ namespace Xen.Graphics.State
 			device.RenderState.DepthBufferFunction = this.DepthTestFunction;
 			device.RenderState.CullMode = this.GetCullMode(reverseCull);
 			device.RenderState.ColorWriteChannels = this.ColourWriteMask;
+			device.RenderState.FillMode = this.FillMode;
 
 			current.mode = this.mode;
 		}
@@ -1001,6 +1069,7 @@ namespace Xen.Graphics.State
 		{
 			bool changed = false;
 
+			// bits 6 to 14 are used.. so ignore bits 1-5
 			if ((current.mode & (~63)) != (mode & (~63)))
 			{
 #if DEBUG
@@ -1017,6 +1086,12 @@ namespace Xen.Graphics.State
 				{
 					device.RenderState.ColorWriteChannels = channels;
 					current.ColourWriteMask = channels;
+				}
+				FillMode fill = this.FillMode;
+				if (fill != current.FillMode)
+				{
+					device.RenderState.FillMode = fill;
+					current.FillMode = fill;
 				}
 			}
 
@@ -1097,6 +1172,8 @@ namespace Xen.Graphics.State
 	public struct StencilTestState
 	{
 		[System.Runtime.InteropServices.FieldOffset(0)]
+		private long _long;
+		[System.Runtime.InteropServices.FieldOffset(0)]
 		internal int op;
 		[System.Runtime.InteropServices.FieldOffset(4)]
 		internal int mode;
@@ -1107,6 +1184,23 @@ namespace Xen.Graphics.State
 			BitWiseTypeValidator.Validate<StencilTestState>();
 		}
 #endif
+
+		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static explicit operator StencilTestState(long state)
+		{
+			StencilTestState value = new StencilTestState();
+			value._long = state;
+			return value;
+		}
+		/// <summary></summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public static implicit operator long(StencilTestState state)
+		{
+			return state._long;
+		}
 		/// <summary></summary>
 		/// <param name="a"></param>
 		/// <param name="b"></param>
@@ -1386,7 +1480,7 @@ namespace Xen.Graphics.State
 					sampler.AddressW = state.AddressW;
 
 #if DEBUG
-				dstate.Application.currentFrame.TextureSamplerAddressStateChanged ++;
+				System.Threading.Interlocked.Increment(ref dstate.Application.currentFrame.TextureSamplerAddressStateChanged);
 #endif
 			}
 

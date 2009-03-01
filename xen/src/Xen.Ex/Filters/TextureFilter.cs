@@ -10,101 +10,183 @@ using Xen.Graphics.State;
 namespace Xen.Ex.Filters
 {
 	/// <summary>
+	/// The number of samples in a blur filter
+	/// </summary>
+	public enum BlurFilterFormat
+	{
+		/// <summary>
+		/// 3x3 sample blur filter
+		/// </summary>
+		ThreeSampleBlur = 2,
+		/// <summary>
+		/// 5x5 sample blur
+		/// </summary>
+		FiveSampleBlur = 4,
+		/// <summary>
+		/// 7x7 sample blur filter
+		/// </summary>
+		SevenSampleBlur = 6,
+		/// <summary>
+		/// 15x15 sample blur filter
+		/// </summary>
+		FifteenSampleBlur = 8,
+		/// <summary>
+		/// 31x31 sample blur, assumes the graphics device supports texture filtering for the render target format
+		/// </summary>
+		ThirtyOneSampleBlur_FilteredTextureFormat = 9
+	}
+
+	static class FilterGenerator
+	{
+		private static float[] weights  = new float[16], offset  = new float[16];
+		private static Vector2[] offsetsV = new Vector2[16];
+
+		//generates weight and offset value for bell curve filters
+		private static int GenerateFilter(BlurFilterFormat format, bool filtered)
+		{
+			int samples = 0;
+			switch (format)
+			{
+				case BlurFilterFormat.ThreeSampleBlur:
+					samples = 3;
+					break;
+				case BlurFilterFormat.FiveSampleBlur:
+					samples = 5;
+					break;
+				case BlurFilterFormat.SevenSampleBlur:
+					samples = 7;
+					break;
+				case BlurFilterFormat.FifteenSampleBlur:
+					samples = 15;
+					break;
+				case BlurFilterFormat.ThirtyOneSampleBlur_FilteredTextureFormat:
+					if (!filtered)
+						throw new ArgumentException();
+					samples = 31;
+					break;
+			}
+
+			int actualSamples = samples;
+			if (filtered)
+				actualSamples = samples / 2 + 1;
+
+			if (!filtered)
+			{
+				//centre sample samples the 0 offset pixel
+				int centre = actualSamples / 2;
+				weights[centre] = 1;
+				offset[centre] = 0;
+
+				double total = 1;
+
+				for (int i = 1; i <= centre; i++)
+				{
+					//bell curve
+					//~ exp(- x^2 )
+					double x = (i / (double)(centre + 1));
+
+					double bell = Math.Exp(-(x * x) * 3);
+					total += bell * 2;
+
+					offset[centre - i] = -i;
+					offset[centre + i] = i;
+					weights[centre - i] = (float)bell;
+					weights[centre + i] = (float)bell;
+				}
+
+				float inv = 1.0f / (float)total;
+				for (int i = 0; i < actualSamples; i++)
+					weights[i] *= inv;
+			}
+			else
+			{
+				bool isOdd = (actualSamples & 1) == 1;
+
+				//if it's odd, there is a centre sample
+
+				int count = actualSamples/2;
+
+				double total = 0;
+
+				if (isOdd)
+				{
+					weights[count] = 2;
+					offset[count] = 0;
+					total = 2;
+				}
+
+
+				for (int i = 0; i < count; i++)
+				{
+					//bell curve
+					//~ exp(- x^2 )
+					//each is made up of two combined samples (filter)
+					double x1,x2;
+
+					if (isOdd)
+					{
+						x1 = ((i * 2 + 1) / (double)(actualSamples));
+						x2 = ((i * 2 + 2) / (double)(actualSamples));
+					}
+					else
+					{
+						x1 = ((i * 2) / (double)(actualSamples));
+						x2 = ((i * 2 + 1) / (double)(actualSamples));
+					}
+
+					double bell1 = Math.Exp(-(x1 * x1) * 3);
+					double bell2 = Math.Exp(-(x2 * x2) * 3);
+
+					if (!isOdd && i == 0)
+						bell1 *= 0.5; //two samples on the centre
+
+					double bias;
+					if (isOdd)
+						bias = ((i*2 + 1) * bell1 + (i*2 + 2) * bell2) / (bell1 + bell2);
+					else
+						bias = (i*2 * bell1 + (i*2 + 1) * bell2) / (bell1 + bell2);
+					double weight = bell1 + bell2;
+
+					total += weight * 2;
+
+					int p = isOdd ? 1 : 0;
+
+					offset[count - i - 1] = -(float)bias;
+					offset[count + i + p] = (float)bias;
+					weights[count - i - 1] = (float)weight;
+					weights[count + i + p] = (float)weight;
+
+				}
+
+				float inv = 1.0f / (float)total;
+				for (int i = 0; i < actualSamples; i++)
+					weights[i] *= inv;
+			}
+			return actualSamples;
+		}
+
+
+		public static void SetFilter(BlurFilterFormat format, bool xAxis, SinglePassTextureFilter target, bool supportsFiltering)
+		{
+			lock (weights)
+			{
+				int kernel = GenerateFilter(format, supportsFiltering);
+
+				Vector2 axis = new Vector2(xAxis ? 1 : 0, xAxis ? 0 : 1);
+
+				for (int i = 0; i < 16; i++)
+					offsetsV[i] = axis * offset[i];
+
+				target.SetFilter(offsetsV, weights, kernel);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Stores an 16 sample filter
 	/// </summary>
 	public struct Filter16Sample
 	{
-		private static readonly Filter16Sample horizontalBlur = Blur(new Vector2(1, 0));
-		private static readonly Filter16Sample verticalBlur = Blur(new Vector2(0, 1));
-
-		private static Filter16Sample Blur(Vector2 axis)
-		{
-			Filter16Sample f;
-
-			f.PixelOffset0 = axis * 14.25f;
-			f.PixelOffset1 = axis * 12.40f;
-			f.PixelOffset2 = axis * 10.45f;
-			f.PixelOffset3 = axis * 8.475f;
-			f.PixelOffset4 = axis * 6.475f;
-			f.PixelOffset5 = axis * 4.475f;
-			f.PixelOffset6 = axis * 2.475f;
-			f.PixelOffset7 = axis * 0.65f;
-			f.PixelOffset8 = axis * -0.65f;
-			f.PixelOffset9 = axis * -2.475f;
-			f.PixelOffset10= axis * -4.475f;
-			f.PixelOffset11= axis * -6.475f;
-			f.PixelOffset12= axis * -8.475f;
-			f.PixelOffset13= axis * -10.45f;
-			f.PixelOffset14= axis * -12.40f;
-			f.PixelOffset15= axis * -14.25f;
-
-			//approx consistent drops
-			//.35 * 2     = 0.70
-			//.65         = 0.65
-			//.525 * 1.2  = 0.63
-			//.475 * 1.2  = 0.57
-			//.525 * 1.0  = 0.525
-			//.475 * 1.0  = 0.475
-			//.525 * 0.8  = 0.42
-			//.475 * 0.8  = 0.38
-			//.525 * 0.65 = 0.34
-			//.475 * 0.65 = 0.31
-			//.55  * 0.475= 0.26
-			//.45  * 0.475= 0.215
-			//.6   * 0.275= 0.16
-			//.4   * 0.275= 0.11
-			//.75  * 0.1  = 0.07
-			//.25  * 0.1  = 0.03
-
-
-			f.Weight0 = 0.1f;
-			f.Weight1 = 0.275f;
-			f.Weight2 = 0.475f;
-			f.Weight3 = 0.65f;
-			f.Weight4 = 0.8f;
-			f.Weight5 = 1.0f;
-			f.Weight6 = 1.2f;
-			f.Weight7 = 1;
-			f.Weight8 = 1;
-			f.Weight9 = 1.2f;
-			f.Weight10= 1.0f;
-			f.Weight11= 0.8f;
-			f.Weight12= 0.65f;
-			f.Weight13= 0.475f;
-			f.Weight14= 0.275f;
-			f.Weight15= 0.1f;
-
-			float total = 11;
-
-			f.Weight0 /= total;
-			f.Weight1 /= total;
-			f.Weight2 /= total;
-			f.Weight3 /= total;
-			f.Weight4 /= total;
-			f.Weight5 /= total;
-			f.Weight6 /= total;
-			f.Weight7 /= total;
-			f.Weight8 /= total;
-			f.Weight9 /= total;
-			f.Weight10 /= total;
-			f.Weight11 /= total;
-			f.Weight12 /= total;
-			f.Weight13 /= total;
-			f.Weight14 /= total;
-			f.Weight15 /= total;
-
-			return f;
-		}
-
-		/// <summary>
-		/// Horizontal filter pass used in the <see cref="BlurFilter"/>
-		/// </summary>
-		public static Filter16Sample HorizontalBlur { get { return horizontalBlur; } }
-		/// <summary>
-		/// Vertical filter pass used in the <see cref="BlurFilter"/>
-		/// </summary>
-		public static Filter16Sample VerticalBlur { get { return verticalBlur; } }
-
 		/// <summary>Pixel offset from the sampling centre point</summary>
 		public Vector2 PixelOffset0;
 		/// <summary>Pixel offset from the sampling centre point</summary>
@@ -359,7 +441,7 @@ namespace Xen.Ex.Filters
 			SetFilter(ref filter);
 		}
 
-		private SinglePassTextureFilter(DrawTargetTexture2D source, DrawTargetTexture2D target)
+		internal SinglePassTextureFilter(DrawTargetTexture2D source, DrawTargetTexture2D target)
 		{
 			if (source == null || target == null)
 				throw new ArgumentNullException();
@@ -367,7 +449,7 @@ namespace Xen.Ex.Filters
 				throw new ArgumentException("source.SurfaceFormat != target.SurfaceFormat");
 			if (target.MultiSampleType != Microsoft.Xna.Framework.Graphics.MultiSampleType.None)
 				throw new ArgumentException("Target may not use multisample anitialiasing");
-#if XBOX
+#if XBOX360
 			if (source == target && source.Width * source.Height * DrawTarget.FormatSize(source.SurfaceFormat) >
 				1000*1000*10)//approx 10mb
 				throw new ArgumentException("source == target is invalid for larget render targets on Xbox360");
@@ -382,6 +464,9 @@ namespace Xen.Ex.Filters
 
 			this.source = source;
 			this.targetClone = target.Clone(false,false,false);
+
+			this.targetClone.ClearBuffer.Enabled = false;
+
 			this.element = new ShaderElement(null, source.Width, source.Height,new Vector2(1,1),true);
 			this.targetClone.Add(element);
 
@@ -464,6 +549,14 @@ namespace Xen.Ex.Filters
 			kernelSize = 2;
 		}
 
+		internal void SetFilter(Vector2[] offsets, float[] weights, int kernelSize)
+		{
+			for (int i = 0; i < 16; i++)
+				this.filter[i] = new Vector3(offsets[i], weights[i]);
+
+			this.kernelSize = kernelSize;
+		}
+
 		/// <summary>
 		/// Apply the filter
 		/// </summary>
@@ -475,28 +568,49 @@ namespace Xen.Ex.Filters
 				case 16:
 					Kernel16 shader16 = state.GetShader<Kernel16>();
 					shader16.Texture = source.GetTexture();
-					shader16.TextureSize = this.source.Size;
+					shader16.TextureSize = new Vector2(1.0f / this.source.Size.X, 1.0f / this.source.Size.Y);
 					shader16.SetKernel(this.filter);
 					element.Shader = shader16;
+					break;
+				case 15:
+					Kernel15 shader15 = state.GetShader<Kernel15>();
+					shader15.Texture = source.GetTexture();
+					shader15.TextureSize = new Vector2(1.0f / this.source.Size.X, 1.0f / this.source.Size.Y);
+					shader15.SetKernel(this.filter);
+					element.Shader = shader15;
 					break;
 				case 8:
 					Kernel8 shader8 = state.GetShader<Kernel8>();
 					shader8.Texture = source.GetTexture();
-					shader8.TextureSize = this.source.Size;
+					shader8.TextureSize = new Vector2(1.0f / this.source.Size.X, 1.0f / this.source.Size.Y);
 					shader8.SetKernel(this.filter);
 					element.Shader = shader8;
+					break;
+				case 7:
+					Kernel7 shader7 = state.GetShader<Kernel7>();
+					shader7.Texture = source.GetTexture();
+					shader7.TextureSize = new Vector2(1.0f / this.source.Size.X, 1.0f / this.source.Size.Y);
+					shader7.SetKernel(this.filter);
+					element.Shader = shader7;
 					break;
 				case 4:
 					Kernel4 shader4 = state.GetShader<Kernel4>();
 					shader4.Texture = source.GetTexture();
-					shader4.TextureSize = this.source.Size;
+					shader4.TextureSize = new Vector2(1.0f / this.source.Size.X, 1.0f / this.source.Size.Y);
 					shader4.SetKernel(this.filter);
 					element.Shader = shader4;
+					break;
+				case 3:
+					Kernel3 shader3 = state.GetShader<Kernel3>();
+					shader3.Texture = source.GetTexture();
+					shader3.TextureSize = new Vector2(1.0f / this.source.Size.X, 1.0f / this.source.Size.Y);
+					shader3.SetKernel(this.filter);
+					element.Shader = shader3;
 					break;
 				case 2:
 					Kernel2 shader2 = state.GetShader<Kernel2>();
 					shader2.Texture = source.GetTexture();
-					shader2.TextureSize = this.source.Size;
+					shader2.TextureSize = new Vector2(1.0f / this.source.Size.X, 1.0f / this.source.Size.Y);
 					shader2.SetKernel(this.filter);
 					element.Shader = shader2;
 					break;
@@ -509,36 +623,23 @@ namespace Xen.Ex.Filters
 			return true;
 		}
 	}
+
 	/// <summary>
 	/// Applies a two pass, 16 sample vertical and horizontal texture blur filter to a draw target
 	/// </summary>
 	public sealed class BlurFilter : IDraw
 	{
-		SinglePassTextureFilter filterV, filterH;
+		private readonly SinglePassTextureFilter filterV, filterH;
+		private readonly DrawTargetTexture2D source;
 
 		/// <summary>
-		/// Blur the source horizontally to the <paramref name="intermediate"/> target, then blur vertically back to <paramref name="source"/>. (Xbox360 may specify null for <paramref name="intermediate"/>)
+		/// Blur the source horizontally to the <paramref name="intermediate"/> target, then blur vertically back to <paramref name="source"/>. (Xbox360 may specify null for <paramref name="intermediate"/> if the render target will fit in 10mib)
 		/// </summary>
 		/// <param name="source"></param>
 		/// <param name="intermediate">draw target to use as a temporary, intermediate target for blurring</param>
-		public BlurFilter(DrawTargetTexture2D source, DrawTargetTexture2D intermediate)
+		public BlurFilter(BlurFilterFormat filterFormat, DrawTargetTexture2D source, DrawTargetTexture2D intermediate) : 
+			this(filterFormat,source,intermediate,source)
 		{
-#if XBOX
-			//if the surface will fit into EDRAM then the intermediate can be skipped
-			if (source.Width*source.Height*DrawTarget.FormatSize(source.SurfaceFormat)<1024*1024*9)//approx
-			{
-				this.filterV = new SinglePassTextureFilter(source, source, Filter16Sample.VerticalBlur);
-				this.filterH = new SinglePassTextureFilter(source, source, Filter16Sample.HorizontalBlur);
-			}
-			else
-			{
-				this.filterV = new SinglePassTextureFilter(source, intermediate, Filter16Sample.VerticalBlur);
-				this.filterH = new SinglePassTextureFilter(intermediate, source, Filter16Sample.HorizontalBlur);
-			}
-#else
-			this.filterV = new SinglePassTextureFilter(source, intermediate, Filter16Sample.VerticalBlur);
-			this.filterH = new SinglePassTextureFilter(intermediate, source, Filter16Sample.HorizontalBlur);
-#endif
 		}
 
 		/// <summary>
@@ -547,24 +648,36 @@ namespace Xen.Ex.Filters
 		/// <param name="source"></param>
 		/// <param name="intermediate">draw target to use as a temporary, intermediate target for blurring</param>
 		/// <param name="target"></param>
-		public BlurFilter(DrawTargetTexture2D source, DrawTargetTexture2D intermediate, DrawTargetTexture2D target)
+		public BlurFilter(BlurFilterFormat filterFormat, DrawTargetTexture2D source, DrawTargetTexture2D intermediate, DrawTargetTexture2D target)
 		{
-#if XBOX
+			if (target == null || source == null)
+				throw new ArgumentNullException();
+
+			if (intermediate != null && source.SurfaceFormat != intermediate.SurfaceFormat)
+				throw new ArgumentException("source.SurfaceFormat != intermediate.SurfaceFormat");
+			if (intermediate != null && target.SurfaceFormat != intermediate.SurfaceFormat)
+				throw new ArgumentException("target.SurfaceFormat != intermediate.SurfaceFormat");
+
+			this.source = source;
+
+#if XBOX360
 			//if the surface will fit into EDRAM then the intermediate can be skipped
-			if (source.Width*source.Height*DrawTarget.FormatSize(source.SurfaceFormat)<1024*1024*9)//approx
+			if (source.Width*source.Height*DrawTarget.FormatSize(source.SurfaceFormat)<1000*1000*10)//approx
 			{
-				this.filterV = new SinglePassTextureFilter(source, target, Filter16Sample.VerticalBlur);
-				this.filterH = new SinglePassTextureFilter(target, target, Filter16Sample.HorizontalBlur);
+				this.filterV = new SinglePassTextureFilter(source, target);
+				this.filterH = new SinglePassTextureFilter(target, target);
 			}
 			else
 			{
-				this.filterV = new SinglePassTextureFilter(source, intermediate, Filter16Sample.VerticalBlur);
-				this.filterH = new SinglePassTextureFilter(intermediate, source, Filter16Sample.HorizontalBlur);
+				this.filterV = new SinglePassTextureFilter(source, intermediate);
+				this.filterH = new SinglePassTextureFilter(intermediate, source);
 			}
 #else
-			this.filterV = new SinglePassTextureFilter(source, intermediate, Filter16Sample.VerticalBlur);
-			this.filterH = new SinglePassTextureFilter(intermediate, target, Filter16Sample.HorizontalBlur);
+			this.filterV = new SinglePassTextureFilter(source, intermediate);
+			this.filterH = new SinglePassTextureFilter(intermediate, target);
 #endif
+
+			SetFilterFormat(filterFormat);
 		}
 
 		/// <summary>
@@ -580,6 +693,23 @@ namespace Xen.Ex.Filters
 		bool ICullable.CullTest(ICuller culler)
 		{
 			return true;
+		}
+
+		/// <summary>
+		/// <para>Set the filter format of the blur filter.</para>
+		/// <para>Note: Some filter formats require the graphics device support texture filtering for the given format</para>
+		/// </summary>
+		/// <param name="filterFormat"></param>
+		public void SetFilterFormat(BlurFilterFormat filterFormat)
+		{
+			//IsFilterFormat
+			bool filteringSupported = DrawTargetTexture2D.SupportsFormatFiltering(source.SurfaceFormat);
+
+			if (filteringSupported == false && filterFormat == BlurFilterFormat.ThirtyOneSampleBlur_FilteredTextureFormat)
+				throw new ArgumentException("BlurFilterFormat.ThirtyOneSampleBlurFiltered is not supported, Hardware does not support texture filter for " + source.SurfaceFormat.ToString());
+
+			FilterGenerator.SetFilter(filterFormat, true, this.filterH, filteringSupported);
+			FilterGenerator.SetFilter(filterFormat, false, this.filterV, filteringSupported);
 		}
 	}
 

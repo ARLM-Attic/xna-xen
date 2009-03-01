@@ -190,11 +190,11 @@ namespace Xen.Camera
 
 		bool ICullPrimitive.TestWorldBox(Vector3 min, Vector3 max, ref Matrix world)
 		{
-			return FrustumCull.BoxInFrustum(GetCullingPlanes(), ref min, ref max, ref world, 0);
+			return FrustumCull.BoxInFrustum(GetCullingPlanes(), ref min, ref max, ref world);
 		}
 		bool ICullPrimitive.TestWorldBox(ref Vector3 min, ref Vector3 max, ref Matrix world)
 		{
-			return FrustumCull.BoxInFrustum(GetCullingPlanes(), ref min, ref max, ref world, 0);
+			return FrustumCull.BoxInFrustum(GetCullingPlanes(), ref min, ref max, ref world);
 		}
 
 		bool ICullPrimitive.TestWorldSphere(float radius, Vector3 position)
@@ -209,11 +209,11 @@ namespace Xen.Camera
 		
 		ContainmentType ICullPrimitive.IntersectWorldBox(Vector3 min, Vector3 max, ref Matrix world)
 		{
-			return FrustumCull.BoxIntersectsFrustum(GetCullingPlanes(), ref min, ref max, ref world, 0);
+			return FrustumCull.BoxIntersectsFrustum(GetCullingPlanes(), ref min, ref max, ref world);
 		}
 		ContainmentType ICullPrimitive.IntersectWorldBox(ref Vector3 min, ref Vector3 max, ref Matrix world)
 		{
-			return FrustumCull.BoxIntersectsFrustum(GetCullingPlanes(), ref min, ref max, ref world, 0);
+			return FrustumCull.BoxIntersectsFrustum(GetCullingPlanes(), ref min, ref max, ref world);
 		}
 
 		ContainmentType ICullPrimitive.IntersectWorldSphere(float radius, Vector3 position)
@@ -281,6 +281,10 @@ namespace Xen.Camera
 		}
 
 		void ICamera.GetProjectionMatrix(out Matrix matrix, ref Vector2 drawTargetSize)
+		{
+			matrix = Matrix.Identity;
+		}
+		void ICamera.GetProjectionMatrix(out Matrix matrix, Vector2 drawTargetSize)
 		{
 			matrix = Matrix.Identity;
 		}

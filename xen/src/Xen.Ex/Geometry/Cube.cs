@@ -13,7 +13,7 @@ namespace Xen.Ex.Geometry
 	/// <summary>
 	/// Cube geometry
 	/// </summary>
-	public class Cube : IDrawBatch, IBeginEndDrawBatch, ICullableInstance
+	public sealed class Cube : IDrawBatch, IBeginEndDrawBatch, ICullableInstance
 	{
 		IVertices verts;
 		IIndices inds;

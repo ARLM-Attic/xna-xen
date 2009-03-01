@@ -82,6 +82,10 @@ namespace Xen
 			{
 				Array.Resize(ref array, array.Length * 2);
 				drawFlags[index].stack = array;
+#if DEBUG
+				if (array.Length >= 4096)
+					throw new StackOverflowException("Potential memory leak detected: A call to PushDrawFlag() may not have a matching call to PopDrawFlag()");
+#endif
 			}
 			array[drawFlags[index].index] = value;
 		}
@@ -99,6 +103,10 @@ namespace Xen
 			{
 				Array.Resize(ref array, array.Length * 2);
 				drawFlags[index].stack = array;
+#if DEBUG
+				if (array.Length >= 4096)
+					throw new StackOverflowException("Potential memory leak detected: A call to PushDrawFlag() may not have a matching call to PopDrawFlag()");
+#endif
 			}
 			array[drawFlags[index].index] = value;
 		}

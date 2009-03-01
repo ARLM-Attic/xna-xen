@@ -12,7 +12,7 @@ namespace Xen.Ex.Geometry
 	/// <summary>
 	/// A simple class that constructs spherical-cone geometry
 	/// </summary>
-	public class SphericalCone : IDrawBatch, IBeginEndDrawBatch, ICullableInstance
+	public sealed class SphericalCone : IDrawBatch, IBeginEndDrawBatch, ICullableInstance
 	{
 		IVertices verts;
 		IIndices inds;

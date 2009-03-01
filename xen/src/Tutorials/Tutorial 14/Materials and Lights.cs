@@ -221,8 +221,11 @@ namespace Tutorials.Tutorial_14
 		//This method is called before Initalise()
 		protected override void SetupGraphicsDeviceManager(GraphicsDeviceManager graphics, ref RenderTargetUsage presentation)
 		{
-			graphics.PreferredBackBufferWidth = 1280;
-			graphics.PreferredBackBufferHeight = 768;
+			if (graphics != null) // graphics is null when starting within a WinForms host
+			{
+				graphics.PreferredBackBufferWidth = 1280;
+				graphics.PreferredBackBufferHeight = 720;
+			}
 		}
 
 

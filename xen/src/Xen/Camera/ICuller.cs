@@ -402,6 +402,73 @@ namespace Xen
 			return true;
 		}
 
+		internal static bool BoxInFrustum(Plane[] frustum, ref Vector3 minExtents, ref Vector3 maxExtents, ref Matrix world)
+		{
+			float dot;
+			Vector3 point;
+
+			foreach (Plane plane in frustum)
+			{
+				dot = plane.Normal.X * world.M11 +
+						plane.Normal.Y * world.M12 +
+						plane.Normal.Z * world.M13;
+
+				if (dot >= 0)
+				{
+					point.X = world.M41 + world.M11 * minExtents.X;
+					point.Y = world.M42 + world.M12 * minExtents.X;
+					point.Z = world.M43 + world.M13 * minExtents.X;
+				}
+				else
+				{
+					point.X = world.M41 + world.M11 * maxExtents.X;
+					point.Y = world.M42 + world.M12 * maxExtents.X;
+					point.Z = world.M43 + world.M13 * maxExtents.X;
+				}
+
+
+				dot = plane.Normal.X * world.M21 +
+						plane.Normal.Y * world.M22 +
+						plane.Normal.Z * world.M23;
+
+				if (dot >= 0)
+				{
+					point.X += world.M21 * minExtents.Y;
+					point.Y += world.M22 * minExtents.Y;
+					point.Z += world.M23 * minExtents.Y;
+				}
+				else
+				{
+					point.X += world.M21 * maxExtents.Y;
+					point.Y += world.M22 * maxExtents.Y;
+					point.Z += world.M23 * maxExtents.Y;
+				}
+
+
+
+				dot = plane.Normal.X * world.M31 +
+						plane.Normal.Y * world.M32 +
+						plane.Normal.Z * world.M33;
+
+				if (dot >= 0)
+				{
+					point.X += world.M31 * minExtents.Z;
+					point.Y += world.M32 * minExtents.Z;
+					point.Z += world.M33 * minExtents.Z;
+				}
+				else
+				{
+					point.X += world.M31 * maxExtents.Z;
+					point.Y += world.M32 * maxExtents.Z;
+					point.Z += world.M33 * maxExtents.Z;
+				}
+
+				if (plane.Normal.X * point.X + plane.Normal.Y * point.Y + plane.Normal.Z * point.Z + plane.D > 0)
+					return false;
+			}
+			return true;
+		}
+
 		internal static ContainmentType BoxIntersectsFrustum(Plane[] frustum, ref Vector3 minExtents, ref Vector3 maxExtents, ref Matrix world, float baseRadius)
 		{
 			bool overlap = false;
@@ -452,6 +519,104 @@ namespace Xen
 			float dot;
 			Vector3 point, overlapPoint;
 			overlap = false;
+
+			foreach (Plane plane in frustum)
+			{
+				dot = plane.Normal.X * world.M11 +
+						plane.Normal.Y * world.M12 +
+						plane.Normal.Z * world.M13;
+
+				if (dot >= 0)
+				{
+					point.X = world.M41 + world.M11 * minExtents.X;
+					point.Y = world.M42 + world.M12 * minExtents.X;
+					point.Z = world.M43 + world.M13 * minExtents.X;
+
+					overlapPoint.X = world.M41 + world.M11 * maxExtents.X;
+					overlapPoint.Y = world.M42 + world.M12 * maxExtents.X;
+					overlapPoint.Z = world.M43 + world.M13 * maxExtents.X;
+				}
+				else
+				{
+					point.X = world.M41 + world.M11 * maxExtents.X;
+					point.Y = world.M42 + world.M12 * maxExtents.X;
+					point.Z = world.M43 + world.M13 * maxExtents.X;
+
+					overlapPoint.X = world.M41 + world.M11 * minExtents.X;
+					overlapPoint.Y = world.M42 + world.M12 * minExtents.X;
+					overlapPoint.Z = world.M43 + world.M13 * minExtents.X;
+				}
+
+
+				dot = plane.Normal.X * world.M21 +
+						plane.Normal.Y * world.M22 +
+						plane.Normal.Z * world.M23;
+
+				if (dot >= 0)
+				{
+					point.X += world.M21 * minExtents.Y;
+					point.Y += world.M22 * minExtents.Y;
+					point.Z += world.M23 * minExtents.Y;
+
+					overlapPoint.X += world.M21 * maxExtents.Y;
+					overlapPoint.Y += world.M22 * maxExtents.Y;
+					overlapPoint.Z += world.M23 * maxExtents.Y;
+				}
+				else
+				{
+					point.X += world.M21 * maxExtents.Y;
+					point.Y += world.M22 * maxExtents.Y;
+					point.Z += world.M23 * maxExtents.Y;
+
+					overlapPoint.X += world.M21 * minExtents.Y;
+					overlapPoint.Y += world.M22 * minExtents.Y;
+					overlapPoint.Z += world.M23 * minExtents.Y;
+				}
+
+
+
+				dot = plane.Normal.X * world.M31 +
+						plane.Normal.Y * world.M32 +
+						plane.Normal.Z * world.M33;
+
+				if (dot >= 0)
+				{
+					point.X += world.M31 * minExtents.Z;
+					point.Y += world.M32 * minExtents.Z;
+					point.Z += world.M33 * minExtents.Z;
+
+					overlapPoint.X += world.M31 * maxExtents.Z;
+					overlapPoint.Y += world.M32 * maxExtents.Z;
+					overlapPoint.Z += world.M33 * maxExtents.Z;
+				}
+				else
+				{
+					point.X += world.M31 * maxExtents.Z;
+					point.Y += world.M32 * maxExtents.Z;
+					point.Z += world.M33 * maxExtents.Z;
+
+					overlapPoint.X += world.M31 * minExtents.Z;
+					overlapPoint.Y += world.M32 * minExtents.Z;
+					overlapPoint.Z += world.M33 * minExtents.Z;
+				}
+
+				if (plane.Normal.X * point.X + plane.Normal.Y * point.Y + plane.Normal.Z * point.Z + plane.D > 0)
+					return ContainmentType.Disjoint;
+
+				if (plane.Normal.X * overlapPoint.X + plane.Normal.Y * overlapPoint.Y + plane.Normal.Z * overlapPoint.Z + plane.D > 0)
+					overlap = true;
+			}
+			if (overlap)
+				return ContainmentType.Intersects;
+			return ContainmentType.Contains;
+		}
+
+
+		internal static ContainmentType BoxIntersectsFrustum(Plane[] frustum, ref Vector3 minExtents, ref Vector3 maxExtents, ref Matrix world)
+		{
+			float dot;
+			Vector3 point, overlapPoint;
+			bool overlap = false;
 
 			foreach (Plane plane in frustum)
 			{

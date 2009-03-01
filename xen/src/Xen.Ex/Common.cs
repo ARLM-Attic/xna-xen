@@ -9,7 +9,7 @@ namespace Xen.Ex
 	/// A structure that can be used to do bit casting between primitve types
 	/// </summary>
 	/// <remarks>
-	/// <para>For example, to convert an int to a float:</para>
+	/// <para>For example, to bitwise convert an int to a float:</para>
 	/// <example>
 	/// <code>
 	/// BitCast cast = new BitCast();
@@ -243,6 +243,21 @@ namespace Xen.Ex
 		{
 			return (T[])array.Clone();
 		}
+
+		private static T[] emptyList;
+		/// <summary>
+		/// Gets an empty collection
+		/// </summary>
+		public static ReadOnlyArrayCollection<T> Empty
+		{
+			get
+			{
+				if (emptyList == null)
+					emptyList = new T[0];
+				return new ReadOnlyArrayCollection<T>(emptyList);
+			}
+		}
+
 	}
 
 
@@ -368,6 +383,18 @@ namespace Xen.Ex
 		public void Append(char value) { this.value.Append(value); changeIndex++; }
 		public void Append(char[] value) { this.value.Append(value); changeIndex++; }
 		public void Append(object value) { this.value.Append(value); changeIndex++; }
+
+		public void AppendFormat(string format, object arg0) { this.value.AppendFormat(format, arg0); changeIndex++; }
+		public void AppendFormat(string format, params object[] args) { this.value.AppendFormat(format, args); changeIndex++; }
+		public void AppendFormat(IFormatProvider provider, string format, params object[] args) { this.value.AppendFormat(provider,format, args); changeIndex++; }
+		public void AppendFormat(string format, object arg0, object arg1) { this.value.AppendFormat(format, arg0, arg1); changeIndex++; }
+		public void AppendFormat(string format, object arg0, object arg1, object arg2) { this.value.AppendFormat(format, arg0, arg1, arg2); changeIndex++; }
+
+		public void AppendFormatLine(string format, object arg0) { this.value.AppendFormat(format, arg0); this.value.AppendLine(); changeIndex++; }
+		public void AppendFormatLine(string format, params object[] args) { this.value.AppendFormat(format, args); this.value.AppendLine(); changeIndex++; }
+		public void AppendFormatLine(IFormatProvider provider, string format, params object[] args) { this.value.AppendFormat(provider, format, args); this.value.AppendLine(); changeIndex++; }
+		public void AppendFormatLine(string format, object arg0, object arg1) { this.value.AppendFormat(format, arg0, arg1); this.value.AppendLine(); changeIndex++; }
+		public void AppendFormatLine(string format, object arg0, object arg1, object arg2) { this.value.AppendFormat(format, arg0, arg1, arg2); this.value.AppendLine(); changeIndex++; }
 
 		public void AppendLine(string value) { this.value.AppendLine(value); changeIndex++; }
 		public void AppendLine() { this.value.AppendLine(); changeIndex++; }

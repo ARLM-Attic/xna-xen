@@ -9,28 +9,32 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Xen.Ex.Graphics2D.Statistics
 {
-	class GraphDrawer : ElementRect
+	sealed class GraphDrawer : ElementRect
 	{
-		private Vertices<VertexPositionColor> graph;
-		private VertexPositionColor[] graphValues;
+		private IVertices graph;
+		private static string graphID = typeof(GraphDrawer).FullName + ".vertices";
+
 		private readonly float[] values;
+		private readonly Vector4[] graphData;
 		private int index;
 		private bool dirty;
 		private float widthScale, maxValue, maxValueInv;
 		private Color colour;
 		private float minScale = 0;
+		private readonly float goodValue;
 
-		public GraphDrawer(int samples, Color colour, Vector2 size, float minScale) : base(size)
+		public const int MaxGraphSamples = 200;
+
+		public GraphDrawer(int samples, Color colour, Vector2 size, float minScale, float goodValue) : base(size)
 		{
+			this.goodValue = goodValue;
+
 			this.minScale = minScale;
-			if (samples < 1)
-				throw new ArgumentException("Samples must be 2 or greater");
+			if (samples < 1 || samples > MaxGraphSamples)
+				throw new ArgumentException("Samples must be 2 or greater and less than or equal to " + MaxGraphSamples);
 
 			this.values = new float[samples];
-			graphValues = new VertexPositionColor[samples];
-
-			this.graph = new Vertices<VertexPositionColor>(graphValues);
-			this.graph.ResourceUsage = ResourceUsage.Dynamic;
+			this.graphData = new Vector4[samples];
 
 			this.widthScale = 1.0f / ((float)(samples));
 			dirty = true;
@@ -67,31 +71,53 @@ namespace Xen.Ex.Graphics2D.Statistics
 			get { return maxValue; }
 		}
 
-		protected override void PreDraw(Vector2 size)
-		{
-			if (dirty)
-			{
-				float x = widthScale;
-				for (int i = 0; i < graphValues.Length; i++)
-				{
-					int index = (i + this.index) % graphValues.Length;
-					graphValues[i]
-						= new VertexPositionColor(new Vector3(x, values[index] * maxValueInv, 0), colour);
-					x += widthScale;
-				}
-				dirty = false;
-				this.graph.SetDirty();
-			}
-		}
 
 		protected override void BindShader(DrawState state, bool maskOnly)
 		{
-			state.GetShader<Xen.Ex.Shaders.FillVertexColour>().Bind(state);
+			Xen.Ex.Graphics2D.Stats.DrawGraphLine shader = state.GetShader<Xen.Ex.Graphics2D.Stats.DrawGraphLine>();
+
+			if (dirty)
+			{
+				float x = widthScale;
+				for (int i = 0; i < graphData.Length; i++)
+				{
+					int index = (i + this.index) % graphData.Length;
+					float good = 0;
+
+					if (goodValue != 0)
+					{
+						good = values[index];
+						good = (good - Math.Abs(goodValue)) / goodValue;
+					}
+					graphData[i] = new Vector4(x, values[index] * maxValueInv, 0, good);
+					x += widthScale;
+				}
+				dirty = false;
+			}
+
+			shader.SetGraphLine(this.graphData);
+			
+			shader.Bind(state);
 		}
 
 		protected override void DrawElement(DrawState state)
 		{
-			graph.Draw(state, null, PrimitiveType.LineStrip);
+			if (graph == null)
+			{
+				graph = state.UserValues[graphID] as IVertices;
+
+				if (graph == null)
+				{
+					float[] graphValues = new float[MaxGraphSamples];
+					for (int i = 0; i < MaxGraphSamples; i++)
+						graphValues[i] = (float)i;
+
+					this.graph = Vertices<float>.CreateSingleElementVertices(graphValues, VertexElementUsage.Position, 0);
+					state.UserValues[graphID] = this.graph;
+				}
+			}
+
+			graph.Draw(state, null, PrimitiveType.LineStrip, this.values.Length - 1,0,0);
 		}
 
 		public void ResetAllGraphValues()
@@ -141,7 +167,7 @@ namespace Xen.Ex.Graphics2D.Statistics
 		/// <param name="samples"></param>
 		/// <param name="fontHeight"></param>
 		public Graph(string name, int width, int height, int samples, int fontHeight)
-			: this(name, width, height, samples, fontHeight, 0, null)
+			: this(name, width, height, samples, fontHeight, 0, null, 0)
 		{
 		}
 		/// <summary></summary>
@@ -152,7 +178,7 @@ namespace Xen.Ex.Graphics2D.Statistics
 		/// <param name="fontHeight"></param>
 		/// <param name="minScale"></param>
 		public Graph(string name, int width, int height, int samples, int fontHeight, float minScale)
-			: this(name, width, height, samples, fontHeight, minScale, null)
+			: this(name, width, height, samples, fontHeight, minScale, null, 0)
 		{
 		}
 		/// <summary></summary>
@@ -163,14 +189,15 @@ namespace Xen.Ex.Graphics2D.Statistics
 		/// <param name="fontHeight"></param>
 		/// <param name="font"></param>
 		/// <param name="minScale"></param>
-		public Graph(string name, int width, int height, int samples, int fontHeight, float minScale, SpriteFont font)
+		/// <param name="goodValue">The value that determines the transition from green to red on the graph</param>
+		public Graph(string name, int width, int height, int samples, int fontHeight, float minScale, SpriteFont font, float goodValue)
 			: base(new Vector2((float)width, (float)height), false)
 		{
 			if (width < fontHeight ||
 				height < fontHeight)
 				throw new ArgumentException("size is too small for font size");
 
-			graph = new GraphDrawer(samples, Color.Red, new Vector2(), minScale);
+			graph = new GraphDrawer(samples, Color.Red, new Vector2(), minScale, goodValue);
 			float edge = 0.25f;
 
 			graph.VerticalScaling = ElementScaling.FillToParentPlusSize;
@@ -327,7 +354,7 @@ namespace Xen.Ex.Graphics2D.Statistics
 
 	
 #if XBOX360
-	class ThreadActivity
+	sealed class ThreadActivity
 	{
 		private System.Threading.Thread thread;
 		private float usage = 1;
@@ -408,18 +435,24 @@ namespace Xen.Ex.Graphics2D.Statistics
 
 
 	/// <summary>
-	/// [Debug mode only] Displays various statistics gathered from the previous rendered frame
+	/// <para>[Debug mode only] Displays various statistics gathered from the previous rendered frame</para>
+	/// <para>Xen 1.5: Only the most important graphs are displayed by default, to display a full listing of all graphs, set <see cref="DisplayFullGraphList"/> to true.</para>
 	/// </summary>
-	public class DrawStatisticsDisplay : IDraw, IUpdate
+	public sealed class DrawStatisticsDisplay : IDraw, IUpdate
 	{
 #if DEBUG
 		private delegate float Call(ref DrawStatistics stats, DrawState state);
 		private Graph[] graphs;
+		private bool[] graphVisible;
 		private Call[] setGraphCalls;
 		private DrawStatistics previousFrameOverhead;
 		private bool enabled, keyState;
 		private TextElement toggleText, toggleTextGamepad, toggleTextDisplay;
 		private WeakReference garbageTracker = new WeakReference(null);
+		
+		private OcclusionQuery fillRateQuery;
+		private bool fillRateQueryActive;
+		private float pixelsFillled;
 
 #if XBOX360
 		ThreadActivity[] threads = new ThreadActivity[4]
@@ -433,6 +466,16 @@ namespace Xen.Ex.Graphics2D.Statistics
 #endif
 		private SpriteFont font;
 		private Keys debugKey = Keys.F12;
+		private bool displayAll;
+
+		/// <summary>
+		/// Gets/Sets if all graphs should be displayed (by default, a subset of the default graphs are displayed)
+		/// </summary>
+		public bool DisplayFullGraphList
+		{
+			get { return displayAll; }
+			set { displayAll = value; }
+		}
 
 		/// <summary>
 		/// Gets/Sets the key used to toggle the graphs
@@ -469,12 +512,10 @@ namespace Xen.Ex.Graphics2D.Statistics
 			toggleText = new TextElement("", font);
 			toggleText.HorizontalAlignment = HorizontalAlignment.Left;
 			toggleText.VerticalAlignment = VerticalAlignment.Top;
-			toggleText.Position = new Vector2(50, -40);
 
 			toggleTextGamepad = new TextElement("Hold both thumbsticks to toggle debug graphs", font);
 			toggleTextGamepad.HorizontalAlignment = HorizontalAlignment.Left;
 			toggleTextGamepad.VerticalAlignment = VerticalAlignment.Top;
-			toggleTextGamepad.Position = new Vector2(50, -40);
 
 			DebugToggleKey = Keys.F12;
 			
@@ -517,6 +558,8 @@ namespace Xen.Ex.Graphics2D.Statistics
 			return ((float)total) / ((float)count);
 		}
 
+		delegate T Callback<T, A, B, C, D>(A a, B b, C c, D d);
+
 		/// <summary>
 		/// Draw the statistics
 		/// </summary>
@@ -524,6 +567,7 @@ namespace Xen.Ex.Graphics2D.Statistics
 		public void Draw(DrawState state)
 		{
 #if DEBUG
+
 
 			float fade = 8 - state.TotalTimeSeconds * 0.5f;
 			if (fade > 1)
@@ -538,8 +582,32 @@ namespace Xen.Ex.Graphics2D.Statistics
 				{
 					this.toggleTextDisplay.ColourFloat = new Vector4(1, 1, 1, fade);
 					toggleTextDisplay.Draw(state);
+
+					AlignElements(state);
 				}
 				return;
+			}
+
+			if (fillRateQuery == null)
+			{
+				GraphicsDevice device = state.BeginGetGraphicsDevice(StateFlag.None);
+				fillRateQuery = new OcclusionQuery(device);
+				state.EndGetGraphicsDevice();
+
+				if (fillRateQuery.IsSupported)
+				{
+					fillRateQuery.Begin();
+					fillRateQueryActive = true;
+				}
+			}
+
+			if (fillRateQuery.IsSupported)
+			{
+				if (fillRateQueryActive)
+				{
+					fillRateQuery.End();
+					fillRateQueryActive = false;
+				}
 			}
 
 			DrawStatistics stats;
@@ -553,145 +621,156 @@ namespace Xen.Ex.Graphics2D.Statistics
 				const int height = 128;
 				const int fontPix = 20;
 				List<Call> calls = new List<Call>();
-				
-				Callback<Graph,string,Call> add = delegate(string name,Call call) { calls.Add(call); return new Graph(name, width, height, width - fontPix/2, fontPix, 0, font); };
-				Callback<Graph,string,Call> addHalf = delegate(string name, Call call) { calls.Add(call); return new Graph(name, width / 2, height, width / 2 - fontPix / 2, fontPix, 0, font); };
-				Callback<Graph, string, Call> addHalfMin1 = delegate(string name, Call call) { calls.Add(call); return new Graph(name, width / 2, height, width / 2 - fontPix / 2, fontPix, 1, font); };
+				List<bool> visibleList = new List<bool>();
+
+				Callback<Graph, string, Call, bool, float> add = delegate(string name, Call call, bool visible, float good) { calls.Add(call); visibleList.Add(visible); return new Graph(name, width, height, width - fontPix / 2, fontPix, 0, font, -good); };
+				Callback<Graph, string, Call, bool, float> addHalf = delegate(string name, Call call, bool visible, float good) { calls.Add(call); visibleList.Add(visible); return new Graph(name, width / 2, height, width / 2 - fontPix / 2, fontPix, 0, font, -good); };
+				Callback<Graph, string, Call, bool, float> addHalfMin1 = delegate(string name, Call call, bool visible, float good) { calls.Add(call); visibleList.Add(visible); return new Graph(name, width / 2, height, width / 2 - fontPix / 2, fontPix, 1, font, -good); };
 
 				graphs = new Graph[]
 				{
 					add("Frame Rate (Approx)",delegate(ref DrawStatistics s, DrawState dstate)
-						{return (float)dstate.ApproximateFrameRate;}),
+						{return (float)dstate.ApproximateFrameRate;}, true, -20),
 					
 					add("Frame Draw Time (Ticks)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return s.ApproximateDrawTimeTicks;}),
+					    {return s.ApproximateDrawTimeTicks;}, false, 1.0f/20.0f),
 					
 					addHalf("Draw Target Passes",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)s.DrawTargetsPassCount;}),
+					    {return (float)s.DrawTargetsPassCount;}, false, 10),
 					
-					add("Triangles Drawn",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.TrianglesDrawn);}),
+					add("Primitives Drawn",delegate(ref DrawStatistics s, DrawState dstate)
+					    {return (float)(s.TrianglesDrawn+s.LinesDrawn+s.PointsDrawn);}, true, 1000000),
+
+#if XBOX360
+					addHalf("Pixels Drawn\n(Approx)",delegate(ref DrawStatistics s, DrawState dstate)
+					    {return Math.Max(0,pixelsFillled - (float)s.XboxPixelFillBias);}, true, 20000000), // not accurate
+#else
+					addHalf("Pixels Drawn",delegate(ref DrawStatistics s, DrawState dstate)
+					    {return Math.Max(0,pixelsFillled);}, true, 18000000),
+#endif
 					
 					addHalf("Lines Drawn",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.LinesDrawn);}),
+					    {return (float)(s.LinesDrawn);}, false, 1000000),
 					addHalf("Points Drawn",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.PointsDrawn);}),
+					    {return (float)(s.PointsDrawn);}, false, 1000000),
 					
-					add("Draw Calls (Total)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.DrawIndexedPrimitiveCallCount + s.DrawPrimitivesCallCount);}),
+					addHalf("Draw Calls",delegate(ref DrawStatistics s, DrawState dstate)
+					    {return (float)(s.DrawIndexedPrimitiveCallCount + s.DrawPrimitivesCallCount);}, true, 300),
 					addHalf("Draw Calls (Indexed)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.DrawIndexedPrimitiveCallCount);}),
+					    {return (float)(s.DrawIndexedPrimitiveCallCount);}, false, 300),
 					
 
 					addHalf("Instances Drawn",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.InstancesDrawn);}),
+					    {return (float)(s.InstancesDrawn);}, false, 1000),
 					addHalf("Inst.Batch Size (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.InstancesDrawn,s.InstancesDrawBatchCount);}),
+					    {return Avg(s.InstancesDrawn,s.InstancesDrawBatchCount);}, false, 1000),
 
 
 					
 					addHalf("Set Camera Count",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)s.SetCameraCount;}),
+					    {return (float)s.SetCameraCount;}, false, 1000),
 					
 					addHalf("Shader Bind Count",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)s.ShaderBindCount;}),
+					    {return (float)s.ShaderBindCount;}, false, 1000),
 
 					addHalf("Shader Constant Bytes",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.VertexShaderConstantBytesSetTotalCount + s.PixelShaderConstantBytesSetTotalCount);}),
+					    {return (float)(s.VertexShaderConstantBytesSetTotalCount + s.PixelShaderConstantBytesSetTotalCount);}, false, 2000000),
 					
 					addHalf("VS Constant Bytes (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.VertexShaderConstantBytesSetTotalCount,s.VertexShaderConstantBytesSetCount);}),
+					    {return Avg(s.VertexShaderConstantBytesSetTotalCount,s.VertexShaderConstantBytesSetCount);}, false, 1000),
 					addHalf("PS Constant Bytes (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.PixelShaderConstantBytesSetTotalCount,s.PixelShaderConstantBytesSetCount);}),
+					    {return Avg(s.PixelShaderConstantBytesSetTotalCount,s.PixelShaderConstantBytesSetCount);}, false, 1000),
 					
 					addHalf("VS Complexity (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.VertexShaderApproximateInstructionsTotal,s.VertexShaderBoundWithKnownInstructionsCount);}),
+					    {return Avg(s.VertexShaderApproximateInstructionsTotal,s.VertexShaderBoundWithKnownInstructionsCount);}, false, 64),
 					addHalf("PS Complexity (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.PixelShaderApproximateInstructionsTotal,s.PixelShaderBoundWithKnownInstructionsCount);}),
+					    {return Avg(s.PixelShaderApproximateInstructionsTotal,s.PixelShaderBoundWithKnownInstructionsCount);}, false, 32),
 					
 					addHalf("VS Preshader Complexity (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.VertexShaderApproximatePreshaderInstructionsTotal,s.VertexShaderBoundWithKnownInstructionsCount);}),
+					    {return Avg(s.VertexShaderApproximatePreshaderInstructionsTotal,s.VertexShaderBoundWithKnownInstructionsCount);}, false, 512),
 					addHalf("PS Preshader Complexity (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.PixelShaderApproximatePreshaderInstructionsTotal,s.PixelShaderBoundWithKnownInstructionsCount);}),
+					    {return Avg(s.PixelShaderApproximatePreshaderInstructionsTotal,s.PixelShaderBoundWithKnownInstructionsCount);}, false, 512),
 					
 					addHalf("Dirty Render State Count",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)s.DirtyRenderStateCount;}),
+					    {return (float)s.DirtyRenderStateCount;}, false, 2),
 
 					
 					add("Vertex Bytes Copied",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.VertexBufferByesCopied+s.DynamicVertexBufferByesCopied);}),
+					    {return (float)(s.VertexBufferByesCopied+s.DynamicVertexBufferByesCopied);}, false, 1000000),
 					add("Index Bytes Copied",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.IndexBufferByesCopied+s.DynamicIndexBufferByesCopied);}),
+					    {return (float)(s.IndexBufferByesCopied+s.DynamicIndexBufferByesCopied);}, false, 1000000),
 					
 					add("Resource Device Bytes (Tracked)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(Resource.GetAllAllocatedDeviceBytes());}),
+					    {return (float)(Resource.GetAllAllocatedDeviceBytes());}, false, 100000000),
 					addHalf("Resource Count (Tracked)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(Resource.GetResourceCount());}),
+					    {return (float)(Resource.GetResourceCount());}, false, 50),
 					addHalf("Resource Managed Bytes (Tracked)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(Resource.GetAllAllocatedManagedBytes());}),
+					    {return (float)(Resource.GetAllAllocatedManagedBytes());}, false, 100000000),
 					addHalf("Unused Resources (Tracked)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(Resource.CountResourcesNotUsedByDevice());}),
+					    {return (float)(Resource.CountResourcesNotUsedByDevice());}, false, 10),
 					
 
 					
 					addHalfMin1("Culler Efficiency (Sphere)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return 1-Avg(s.DefaultCullerTestSphereCulledCount,s.DefaultCullerTestSphereCount);}),
+					    {return 1-Avg(s.DefaultCullerTestSphereCulledCount,s.DefaultCullerTestSphereCount);}, false, 1000),
 					addHalfMin1("Culler Efficiency (Box)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return 1-Avg(s.DefaultCullerTestBoxCulledCount,s.DefaultCullerTestBoxCount);}),
+					    {return 1-Avg(s.DefaultCullerTestBoxCulledCount,s.DefaultCullerTestBoxCount);}, false, 1000),
 					
 					addHalf("AlphaBlend State Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.RenderStateAlphaBlendChangedCount);}),
+					    {return (float)(s.RenderStateAlphaBlendChangedCount);}, false, 300),
 					addHalf("AlphaTest State Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.RenderStateAlphaTestChangedCount);}),
+					    {return (float)(s.RenderStateAlphaTestChangedCount);}, false, 300),
 					addHalf("StencilTest State Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.RenderStateStencilTestChangedCount);}),
+					    {return (float)(s.RenderStateStencilTestChangedCount);}, false, 300),
 					addHalf("Depth/FrustumCull State Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.RenderStateDepthColourCullChangedCount);}),
+					    {return (float)(s.RenderStateDepthColourCullChangedCount);}, false, 300),
 
 					addHalf("Tex Sampler Address Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.TextureSamplerAddressStateChanged);}),
+					    {return (float)(s.TextureSamplerAddressStateChanged);}, false, 200),
 					addHalf("Tex Sampler Filter Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.TextureSamplerFilterStateChanged);}),
+					    {return (float)(s.TextureSamplerFilterStateChanged);}, false, 200),
 					addHalf("Texture Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.TextureUnitTextureChanged);}),
+					    {return (float)(s.TextureUnitTextureChanged);}, false, 100),
 					addHalf("Vertex Texture Changed",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return (float)(s.VertexTextureUnitTextureChanged);}),
+					    {return (float)(s.VertexTextureUnitTextureChanged);}, false, 50),
 					
 					add("Bound Textures (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.BoundTextureCount,s.BoundTextureCountTotalSamples);}),
+					    {return Avg(s.BoundTextureCount,s.BoundTextureCountTotalSamples);}, false, 4),
 					addHalf("Vertex Textures (Avg)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return Avg(s.BoundVertexTextureCount,s.BoundTextureCountTotalSamples);}),
+					    {return Avg(s.BoundVertexTextureCount,s.BoundTextureCountTotalSamples);}, false, 1),
 
 					addHalf("Garbage Collected",delegate(ref DrawStatistics s, DrawState dstate)
 					    {
 							if (garbageTracker.Target == null) { garbageTracker.Target = new object(); return 1; }
 							return 0;
-						}),
+						},true,0),
 					
 #if XBOX360
 					
-					addHalfMin1("Thread (1)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return threads[0].Usage;}),
-					addHalfMin1("Thread (3)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return threads[1].Usage;}),
-					addHalfMin1("Thread (4)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return threads[2].Usage;}),
-					addHalfMin1("Thread (5)",delegate(ref DrawStatistics s, DrawState dstate)
-					    {return threads[3].Usage;}),
+					addHalfMin1("CPU Usage\n(Primary)",delegate(ref DrawStatistics s, DrawState dstate)
+					    {return threads[0].Usage;},true,-0.5f),
+					addHalfMin1("CPU Usage\n(Task Threads)",delegate(ref DrawStatistics s, DrawState dstate)
+					    {return (threads[1].Usage+threads[2].Usage+threads[3].Usage) / 3.0f;},true,-0.25f),
 #endif
-					//add("DT",delegate(ref DrawStatistics s, DrawState dstate)
-					//    {
-					//        return dstate.DeltaTimeTicks;
-					//    }),
+						
 				};
 
-				setGraphCalls = calls.ToArray();
+				this.graphVisible = visibleList.ToArray();
+				this.setGraphCalls = calls.ToArray();
 			}
 
 			for (int i = 0; i < graphs.Length; i++)
-				graphs[i].SetGraphValue(setGraphCalls[i](ref stats,state));
+			{
+				if (graphVisible[i] || this.displayAll)
+				{
+					graphs[i].SetGraphValue(setGraphCalls[i](ref stats, state));
+					graphs[i].Visible = true;
+				}
+				else
+					graphs[i].Visible = false;
+			}
 
-			AlignGraphs(state);
+			AlignElements(state);
 
 
 			DrawStatistics currentPreDraw;
@@ -699,30 +778,71 @@ namespace Xen.Ex.Graphics2D.Statistics
 
 
 			for (int i = 0; i < graphs.Length; i++)
-				graphs[i].Draw(state);
+			{
+				if (graphs[i].Visible)
+					graphs[i].Draw(state);
+			}
 
 
 			DrawStatistics currentPostDraw;
 			state.GetCurrentFrameStatistics(out currentPostDraw);
 
 			previousFrameOverhead = currentPostDraw - currentPreDraw;
+
+
+			if (fillRateQuery.IsSupported)
+			{
+				if (fillRateQuery.IsComplete)
+				{
+					pixelsFillled = (float)fillRateQuery.PixelCount;
+
+					fillRateQuery.Begin();
+					fillRateQueryActive = true;
+				}
+			}
+			else
+				pixelsFillled = -1;
 #endif
 		}
 		
 #if DEBUG
-		private void AlignGraphs(DrawState state)
+
+		private void AlignElements(DrawState state)
 		{
 			if (state.DrawTarget == null)
 				return;
 
+			float overscanPixels = 0;
+
+#if XBOX360
+			overscanPixels = (float)state.DrawTarget.Width * 0.1f;
+#else
+			overscanPixels = (float)state.DrawTarget.Width * 0.05f;
+#endif
+
+			toggleText.Position = new Vector2(overscanPixels, -overscanPixels);
+			toggleTextGamepad.Position = new Vector2(overscanPixels, -overscanPixels);
+
+			if (!enabled)
+				return;
+
+			if (displayAll)
+				overscanPixels = 0;
+
 			Vector2 size = state.DrawTarget.Size;
-			float x=0, y=0,height=0;
+
+			size.X -= overscanPixels;
+
+			float x = overscanPixels, y = -overscanPixels, height = 0;
 			for (int i = 0; i < graphs.Length; i++)
 			{
+				if (graphs[i].Visible == false)
+					continue;
+
 				if (x + graphs[i].Size.X > size.X)
 				{
 					y -= height+2;
-					x = 0;
+					x = overscanPixels;
 					height = 0;
 				}
 
@@ -759,6 +879,12 @@ namespace Xen.Ex.Graphics2D.Statistics
 					foreach (Graph g in graphs)
 						g.ResetAllGraphValues();
 				garbageTracker.Target = new object();
+			}
+
+			if (fillRateQueryActive)
+			{
+				fillRateQuery.End();
+				fillRateQueryActive = false;
 			}
 
 #if XBOX360

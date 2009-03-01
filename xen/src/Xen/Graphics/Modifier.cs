@@ -470,7 +470,8 @@ namespace Xen.Graphics.Modifier
 	}
 
 	/// <summary>
-	/// A simple <see cref="IBeginEndDraw"/> and <see cref="IDraw"/> drawable that clears the colour,depth and stencil buffers.
+	/// <para>A simple <see cref="IBeginEndDraw"/> and <see cref="IDraw"/> drawable that clears the colour,depth and stencil buffers.</para>
+	/// <para>Note: All <see cref="DrawTarget"/> classes include an instance of ClearBufferModifer, see <see cref="DrawTarget.ClearBuffer"/></para>
 	/// </summary>
 #if !DEBUG_API
 	[System.Diagnostics.DebuggerStepThrough]

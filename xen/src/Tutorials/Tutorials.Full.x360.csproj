@@ -103,7 +103,19 @@
       <DependentUpon>shader.fx</DependentUpon>
     </Compile>
     <Compile Include="Tutorial 17\Keyboard Input.cs" />
+    <Compile Include="Tutorial 18\DrawPredicate.cs" />
+    <Compile Include="Tutorial 19\Manual Animation.cs" />
     <Compile Include="Tutorial 20\Animation Stress Test.cs" />
+    <Compile Include="Tutorial 21\Particle System 2D.cs" />
+    <Compile Include="Tutorial 22\Particle System 3D.cs" />
+    <Compile Include="Tutorial 23\Advanced Particle System.cs" />
+    <Compile Include="Tutorial 24\BatchModel.cs" />
+    <Compile Include="Tutorial 25\shader.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>shader.fx</DependentUpon>
+    </Compile>
+    <Compile Include="Tutorial 25\Shadow Mapping.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="GameThumbnail.png" />
@@ -124,6 +136,10 @@
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>
     <None Include="Tutorial 16\shader.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>shader.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 25\shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>

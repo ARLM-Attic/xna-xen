@@ -91,6 +91,12 @@ namespace Tutorials.Tutorial_15
 			//this element will display the camera position
 			positionDisplay = new TextElement();
 
+			//TextElement (unlike other Elements) defaults to Top Left alignment
+			//So, in order to bring it closer to the centre of the screen (due to potential overscan)
+			//it's position needs to be set 'right' and 'down' from 'top left'
+			//(this is just an example, see XNA docs for correct overscan compensation behaviour)
+			positionDisplay.Position = new Vector2(40, -40); //offset from top left corner alignment
+
 			//add it to the screen
 			drawToScreen.Add(positionDisplay);
 
@@ -144,6 +150,12 @@ namespace Tutorials.Tutorial_15
 			//at runtime, pressing 'F12' will toggle the overlay (or holding both thumsticks on x360)
 			this.statisticsOverlay = new Xen.Ex.Graphics2D.Statistics.DrawStatisticsDisplay(this.UpdateManager);
 
+			//As of xen 1.5, by default the DrawStatisticsDisplay displays a significantly reduced number of graphs.
+			//To display the full set of graphs (which generally takes up the entire screen), set the following
+			//property to 'true':
+			//this.statisticsOverlay.DisplayFullGraphList = true;
+
+
 			//then add it to the screen
 			drawToScreen.Add(statisticsOverlay);
 		}
@@ -184,6 +196,7 @@ namespace Tutorials.Tutorial_15
 
 			//Set the position text
 			positionDisplay.Text.Clear();
+
 			positionDisplay.Text.Append(cameraPosition.X);
 			positionDisplay.Text.Append(", ");
 			positionDisplay.Text.Append(cameraPosition.Y);
@@ -199,8 +212,11 @@ namespace Tutorials.Tutorial_15
 		//This method is called before Initialise()
 		protected override void SetupGraphicsDeviceManager(GraphicsDeviceManager graphics, ref RenderTargetUsage presentation)
 		{
-			graphics.PreferredBackBufferWidth = 1280;
-			graphics.PreferredBackBufferHeight = 768;
+			if (graphics != null) // graphics is null when starting within a WinForms host
+			{
+				graphics.PreferredBackBufferWidth = 1280;
+				graphics.PreferredBackBufferHeight = 720;
+			}
 		}
 
 		protected override void Update(UpdateState state)

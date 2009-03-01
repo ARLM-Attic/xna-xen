@@ -13,13 +13,18 @@ namespace Xen.Ex.Scene
 		private BoundsCalculatingPreCuller preCuller = new BoundsCalculatingPreCuller();
 		private List<IDraw> addList = new List<IDraw>();
 		private List<IDraw> drawList = new List<IDraw>();
-		private bool firstDraw = true, processingActive = false;
+		private bool firstDraw = true, processingActive = false, runOptimize = true;
 
 		protected abstract void AddItem(IDraw item, ref Vector3 minBounds, ref Vector3 maxBounds);
 		protected abstract void DrawItems(DrawState state);
 		protected abstract bool CullTestItems(ICuller culler);
+		protected bool IsOptimizedState { get { return !runOptimize; } }
+		/// <summary>
+		/// Optional method to override, called when it is expected that all contents have been added.
+		/// </summary>
+		protected virtual void OptimizeContents() { }
 		private AABBToAABBPrimitive queryBox;
-		private static Random random = new Random(0);
+		private Random random;
 
 		/// <summary>
 		/// Query the partition, returning all instances that intersect the primitive
@@ -73,6 +78,8 @@ namespace Xen.Ex.Scene
 		/// <param name="item"></param>
 		public void Add(IDraw item)
 		{
+			runOptimize = true;
+
 			if (processingActive)
 				this.drawList.Add(item);
 			else
@@ -97,11 +104,14 @@ namespace Xen.Ex.Scene
 				//most tree structures work best when the data that is added
 				//is in as random order as possible.
 				//for example, if all the items are in a straight line,
-				//then some tree structures will be very badly unballanced
+				//then some tree structures will be very badly unbalanced
 
 				//randomize the array
 				for (int i = 0; i < addList.Count; i++)
 				{
+					if (random == null)
+						random = new Random();
+
 					//swap two random items
 					int indexA = random.Next(addList.Count);
 					int indexB = random.Next(addList.Count);
@@ -138,7 +148,10 @@ namespace Xen.Ex.Scene
 						addList.Capacity = 4;
 						drawList.Capacity = 4;
 					}
+					if (runOptimize)
+						this.OptimizeContents();
 					firstDraw = false;
+					runOptimize = false;
 				}
 
 				if (drawList.Count>0)
@@ -285,9 +298,10 @@ namespace Xen.Ex.Scene
 
 	/// <summary>
 	/// <para>When this class is used as a preculler, it will compute the cull bounds of the cull test calls made when drawing</para>
-	/// <para>Note: This class is somewhat inefficient on the Xbox right now. This will be improved in a future version.</para>
+	/// <para>This class can also be used as a post culler, to compute the bounds of culltests that pass</para>
+	/// <para>Note: This class is somewhat inefficient on the Xbox right now.</para>
 	/// </summary>
-	public class BoundsCalculatingPreCuller : ICullPrimitive
+	public sealed class BoundsCalculatingPreCuller : ICullPrimitive
 	{
 		private Matrix matrix;
 		private bool isIdentity;
@@ -303,8 +317,7 @@ namespace Xen.Ex.Scene
 		public void BeginPreCullItem(DrawState state)
 		{
 			this.reset = true;
-			state.GetWorldMatrix(out matrix);
-			isIdentity = matrix == Matrix.Identity;
+			state.GetWorldMatrix(out matrix, out isIdentity);
 			scale = 1;
 
 			minBound = new Vector3();
@@ -496,6 +509,243 @@ namespace Xen.Ex.Scene
 		ContainmentType ICullPrimitive.IntersectWorldSphere(float radius, Vector3 position)
 		{
 			UpdateBounds(ref position, radius);
+			return ContainmentType.Contains;
+		}
+	}
+
+
+	/// <summary>
+	/// <para>When this class is used as a preculler, it will compute the centre positions of the cull test calls made when drawing</para>
+	/// <para>This class can also be used as a post culler, to compute the positions of culltests that pass</para>
+	/// <para>This class is significantly faster than the <see cref="BoundsCalculatingPreCuller"/></para>
+	/// </summary>
+	public sealed class PositionCalculatingPreCuller : ICullPrimitive
+	{
+		private float count;
+		private uint countI;
+		private Vector3 position;
+		private Matrix matrix = Matrix.Identity;
+		private bool isIdentity;
+
+		/// <summary>
+		/// <para>Call this method before drawing/culling an item. Match this method call with a call to TryGetPosition after the cull/draw is complete</para>
+		/// <para>The <see cref="ResetPreCullItem"/> method may also be used for subsequent items that are culled, provided the world matrix hasn't changed.</para>
+		/// </summary>
+		/// <param name="state"></param>
+		public void BeginPreCullItem(DrawState state)
+		{
+			this.count = 0;
+			this.countI = 0;
+			this.position = new Vector3();
+
+			state.GetWorldMatrix(out this.matrix, out this.isIdentity);
+		}
+
+		/// <summary>
+		/// <para>If drawing/culling multiple items with the same parent (Where the world matrix does not change), this method can be used in place of calls to <see cref="BeginPreCullItem"/></para>
+		/// <para>This method is faster than <see cref="BeginPreCullItem"/></para>
+		/// </summary>
+		/// <param name="state"></param>
+		public void ResetPreCullItem()
+		{
+			this.count = 0;
+			this.countI = 0;
+			this.position = new Vector3();
+		}
+
+		/// <summary>
+		/// <para>Call this method to get the computed position. Call after culling/drawing an item. Call <see cref="BeginPreCullItem"/> before culling/drawing the item.</para>
+		/// <para>Returns false if the position could not be determined</para>
+		/// </summary>
+		/// <param name="min"></param>
+		/// <param name="max"></param>
+		/// <returns></returns>
+		public bool TryGetPosition(out Vector3 position)
+		{
+			position = this.position;
+
+			switch (countI)
+			{
+				case 0:
+				case 1:
+					break;
+				case 2:
+					position.X *= 0.5f;
+					position.Y *= 0.5f;
+					break;
+				case 3:
+					position.X *= 0.33333333333f;
+					position.Y *= 0.33333333333f;
+					break;
+				case 4:
+					position.X *= 0.25f;
+					position.Y *= 0.25f;
+					break;
+				default:
+					float inv = 1.0f / count;
+					position.X *= inv;
+					position.Y *= inv;
+					break;
+			}
+
+			return countI != 0;
+		}
+
+
+		//returning true or ContainmentType.Contains means this pre-culler failed to cull
+		//the input, so the next pre-culler is tried, or the main on-screen culler is tried.
+		//in any event, the bounds can be determined by the cull process
+
+		bool ICullPrimitive.TestWorldBox(ref Vector3 min, ref Vector3 max, ref Matrix world)
+		{
+			Vector3 v;
+
+			v = min;
+			Vector3.Transform(ref v, ref world, out v);
+			if (!isIdentity)
+				Vector3.Transform(ref v, ref this.matrix, out v);
+
+			this.position.X += v.X;
+			this.position.Y += v.Y;
+			this.position.Z += v.Z;
+
+			v = max;
+			Vector3.Transform(ref v, ref world, out v);
+			if (!isIdentity)
+				Vector3.Transform(ref v, ref this.matrix, out v);
+
+			this.position.X += v.X;
+			this.position.Y += v.Y;
+			this.position.Z += v.Z;
+
+
+			this.count += 2;
+			this.countI += 2;
+
+			return true;
+		}
+
+		bool ICullPrimitive.TestWorldBox(Vector3 min, Vector3 max, ref Matrix world)
+		{
+			return ((ICullPrimitive)this).TestWorldBox(ref min, ref max, ref world);
+		}
+
+		bool ICullPrimitive.TestWorldBox(ref Vector3 min, ref Vector3 max)
+		{
+			Vector3 v;
+
+			v = min;
+			if (!isIdentity)
+				Vector3.Transform(ref v, ref this.matrix, out v);
+
+			this.position.X += v.X;
+			this.position.Y += v.Y;
+			this.position.Z += v.Z;
+
+			v = max;
+			if (!isIdentity)
+				Vector3.Transform(ref v, ref this.matrix, out v);
+
+			this.position.X += v.X;
+			this.position.Y += v.Y;
+			this.position.Z += v.Z;
+
+
+			this.count += 2;
+			this.countI += 2;
+
+			return true;
+		}
+
+		bool ICullPrimitive.TestWorldBox(Vector3 min, Vector3 max)
+		{
+			return ((ICullPrimitive)this).TestWorldBox(ref min, ref max);
+		}
+
+		bool ICullPrimitive.TestWorldSphere(float radius, ref Vector3 position)
+		{
+			Vector3 v;
+
+			v = position;
+			if (!isIdentity)
+				Vector3.Transform(ref v, ref this.matrix, out v);
+
+			this.position.X += v.X;
+			this.position.Y += v.Y;
+			this.position.Z += v.Z;
+
+			this.count++;
+			this.countI++;
+
+			return true;
+		}
+
+		bool ICullPrimitive.TestWorldSphere(float radius, Vector3 position)
+		{
+			if (!isIdentity)
+				Vector3.Transform(ref position, ref this.matrix, out position);
+
+			this.position.X += position.X;
+			this.position.Y += position.Y;
+			this.position.Z += position.Z;
+
+			this.count++;
+			this.countI++;
+			return true;
+		}
+
+		ContainmentType ICullPrimitive.IntersectWorldBox(ref Vector3 min, ref Vector3 max, ref Matrix world)
+		{
+			((ICullPrimitive)this).TestWorldBox(ref min, ref max, ref world);
+			return ContainmentType.Contains;
+		}
+
+		ContainmentType ICullPrimitive.IntersectWorldBox(Vector3 min, Vector3 max, ref Matrix world)
+		{
+			((ICullPrimitive)this).TestWorldBox(ref min, ref max, ref world);
+			return ContainmentType.Contains;
+		}
+
+		ContainmentType ICullPrimitive.IntersectWorldBox(ref Vector3 min, ref Vector3 max)
+		{
+			((ICullPrimitive)this).TestWorldBox(ref min, ref max);
+			return ContainmentType.Contains;
+		}
+
+		ContainmentType ICullPrimitive.IntersectWorldBox(Vector3 min, Vector3 max)
+		{
+			((ICullPrimitive)this).TestWorldBox(ref min, ref max);
+			return ContainmentType.Contains;
+		}
+
+		ContainmentType ICullPrimitive.IntersectWorldSphere(float radius, ref Vector3 position)
+		{
+			Vector3 v;
+
+			v = position;
+			if (!isIdentity)
+				Vector3.Transform(ref v, ref this.matrix, out v);
+
+			this.position.X += v.X;
+			this.position.Y += v.Y;
+			this.position.Z += v.Z;
+
+			this.count++;
+			this.countI++;
+			return ContainmentType.Contains;
+		}
+
+		ContainmentType ICullPrimitive.IntersectWorldSphere(float radius, Vector3 position)
+		{
+			if (!isIdentity)
+				Vector3.Transform(ref position, ref this.matrix, out position);
+
+			this.position.X += position.X;
+			this.position.Y += position.Y;
+			this.position.Z += position.Z;
+
+			this.count++;
+			this.countI++;
 			return ContainmentType.Contains;
 		}
 	}

@@ -72,6 +72,8 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>False</Private>
@@ -111,10 +113,60 @@
     </Compile>
     <Compile Include="Graphics2D\SimpleElement.cs" />
     <Compile Include="Graphics2D\SpriteElement.cs" />
+    <Compile Include="Graphics2D\Stats\Shader.fx.cs">
+      <DependentUpon>Shader.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="Graphics2D\Stats\Stats.cs" />
     <Compile Include="Graphics2D\TextElement.cs" />
+    <Compile Include="Graphics\BatchModel.cs" />
+    <Compile Include="Graphics\Display\Billboard3D.fx.cs">
+      <DependentUpon>Billboard3D.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Graphics\Display\Billboard3D.cs" />
+    <Compile Include="Graphics\Display\VelocityBillboard3D.cs" />
+    <Compile Include="Graphics\Display\VelocityBillboard3D.fx.cs">
+      <DependentUpon>VelocityBillboard3D.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Graphics\Display\VelocityLines.fx.cs">
+      <DependentUpon>VelocityLines.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Graphics\Display\VelocityLines.cs" />
+    <Compile Include="Graphics\Processor\GpuParticlesShaderBuilder.cs" />
+    <Compile Include="Graphics\Processor\CpuParticlesCodeBuilder.cs" />
+    <Compile Include="Graphics\Processor\GpuParticlesData.cs" />
+    <Compile Include="Graphics\Display\VelocityBillboard.fx.cs">
+      <DependentUpon>VelocityBillboard.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Graphics\Display\VelocityBillboard.cs" />
+    <Compile Include="Graphics\Processor\CpuParticles.cs" />
+    <Compile Include="Graphics\ParticleSystemContent.cs" />
+    <Compile Include="Graphics\Display\Billboard.cs" />
+    <Compile Include="Graphics\Processor\GpuParticles.cs" />
+    <Compile Include="Graphics\Display\ParticleDrawer.cs" />
     <Compile Include="Graphics\Model.cs" />
     <Compile Include="Graphics\ModelContent.cs" />
+    <Compile Include="Graphics\ParticleSystem.cs" />
+    <Compile Include="Graphics\Display\Billboard.fx.cs">
+      <DependentUpon>Billboard.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Graphics\Processor\GpuParticles.fx.cs">
+      <DependentUpon>GpuParticles.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Graphics\ParticleSystemHotLoader.cs" />
     <Compile Include="Material\BlendMaterial.fx.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -131,10 +183,22 @@
       <DependentUpon>Material.fx</DependentUpon>
     </Compile>
     <Compile Include="Material\MaterialShader.cs" />
+    <Compile Include="Shaders\Depth.fx.cs">
+      <DependentUpon>Depth.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scene\CullTestVisualizer.cs" />
+    <Compile Include="Scene\Predicate.cs" />
     <Compile Include="Scene\Sort.cs" />
     <Compile Include="Scene\StaticBinaryTreePartition.cs" />
     <Compile Include="Scene\StaticPartition.cs" />
+    <Compile Include="Shaders\DepthInstance.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DepthInstance.fx</DependentUpon>
+    </Compile>
     <Compile Include="Shaders\Simple.fx.cs">
       <SubType>Code</SubType>
       <AutoGen>True</AutoGen>
@@ -189,6 +253,34 @@
       <Generator>XenFX</Generator>
       <LastGenOutput>Shader.fx.cs</LastGenOutput>
     </None>
+    <None Include="Graphics2D\Stats\Shader.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Shader.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Graphics\Display\Billboard.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Billboard.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Graphics\Display\Billboard3D.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Billboard3D.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Graphics\Display\VelocityBillboard3D.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>VelocityBillboard3D.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Graphics\Display\VelocityLines.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>VelocityLines.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Graphics\Display\VelocityBillboard.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>VelocityBillboard.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Graphics\Processor\GpuParticles.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>GpuParticles.fx.cs</LastGenOutput>
+    </None>
     <None Include="Material\BlendMaterial.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>BlendMaterial.fx.cs</LastGenOutput>
@@ -200,6 +292,14 @@
     <None Include="Material\Material.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>Material.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Shaders\Depth.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Depth.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Shaders\DepthInstance.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>DepthInstance.fx.cs</LastGenOutput>
     </None>
     <None Include="Shaders\Simple.fx">
       <Generator>XenFX</Generator>

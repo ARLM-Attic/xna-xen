@@ -27,7 +27,6 @@ namespace Xen
 		private int bufferVertexCount, bufferVertexCountChangeIndex = 1;
 
 #if XBOX360
-		
 		/// <summary>
 		///<para>there is a bug in XNA with render target clearing on the 360</para>
 		///<para>the screen doesn't obey the RenderTargetUsage option when you *only* render to the screen</para>
@@ -116,7 +115,13 @@ namespace Xen
 
 			for (int i = 0; i < this.vertexStreams.Length; i++)
 				this.SetStream(i, null, 0, 0);
+
 #endif
+			boundVertexShader = null;
+			boundPixelShader = null;
+
+			vertexShaderConstantsToBind = null;
+			pixelShaderConstantsToBind = null;
 		}
 
 		internal void UnbindBuffer(VertexBuffer vb)
@@ -212,6 +217,7 @@ namespace Xen
 #if DEBUG
 			ValidateProtected();
 #endif
+
 			if (internalStateDirty != StateFlag.None)
 			{
 				visibleState.state.ResetState(internalStateDirty, ref internalState, graphics, cameraInvertsCullMode);
@@ -227,9 +233,9 @@ namespace Xen
 			if (boundShader != null &&
 				(boundShaderStateDirty ||
 				(boundShaderUsesVertexCount) ||
-				(boundShaderUsesWorldMatrix && boundShaderWorldIndex != worldMatrix.index) ||
-				(boundShaderUsesProjectionMatrix && boundShaderProjectionIndex != projectionMatrix.index) ||
-				(boundShaderUsesViewMatrix && boundShaderViewIndex != viewMatrix.index) ||
+				(boundShaderUsesWorldMatrix && boundShaderWorldIndex != ms_World.index) ||
+				(boundShaderUsesProjectionMatrix && boundShaderProjectionIndex != ms_Projection.index) ||
+				(boundShaderUsesViewMatrix && boundShaderViewIndex != ms_View.index) ||
 				(boundShader.HasChanged)))
 			{
 #if DEBUG
@@ -239,23 +245,33 @@ namespace Xen
 			}
 
 
-#if XBOX360
-
-			//fix a shader binding bug on the 360
-
-			if (!shadersAssigned)
+			if (vertexShaderToBind != boundVertexShader)
 			{
-				if (!vertexConstantsSet)
-					graphics.VertexShader = boundVertexShader;
-				if (!pixelConstantsSet)
-					graphics.PixelShader = boundPixelShader;
+				graphics.VertexShader = vertexShaderToBind;
+				boundVertexShader = vertexShaderToBind;
 			}
 
-			vertexConstantsSet = false;
-			pixelConstantsSet = false;
-			shadersAssigned = false;
+			if (pixelShaderToBind != boundPixelShader)
+			{
+				graphics.PixelShader = pixelShaderToBind;
+				boundPixelShader = pixelShaderToBind;
+			}
 
+			if (pixelShaderConstantsToBind != null)
+			{
+				graphics.SetPixelShaderConstant(0, pixelShaderConstantsToBind);
+				pixelShaderConstantsToBind = null;
+			}
+
+			if (vertexShaderConstantsToBind != null)
+			{
+				graphics.SetVertexShaderConstant(0, vertexShaderConstantsToBind);
+				vertexShaderConstantsToBind = null;
+#if XBOX360
+				//must reassign the vertex shader on the xbox whenever the shader constants have changed...
+				boundVertexShader = null;
 #endif
+			}
 		}
 
 		/// <summary>

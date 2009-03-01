@@ -129,6 +129,7 @@ technique FillSolidColour
    }
 }
 
+/*
 technique NonLinearDepthOutput
 {
    pass
@@ -138,8 +139,6 @@ technique NonLinearDepthOutput
    }
 }
 
-
-
 technique LinearDepthOutput
 {
    pass
@@ -148,4 +147,4 @@ technique LinearDepthOutput
 		PixelShader = compile ps_2_0 LinearDepthOutPS();
    }
 }
-
+*/

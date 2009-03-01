@@ -29,19 +29,12 @@ vs0ps0tci:vs0ps0i,vs0ps0ti,vs0ps0ci;
 //most registers/samplers etc are enforced to keep registers consistent between shaders, so they can be merged.
 
 
-#ifdef XBOX360
-		
-//bug? for some reason can't use register 8-11 on xbox
-float4 viewPoint : VIEWPOINT : register(c12);
-float4 ambient : register(c13);
-
-//but can use it for vcount
-int VertexCount : VERTEXCOUNT : register(c11);
-
-#else
-
 float4 viewPoint : VIEWPOINT : register(c8);
 float4 ambient : register(c9);
+
+#ifdef XBOX360
+		
+int VertexCount : VERTEXCOUNT : register(c10);
 
 #endif
 
@@ -64,7 +57,7 @@ sampler2D CustomNormalMapSampler : register(s1) = sampler_state
 //format is position,specular,diffuse,attenuation
 
 #ifdef XBOX360
-float4 v_lights[24] : register(c14); //max 6
+float4 v_lights[24] : register(c11); //max 6
 #else
 float4 v_lights[24] : register(c10); //max 6
 #endif
@@ -516,6 +509,9 @@ float4 DudPStex() : COLOR
 #define VS_TARGET vs_3_0
 #define PS_TARGET ps_3_0
 #else
+//technically, this should be vs_3_0, as instancing is only supported on vs_3_0,
+//however, it's best practise to not mix vs_3_0 and ps_2_0 (and these shaders may be merged with ps_2_0 shaders)...
+//the side effect of this, is that instancing may cause the DX debug runtime to assert
 #define VS_TARGET vs_2_0
 #define PS_TARGET ps_2_0
 #endif

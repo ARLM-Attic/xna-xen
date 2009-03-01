@@ -24,7 +24,7 @@ sampler2D DisplayTextureSampler = sampler_state
 	
 	MagFilter = LINEAR;		//(default)
 	MinFilter = LINEAR;		//(default)
-	MipFilter = NONE;		//(default)
+	MipFilter = POINT;		//(default is POINT for shaders, NONE for the TextureSamplerState struct)
     AddressU = Clamp;		//(default is Wrap)
     AddressV = Clamp;		//(default is Wrap)
 };

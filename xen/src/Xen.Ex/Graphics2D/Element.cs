@@ -57,7 +57,8 @@ namespace Xen.Ex.Graphics2D
 		private AlphaBlendState blend = AlphaBlendState.None;
 		internal Element parent;
 		private Vector2 position;
-		private static Xen.Camera.Camera2D camera = new Xen.Camera.Camera2D(true);
+		private static Xen.Camera.Camera2D camera;
+		private static string cameraID = typeof(Element).FullName + ".camera";
 
 		/// <summary>
 		/// Gets an optional list of children for the element
@@ -72,6 +73,7 @@ namespace Xen.Ex.Graphics2D
 		/// </summary>
 		public AlphaBlendState AlphaBlendState
 		{
+			get { return blend; }
 			set { blend = value; }
 		}
 
@@ -276,6 +278,17 @@ namespace Xen.Ex.Graphics2D
 				rstate.DepthColourCull.DepthTestEnabled = false;
 
 				state.PushRenderState(ref rstate);
+
+				if (camera == null)
+				{
+					camera = state.UserValues[cameraID] as Xen.Camera.Camera2D;
+					if (camera == null)
+					{
+						camera = new Xen.Camera.Camera2D(true);
+						state.UserValues[cameraID] = camera;
+					}
+				}
+
 				state.PushCamera(camera);
 			}
 			else
@@ -420,6 +433,15 @@ namespace Xen.Ex.Graphics2D
 	/// </summary>
 	public abstract class ElementRect : Element
 	{
+		private VertexPositionColorTexture[] vertexData = new VertexPositionColorTexture[4];
+		private Vertices<VertexPositionColorTexture> vertices;
+		private bool clipChildren = false, dirty = true, normalised;
+		private Vector2 size;
+		private ElementScaling hSize;
+		private ElementScaling vSize;
+		private List<Element> children;
+		private bool enableDepthTest;
+
 		/// <summary></summary>
 		/// <param name="sizeInPixels"></param>
 		protected ElementRect(Vector2 sizeInPixels)
@@ -439,13 +461,6 @@ namespace Xen.Ex.Graphics2D
 		}
 
 
-		private VertexPositionColorTexture[] vertexData = new VertexPositionColorTexture[4];
-		private Vertices<VertexPositionColorTexture> vertices;
-		private bool clipChildren = false, dirty = true, normalised;
-		private Vector2 size;
-		private ElementScaling hSize;
-		private ElementScaling vSize;
-		private List<Element> children;
 
 		/// <summary></summary>
 		protected sealed override List<Element> Children
@@ -505,6 +520,23 @@ namespace Xen.Ex.Graphics2D
 			set { hSize = value; }
 		}
 
+		/// <summary>
+		/// <para>When true, the element will be displayed at a Z depth of 1.0 (maximum), with depth testing enabled</para>
+		/// <para>When true, this element will be occluded by any 3D object that has been drawn</para>
+		/// </summary>
+		public bool DrawAtMaxZDepth
+		{
+			get { return enableDepthTest; }
+			set 
+			{
+				if (enableDepthTest != value)
+				{
+					enableDepthTest = value;
+					dirty = true;
+				}
+			}
+		}
+
 		/// <summary></summary>
 		/// <param name="matrix"></param>
 		/// <param name="scale"></param>
@@ -523,7 +555,17 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="state"></param>
 		protected override void DrawElement(DrawState state)
 		{
+			bool depthState = false;
+			if (enableDepthTest)
+			{
+				depthState = state.RenderState.DepthColourCull.DepthTestEnabled;
+				state.RenderState.DepthColourCull.DepthTestEnabled = true;
+			}
+
 			vertices.Draw(state, null, PrimitiveType.TriangleStrip);
+
+			if (enableDepthTest)
+				state.RenderState.DepthColourCull.DepthTestEnabled = depthState;
 		}
 
 		/// <summary>
@@ -543,10 +585,10 @@ namespace Xen.Ex.Graphics2D
 		{
 			if (dirty)
 			{
-				vertexData[0].Position = new Vector3(1, 0, 0);
-				vertexData[1].Position = new Vector3(0, 0, 0);
-				vertexData[2].Position = new Vector3(1, 1, 0);
-				vertexData[3].Position = new Vector3(0, 1, 0);
+				vertexData[0].Position = new Vector3(1, 0, 1);
+				vertexData[1].Position = new Vector3(0, 0, 1);
+				vertexData[2].Position = new Vector3(1, 1, 1);
+				vertexData[3].Position = new Vector3(0, 1, 1);
 
 				WriteTextureCoords(ref vertexData[3].TextureCoordinate, ref vertexData[2].TextureCoordinate,
 					ref vertexData[1].TextureCoordinate, ref vertexData[0].TextureCoordinate);
