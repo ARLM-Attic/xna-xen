@@ -98,30 +98,30 @@ namespace Xen.Ex.ModelImporter
 
 		void ProcessSkeletonNodes(NodeContent node, ContentProcessorContext context, List<SkeletonData> skeletons)
 		{
+			if (node is BoneContent)
+			{
+				skeletons.Add(ProcessSkeleton(node as BoneContent, context));
+				return;
+			}
+
 			foreach (NodeContent child in node.Children)
 			{
-				if (child is BoneContent)
-				{
-					skeletons.Add(ProcessSkeleton(child as BoneContent, context));
-					continue;
-				}
-
 				ProcessSkeletonNodes(child, context, skeletons);
 			}
 		}
 
 		void ProcessMeshNodes(NodeContent node, ContentProcessorContext context, List<MeshData> meshes, string rootPath, Dictionary<string, object> processedContent, SkeletonData skeleton, AnimationData[] animations)
 		{
+			if (node is BoneContent && !importBoneContentMehses)
+				return;
+			if (node is MeshContent)
+			{
+				meshes.Add(ProcessMesh(node as MeshContent, context, rootPath, processedContent, skeleton, animations));
+				return;
+			}
+
 			foreach (NodeContent child in node.Children)
 			{
-				if (child is BoneContent && !importBoneContentMehses)
-					continue;
-				if (child is MeshContent)
-				{
-					meshes.Add(ProcessMesh(child as MeshContent, context, rootPath, processedContent, skeleton, animations));
-					continue;
-				}
-
 				ProcessMeshNodes(child, context, meshes, rootPath, processedContent, skeleton, animations);
 			}
 		}
