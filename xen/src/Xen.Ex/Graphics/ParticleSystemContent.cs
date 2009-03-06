@@ -534,62 +534,75 @@ namespace Xen.Ex.Graphics.Content
 		/// <param name="BuildTextureCallback"></param>
 		public ParticleSystemData(string filename, XmlElement root, TargetPlatform targetPlatform, bool includeLogicTypeData, Converter<string, string> BuildTextureCallback)
 		{
-			this.filename = filename;
-			this.includeLogicTypeData = includeLogicTypeData;
+			//push the culture, set an default culture to enforce number formats
+			System.Globalization.CultureInfo storedCulture = System.Threading.Thread.CurrentThread.CurrentCulture;
 
-			//parse the xml document
-			List<XmlElement> particleNodes = new List<XmlElement>();
+			System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
 
-			XmlElement systemNode = null;
-
-			foreach (XmlNode node in root.ChildNodes)
+			try
 			{
-				if (node is XmlElement)
+				this.filename = filename;
+				this.includeLogicTypeData = includeLogicTypeData;
+
+				//parse the xml document
+				List<XmlElement> particleNodes = new List<XmlElement>();
+
+				XmlElement systemNode = null;
+
+				foreach (XmlNode node in root.ChildNodes)
 				{
-					if (node.Name == "particle")
-						particleNodes.Add(node as XmlElement);
-					if (node.Name == "system")
-						systemNode = node as XmlElement;
+					if (node is XmlElement)
+					{
+						if (node.Name == "particle")
+							particleNodes.Add(node as XmlElement);
+						if (node.Name == "system")
+							systemNode = node as XmlElement;
+					}
 				}
-			}
 
-			if (systemNode == null)
-				throw new FormatException("XML data does not contain a \'system\' element");
+				if (systemNode == null)
+					throw new FormatException("XML data does not contain a \'system\' element");
 
-			this.system = new ParticleSystemLogicData(filename, systemNode, particleNodes.ToArray(), out this.particleTypes, BuildTextureCallback);
+				this.system = new ParticleSystemLogicData(filename, systemNode, particleNodes.ToArray(), out this.particleTypes, BuildTextureCallback);
 
-			//determine if colours have been used in any of the particle types
+				//determine if colours have been used in any of the particle types
 
-			bool coloursUsed = false;
+				bool coloursUsed = false;
 
-			//not the most efficient way, but it's only done once
-			for (int i = 0; i < particleTypes.Length; i++)
-			{
-				foreach (ParticleSystemLogicStep step in particleTypes[i].ParticleLogicData.Frame)
-					ComputeColoursUsed(step, ref coloursUsed);
-
-				foreach (ParticleSystemLogicStep step in particleTypes[i].ParticleLogicData.Once)
-					ComputeColoursUsed(step, ref coloursUsed);
-			}
-			this.systemUsesColourValues = coloursUsed;
-
-			//calculate the maximum expected number of each particle type (using a test run of the particle system)
-			ComputeExpectedCapacity();
-
-			//create the CPU runtime logic
-			CpuParticleProcessorData cpuData = null;
-
-			if (targetPlatform != TargetPlatform.Xbox360)
-			{
-				cpuData = new CpuParticleProcessorData();
+				//not the most efficient way, but it's only done once
 				for (int i = 0; i < particleTypes.Length; i++)
-					cpuData.AddParticleType(particleTypes[i]);
-				cpuData.BuildAssembly();
-			}
+				{
+					foreach (ParticleSystemLogicStep step in particleTypes[i].ParticleLogicData.Frame)
+						ComputeColoursUsed(step, ref coloursUsed);
 
-			//generate the runtime particle data (eg, GPU shaders, CPU code)
-			for (int i = 0; i < particleTypes.Length; i++)
-				particleTypes[i].CreateRuntimeLogic(coloursUsed, cpuData, targetPlatform);
+					foreach (ParticleSystemLogicStep step in particleTypes[i].ParticleLogicData.Once)
+						ComputeColoursUsed(step, ref coloursUsed);
+				}
+				this.systemUsesColourValues = coloursUsed;
+
+				//calculate the maximum expected number of each particle type (using a test run of the particle system)
+				ComputeExpectedCapacity();
+
+				//create the CPU runtime logic
+				CpuParticleProcessorData cpuData = null;
+
+				if (targetPlatform != TargetPlatform.Xbox360)
+				{
+					cpuData = new CpuParticleProcessorData();
+					for (int i = 0; i < particleTypes.Length; i++)
+						cpuData.AddParticleType(particleTypes[i]);
+					cpuData.BuildAssembly();
+				}
+
+				//generate the runtime particle data (eg, GPU shaders, CPU code)
+				for (int i = 0; i < particleTypes.Length; i++)
+					particleTypes[i].CreateRuntimeLogic(coloursUsed, cpuData, targetPlatform);
+			}
+			finally
+			{
+				//reset the culture
+				System.Threading.Thread.CurrentThread.CurrentCulture = storedCulture;
+			}
 		}
 
 		/// <summary>
