@@ -11,7 +11,7 @@ float3 shadowViewDirection;
 float3 shadowViewPoint;
 float2 shadowCameraNearFar;
 
-float4 blendMatrices[71*3];
+float4 blendMatrices[72*3];
 
 
 // --------------------------------

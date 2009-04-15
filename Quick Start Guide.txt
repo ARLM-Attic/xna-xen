@@ -15,7 +15,7 @@ version 1.5 (XNA 3.0)
 Tutorials.sln contains 25 small tutorial applications.
 Reading these will make learning xen a lot easier!
 
-
+Full Xen projects for PC and Xbox are located in ./xen/src/
 
 
 
@@ -39,7 +39,34 @@ XboxLive: StatusUnknown
 -- Change Log
 
 ----------------
+-- 15/APR/09
+-- Version 1.5.3
+
+Minor update before 1.6
+
+[Fixed] A bug where UpdateManager.Remove() would throw an exception when the object was already removed
+[Fixed] A bug where GPU ParticleSystem rand and rand_smooth were swapped on the xbox, due to texture format differences
+[Fixed] A bug where the Dpad was no longer being updated in PlayerInput
+
+[Added] Element.TryGetLayout, which attempts to get the position and size of a 2D Element
+[Added] TextElement and TextElementRect now share the ITextElement Interface
+[Added] TextElement and TextElementRect now can have 2D Elements embedded between characters (AddInline)
+
+----------------
+-- 6/MAR/09
+-- Version 1.5.2
+
+[Fixed] Random distribution code for the GPU Particle Processor wasn't using an invariant culture when generating shader code, causing the compile to fail when a system number format such as German was used.
+
+----------------
+-- 3/MAR/09
+-- Version 1.5.1
+
+[Fixed] Fixed a bug in the model importer where some models would not import correctly if their content was entirely in the root node
+
+----------------
 -- 1/MAR/09
+-- Version 1.5
 
 Major update to many parts of the API
 

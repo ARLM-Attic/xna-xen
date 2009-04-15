@@ -203,6 +203,11 @@ namespace Xen.Input.Mapping
 			input.buttons.shoulderL.SetState(state.Buttons.LeftShoulder == ButtonState.Pressed, tick);
 			input.buttons.shoulderR.SetState(state.Buttons.RightShoulder == ButtonState.Pressed, tick);
 
+			input.buttons.dpadD.SetState(state.DPad.Down == ButtonState.Pressed, tick);
+			input.buttons.dpadL.SetState(state.DPad.Left == ButtonState.Pressed, tick);
+			input.buttons.dpadR.SetState(state.DPad.Right == ButtonState.Pressed, tick);
+			input.buttons.dpadU.SetState(state.DPad.Up == ButtonState.Pressed, tick);
+
 			input.buttons.back.SetState(state.Buttons.Back == ButtonState.Pressed, tick);
 			input.buttons.start.SetState(state.Buttons.Start == ButtonState.Pressed, tick);
 			input.buttons.leftStickClick.SetState(state.Buttons.LeftStick == ButtonState.Pressed, tick);

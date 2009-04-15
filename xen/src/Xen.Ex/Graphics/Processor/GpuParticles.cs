@@ -91,7 +91,8 @@ namespace Xen.Ex.Graphics.Processor
 				//gpu shaders will vary the random numbers by +/- 1/256
 
 				//first values are linear rand
-				pixels[i++] = (ushort)(rand.Next(ushort.MaxValue - 512) + 256);
+				ushort linearRand = (ushort)(rand.Next(ushort.MaxValue - 512) + 256);
+
 				//second are non linear
 
 				int randBase = rand.Next(ushort.MaxValue - 512) + 256;
@@ -102,9 +103,16 @@ namespace Xen.Ex.Graphics.Processor
 				//so it's half linear, half squared non-linear
 				rand0 = (rand0 + randBase) >> 1;
 
-				ushort value = (ushort)rand0;
-	
-				pixels[i++] = value;
+				ushort nonLinearRand = (ushort)rand0;
+
+#if !XBOX360
+				pixels[i++] = linearRand;
+				pixels[i++] = nonLinearRand;
+#else
+				//on the xbox, storage order is reversed. Thanks to Arc for spotting this.
+				pixels[i++] = nonLinearRand;
+				pixels[i++] = linearRand;
+#endif
 			}
 
 			GraphicsDevice device = state.BeginGetGraphicsDevice(StateFlag.None);

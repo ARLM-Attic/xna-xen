@@ -367,6 +367,84 @@ namespace Xen.Ex.Graphics2D
 			}
 		}
 
+
+
+		/// <summary>
+		/// <para>Attempt to get the layout (position and size) of this element</para>
+		/// <para>The draw target the element is draw to must be specified</para>
+		/// <para>Note this operation can be quite expensive if performed multiple times per frame</para>
+		/// </summary>
+		/// <param name="position"></param>
+		/// <param name="size"></param>
+		/// <param name="drawTargetSize"></param>
+		/// <returns></returns>
+		public bool TryGetLayout(out Vector2 position, out Vector2 size, DrawTarget drawTarget)
+		{
+			return TryGetLayout(out position, out size, drawTarget.Size);
+		}
+		/// <summary>
+		/// <para>Attempt to get the layout (position and size) of this element</para>
+		/// <para>The size of the draw target the element is being drawn to must be specified</para>
+		/// <para>Note this operation can be quite expensive if performed multiple times per frame</para>
+		/// </summary>
+		/// <param name="position"></param>
+		/// <param name="size"></param>
+		/// <param name="drawTargetSize"></param>
+		/// <returns></returns>
+		public bool TryGetLayout(out Vector2 position, out Vector2 size, Vector2 drawTargetSize)
+		{
+			position = new Vector2();
+			size = new Vector2(1, 1);
+			Matrix tmp = Matrix.Identity;
+			Vector2 originalSize = drawTargetSize;
+
+			if (TryApplyLayout(ref position, ref size, ref drawTargetSize, ref tmp))
+			{
+				position.X *= originalSize.X;
+				position.Y *= originalSize.Y;
+				size.X *= originalSize.X;
+				size.Y *= originalSize.Y;
+				return true;
+			}
+			else
+			{
+				position = new Vector2();
+				size = new Vector2();
+				return false;
+			}
+		}
+
+		private bool TryApplyLayout(ref Vector2 position, ref Vector2 localScale, ref Vector2 scale, ref Matrix matrix)
+		{
+			if (parent != null)
+			{
+				if (!parent.TryApplyLayout(ref position, ref localScale, ref scale, ref matrix))
+					return false;
+			}
+
+			if ((scale.X != 0 && scale.Y != 0))
+			{
+				Vector2 size = ElementSize;
+				GetDisplayMatrix(out matrix, scale, ref size);
+
+				if (!UseSize)
+					size = new Vector2(1, 1);
+				else
+					if (IsNormalised)
+						size *= scale;
+
+				scale = size;
+
+				Vector2.Transform(ref position, ref matrix, out position);
+				Vector2.TransformNormal(ref localScale, ref matrix, out localScale);
+
+				return true;
+			}
+			return false;
+		}
+
+
+
 		/// <summary>
 		/// Override to implement draw logic
 		/// </summary>
@@ -374,7 +452,7 @@ namespace Xen.Ex.Graphics2D
 		protected abstract void DrawElement(DrawState state);
 
 		/// <summary>
-		/// Override to implement logic that occurs before the element is drawn, such as dirtying the element if it's size has changed
+		/// <para>Override to implement logic that occurs before the element is drawn, such as dirtying the element if it's size has changed</para>
 		/// </summary>
 		/// <param name="size"></param>
 		protected virtual void PreDraw(Vector2 size) { }

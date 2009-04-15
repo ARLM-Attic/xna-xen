@@ -168,9 +168,9 @@ namespace Xen
 			}
 
 			Monitor.Exit(syncMinor);
-			return index.index == 1;
+			return index != null;
 		}
-		//int badFrames = 0;
+
 		UpdateFrequency IUpdate.Update(UpdateState state)
 		{
 			if (totalTime == 0)

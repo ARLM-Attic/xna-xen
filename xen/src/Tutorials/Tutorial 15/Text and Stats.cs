@@ -44,6 +44,8 @@ namespace Tutorials.Tutorial_15
 		private TextElementRect yellowElement;
 		//this element will display the position of the camera
 		private TextElement positionDisplay;
+		//a red box that is embedded within the yellow text
+		private SolidColourElement embeddedElement;
 
 		//this is a special object that displays a large number of debug graphs
 		//this is very useful for debugging performance problems at runtime
@@ -67,6 +69,7 @@ namespace Tutorials.Tutorial_15
 			camera.ZAxisUp = true;
 			//also it's default is a bit too fast moving
 			camera.MovementSensitivity *= 0.1f;
+			camera.LookAt(new Vector3(1, 0, 0), new Vector3(), new Vector3(0, 0, 1));
 
 			this.camera = camera;
 
@@ -104,17 +107,30 @@ namespace Tutorials.Tutorial_15
 
 			Vector2 sizeInPixels = new Vector2(400, 200);
 
-			//create the text
+			//create the main block of yellow text
 			this.yellowElement = new TextElementRect(sizeInPixels);
 			this.yellowElement.Colour = Color.Yellow;
 
+			//first line of text... this will have a flashing 2D element embedded
+			string embeddedText = @"This is a text box with a large amount of custom text! It also includes an embedded 2D element: , which is a 16x16 SolidColourElement";
+			uint insertAtIndex = 96; // Hard coded to insert a 2D element at character index 96               which is about here: ^
+
 			//add a bunch of text...
-			this.yellowElement.Text.AppendLine(@"This is a text box with a large amount of custom text!");
+			this.yellowElement.Text.AppendLine(embeddedText);
+			this.yellowElement.Text.AppendLine();
 			this.yellowElement.Text.AppendLine(@"This class is:");
 			this.yellowElement.Text.AppendLine(this.GetType().FullName);
 			this.yellowElement.Text.AppendLine(@"It is located in assembly:");
 			this.yellowElement.Text.AppendLine(this.GetType().Assembly.FullName);
 			this.yellowElement.Text.AppendLine();
+
+			//add an embedded 2D element within the text
+			//create it..
+			this.embeddedElement = new SolidColourElement(Color.Red, new Vector2(16, 16)); // quite small
+			this.embeddedElement.AlphaBlendState = AlphaBlendState.Alpha;
+			//add it.
+			this.yellowElement.AddInline(this.embeddedElement, insertAtIndex);
+
 
 #if XBOX360
 			this.yellowElement.Text.AppendLine(@"Press and hold both thumbsticks to show the debug overlay");
@@ -123,13 +139,13 @@ namespace Tutorials.Tutorial_15
 #endif
 
 
-			//align the element to the bottom centre of the screen
+			//align the element rectangle to the bottom centre of the screen
 			this.yellowElement.VerticalAlignment = VerticalAlignment.Bottom;
 			this.yellowElement.HorizontalAlignment = HorizontalAlignment.Centre;
 
 			//centre align the text
 			this.yellowElement.TextHorizontalAlignment = TextHorizontalAlignment.Centre;
-			//centre the text in the middle of the 400x200 area of the element
+			//centre the text in the middle of the 400x200 area of the element rectangle
 			this.yellowElement.TextVerticalAlignment = VerticalAlignment.Centre;
 
 			//add it to the screen
@@ -144,10 +160,10 @@ namespace Tutorials.Tutorial_15
 			//The DrawStatisticsDisplay displays some of the more important statistics. It will also
 			//display thread activity on the xbox.
 
-			//DrawStatistics is only available in DEBUG xen builds
-			//It can be accessed at runtime with DrawState GetPreviousFrameStatistics()
+			//DrawStatistics are only available in DEBUG xen builds
+			//They can be accessed at runtime with DrawState GetPreviousFrameStatistics()
 
-			//at runtime, pressing 'F12' will toggle the overlay (or holding both thumsticks on x360)
+			//at runtime, pressing 'F12' will toggle the overlay (or holding both thumbsticks on x360)
 			this.statisticsOverlay = new Xen.Ex.Graphics2D.Statistics.DrawStatisticsDisplay(this.UpdateManager);
 
 			//As of xen 1.5, by default the DrawStatisticsDisplay displays a significantly reduced number of graphs.
@@ -184,17 +200,20 @@ namespace Tutorials.Tutorial_15
 			//both elements require the font to be set before they are drawn
 			this.yellowElement.Font = xnaSpriteFont;
 			this.positionDisplay.Font = xnaSpriteFont;
+			//the statistics overlay also requires the font is set
 			this.statisticsOverlay.Font = xnaSpriteFont;
 		}
 
 
 		protected override void Draw(DrawState state)
 		{
+			//update some of the text before drawing..
+
 			//get the camera position
 			Vector3 cameraPosition;
 			camera.GetCameraPosition(out cameraPosition);
 
-			//Set the position text
+			//Set the position text to the camera position
 			positionDisplay.Text.Clear();
 
 			positionDisplay.Text.Append(cameraPosition.X);
@@ -202,6 +221,13 @@ namespace Tutorials.Tutorial_15
 			positionDisplay.Text.Append(cameraPosition.Y);
 			positionDisplay.Text.Append(", ");
 			positionDisplay.Text.Append(cameraPosition.Z);
+
+			//fade the embedded element in and out with a Sine pattern
+			Color colour = embeddedElement.Colour;
+			colour.A = (byte)(Math.Sin(state.TotalTimeSeconds * 4) * 128 + 127);
+			embeddedElement.Colour = colour;
+
+
 
 			//draw everything
 			drawToScreen.Draw(state);

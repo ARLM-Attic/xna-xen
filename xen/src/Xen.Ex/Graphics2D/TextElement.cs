@@ -10,6 +10,68 @@ using Xen.Graphics.State;
 namespace Xen.Ex.Graphics2D
 {
 	/// <summary>
+	/// Interface for a <see cref="TextElement"/> or a <see cref="TextElementRect"/>
+	/// </summary>
+	public interface ITextElement
+	{
+		/// <summary>
+		/// Gets/Sets the colour of the text
+		/// </summary>
+		Color Colour { get; set; }
+		/// <summary>
+		/// Gets/Sets the colour of the text (as a <see cref="Vector4"/>)
+		/// </summary>
+		Vector4 ColourFloat { get; set; }
+		/// <summary>
+		/// <para>Gets/Sets the XNA <see cref="SpriteFont"/> used by ths element</para>
+		/// <para>Note: The font must be set before drawing the text</para>
+		/// </summary>
+		SpriteFont Font { get; set; }
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		void AddInline(Element element, uint textIndex);
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		/// <param name="elementOffset"></param>
+		void AddInline(Element element, uint textIndex, Vector2 elementOffset);
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		/// <param name="elementOffset"></param>
+		void AddInline(Element element, uint textIndex, ref Vector2 elementOffset);
+		/// <summary>
+		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		bool RemoveInline(Element element);
+		/// <summary>
+		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		bool RemoveInlineAt(uint textIndex);
+		/// <summary>
+		/// Remove all elements added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		void RemoveInlineChildren();
+		/// <summary>
+		/// <para>Gets the <see cref="TextValue"/> of this element (See implementation remarks for assignment details)</para>
+		/// </summary>
+		TextValue Text { get; set; }
+	}
+
+	/// <summary>
 	/// Text alignment enumeration used by <see cref="TextElementRect"/>
 	/// </summary>
 	public enum TextHorizontalAlignment : byte
@@ -20,21 +82,164 @@ namespace Xen.Ex.Graphics2D
 		Justified,
 	}
 
+	//class that wraps up the child elements
+	//deals with elements that are inserted into a text string
+	class TextChildren
+	{
+		struct ElementOffset
+		{
+			public Element Element;
+			public Vector2 Offset;
+		}
+
+		private readonly List<Element> children;
+		private SortedList<uint, ElementOffset> insertedElements;
+		private int insertIndex;
+
+
+		public TextChildren(SpriteElement rootSprite)
+		{
+			this.children = new List<Element>(1);
+			this.children.Add(rootSprite);
+		}
+		public TextChildren(List<Element> children)
+		{
+			this.children = children;
+		}
+
+
+
+		public List<Element> Children { get { return children; } }
+		private Element TextElement { get { return children[0]; } }
+
+		//add / remove
+		public void AddElement(Element element, uint textIndex, ref Vector2 elementOffset)
+		{
+			if (insertedElements == null)
+				insertedElements = new SortedList<uint, ElementOffset>();
+
+			this.children.Add(element);
+
+			ElementOffset offset = new ElementOffset();
+			offset.Element = element;
+			offset.Offset = elementOffset;
+
+			this.insertedElements.Add(textIndex, offset);
+		}
+		public bool RemoveElementAt(uint textIndex, out Element element)
+		{
+			ElementOffset offset = new ElementOffset();
+			if (this.insertedElements != null &&
+				this.insertedElements.TryGetValue(textIndex, out offset))
+			{
+				this.insertedElements.Remove(textIndex);
+				this.children.Remove(offset.Element);
+				element = offset.Element;
+				return true;
+			}
+			element = offset.Element;
+			return false;
+		}
+		public bool RemoveElement(Element element)
+		{
+			if (this.insertedElements != null)
+			{
+				for (int i = 0; i < this.insertedElements.Count; i++)
+				{
+					if (this.insertedElements.Values[i].Element == element)
+					{
+						this.insertedElements.RemoveAt(i);
+						this.children.Remove(element);
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+		public void RemoveAll()
+		{
+			if (this.insertedElements != null)
+			{
+				insertedElements.Clear();
+				this.children.RemoveRange(1, this.children.Count - 1);
+			}
+		}
+
+		//running through the text string...
+		public uint ResetInsertIndex()
+		{
+			if (insertedElements == null || insertedElements.Count == 0)
+				return uint.MaxValue;
+			insertIndex = 0;
+			return insertedElements.Keys[0];
+		}
+
+		public uint GetNextInsertedIndex()
+		{
+			insertIndex++;
+			if (insertedElements == null ||
+				insertIndex >= insertedElements.Count)
+				return uint.MaxValue;
+			return insertedElements.Keys[insertIndex];
+		}
+
+		public uint GetInsertedCount()
+		{
+			return (uint)insertIndex;
+		}
+
+		public void MoveRange(ref Vector2 offset, uint start)
+		{
+			for (int i = (int)start; i < insertIndex; i++)
+			{
+				insertedElements.Values[i].Element.Position += offset;
+			}
+		}
+		public void MoveRangeUptoIndex(ref Vector2 offset, ref uint start, int maxTextIndex)
+		{
+			while (start < insertIndex)
+			{
+				if (insertedElements.Keys[(int)start] > maxTextIndex)
+					return;
+				insertedElements.Values[(int)start].Element.Position += offset;
+				start++;
+			}
+		}
+
+		public void SetInsertedElementLayout(ref Vector2 position, out float insertedWidth)
+		{
+			Element text = TextElement;
+			ElementOffset offset = insertedElements.Values[insertIndex];
+			Element element = offset.Element;
+
+			insertedWidth = 0;
+			if (element is ElementRect)
+				insertedWidth = (element as ElementRect).Size.X;
+
+			offset.Offset.X += position.X;
+			offset.Offset.Y += position.Y;
+
+			element.Position = offset.Offset;
+			element.VerticalAlignment = text.VerticalAlignment;
+			element.HorizontalAlignment = text.HorizontalAlignment;
+		}
+	}
+
 	/// <summary>
 	/// <para>Element that displays a text string at a position</para>
 	/// <para>Use <see cref="TextElementRect"/> to display text in a rectangle</para>
 	/// </summary>
-	public class TextElement : Element
+	public class TextElement : Element, ITextElement
 	{
 		private ElementFont font;
 		private SpriteFont spriteFont;
 		private SpriteElement sprite;
 		private TextValue text;
 		private int textChangeIndex = -1;
-		private List<Element> children = new List<Element>();
+		private TextChildren children;
 		private Vector4 colour = Vector4.One;
 		private bool dirty = false;
-		
+
 		/// <summary>
 		/// <para>Construct the text element</para>
 		/// <para>Note: the <see cref="Font"/> must be set before drawing</para>
@@ -71,7 +276,7 @@ namespace Xen.Ex.Graphics2D
 			sprite.VerticalAlignment = VerticalAlignment.Top;
 			this.VerticalAlignment = VerticalAlignment.Top;
 
-			children.Add(sprite);
+			children = new TextChildren(sprite);
 			SetParentToThis(sprite);
 
 			sprite.AlphaBlendState = AlphaBlendState.Alpha;
@@ -158,8 +363,92 @@ namespace Xen.Ex.Graphics2D
 		{
 			get
 			{
-				return children;
+				return children.Children;
 			}
+		}
+
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		public void AddInline(Element element, uint textIndex)
+		{
+			Vector2 zero = new Vector2();
+			AddInline(element, textIndex, ref zero);
+		}
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		/// <param name="elementOffset"></param>
+		public void AddInline(Element element, uint textIndex, Vector2 elementOffset)
+		{
+			AddInline(element, textIndex, ref elementOffset);
+		}
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		/// <param name="elementOffset"></param>
+		public void AddInline(Element element, uint textIndex, ref Vector2 elementOffset)
+		{
+			if (textIndex >= this.text.Length)
+				throw new ArgumentException("textIndex >= this.Text.Length");
+
+			SetParentToThis(element);
+			this.children.AddElement(element, textIndex, ref elementOffset);
+
+			this.dirty = true;
+		}
+		/// <summary>
+		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		public bool RemoveInline(Element element)
+		{
+			if (this.children.RemoveElement(element))
+			{
+				this.ResetParent(element);
+
+				this.dirty = true;
+				return true;
+			}
+			return false;
+		}
+		/// <summary>
+		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		public bool RemoveInlineAt(uint textIndex)
+		{
+			Element element;
+			if (this.children.RemoveElementAt(textIndex, out element))
+			{
+				this.ResetParent(element);
+
+				this.dirty = true;
+				return true;
+			}
+			return false;
+		}
+		/// <summary>
+		/// Remove all elements added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		public void RemoveInlineChildren()
+		{
+			if (this.children.Children.Count > 1)
+				this.dirty = true;
+
+			for (int i = 1; i < this.children.Children.Count; i++)
+				this.ResetParent(this.children.Children[i]);
+			this.children.RemoveAll();
 		}
 
 		/// <summary>
@@ -194,12 +483,26 @@ namespace Xen.Ex.Graphics2D
 			bool flag = true;
 			int index;
 
+			uint insertedElementIndex = children.ResetInsertIndex();
+
 			StringBuilder text = this.text.value;
 
 			if (text.Length > 0)
 			{
 				for (int i = 0; i < text.Length; i++)
 				{
+
+					if (i == insertedElementIndex)
+					{
+						float width;
+
+						//update the inserted element
+						children.SetInsertedElementLayout(ref position, out width);
+						position.X += width;
+						insertedElementIndex = children.GetNextInsertedIndex();
+					}
+
+
 					char c = text[i];
 
 					switch (c)
@@ -219,7 +522,7 @@ namespace Xen.Ex.Graphics2D
 								Vector3 kerning = font.kerning[index];
 								float width = ((kerning.Y + kerning.Z)) * 4;
 
-								position.X = (float)(Math.Floor(position.X / width)+1) * width;
+								position.X = (float)(Math.Floor(position.X / width) + 1) * width;
 							}
 							break;
 
@@ -293,11 +596,12 @@ namespace Xen.Ex.Graphics2D
 	/// <summary>
 	/// <para>Element that displays a text string within a rectangle</para>
 	/// </summary>
-	public class TextElementRect : ElementRect
+	public class TextElementRect : ElementRect, ITextElement
 	{
 		private ElementFont font;
 		private SpriteFont spriteFont;
 		private SpriteElement sprite;
+		private TextChildren children;
 		private readonly TextValue text;
 		private int textChangeIndex = -1;
 		private Vector2 pixelSize;
@@ -313,7 +617,7 @@ namespace Xen.Ex.Graphics2D
 		public bool VerticalSizeToContent
 		{
 			get { return sizeToVertical; }
-			set 
+			set
 			{
 				if (sizeToVertical != value)
 				{
@@ -390,7 +694,7 @@ namespace Xen.Ex.Graphics2D
 		/// </summary>
 		/// <param name="sizeInPixels"></param>
 		public TextElementRect(Vector2 sizeInPixels)
-			: this(sizeInPixels,(string)null,null)
+			: this(sizeInPixels, (string)null, null)
 		{
 			this.text = new TextValue();
 		}
@@ -402,14 +706,12 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="font"></param>
 		/// <param name="text"></param>
 		public TextElementRect(Vector2 sizeInPixels, string text, SpriteFont font)
-			: base(sizeInPixels)
+			: this(sizeInPixels, font)
 		{
 			this.text = new TextValue();
 
 			if (text != null)
 				this.text.Append(text);
-
-			InitFont(font);
 		}
 
 		/// <summary>
@@ -418,12 +720,10 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="sizeInPixels"></param>
 		/// <param name="font"></param>
 		/// <param name="text"></param>
-		public TextElementRect(Vector2 sizeInPixels, TextValue text, SpriteFont font) 
-			: base(sizeInPixels)
+		public TextElementRect(Vector2 sizeInPixels, TextValue text, SpriteFont font)
+			: this(sizeInPixels, font)
 		{
 			this.text = text ?? new TextValue();
-
-			InitFont(font);
 		}
 
 		/// <summary>
@@ -432,7 +732,7 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="sizeInPixels"></param>
 		/// <param name="text"></param>
 		public TextElementRect(Vector2 sizeInPixels, string text)
-			: this(sizeInPixels,text,null)
+			: this(sizeInPixels, text, null)
 		{
 		}
 		/// <summary>
@@ -445,7 +745,8 @@ namespace Xen.Ex.Graphics2D
 		{
 		}
 
-		private void InitFont(SpriteFont font)
+		private TextElementRect(Vector2 sizeInPixels, SpriteFont font)
+			: base(sizeInPixels)
 		{
 			if (font != null)
 				this.font = font;
@@ -457,6 +758,8 @@ namespace Xen.Ex.Graphics2D
 			this.VerticalAlignment = VerticalAlignment.Top;
 
 			Add(sprite);
+
+			this.children = new TextChildren(this.Children);
 
 			sprite.AlphaBlendState = AlphaBlendState.Alpha;
 		}
@@ -481,6 +784,89 @@ namespace Xen.Ex.Graphics2D
 				}
 			}
 		}
+
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		public void AddInline(Element element, uint textIndex)
+		{
+			Vector2 zero = new Vector2();
+			AddInline(element, textIndex, ref zero);
+		}
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		public void AddInline(Element element, uint textIndex, Vector2 elementOffset)
+		{
+			AddInline(element, textIndex, ref elementOffset);
+		}
+		/// <summary>
+		/// Adds a child element that is embedded inline at the given text index
+		/// </summary>
+		/// <param name="element"></param>
+		/// <param name="textIndex"></param>
+		public void AddInline(Element element, uint textIndex, ref Vector2 elementOffset)
+		{
+			if (textIndex >= this.text.Length)
+				throw new ArgumentException("textIndex >= this.Text.Length");
+
+			SetParentToThis(element);
+			this.children.AddElement(element, textIndex, ref elementOffset);
+
+			this.SetDirty();
+		}
+		/// <summary>
+		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		public bool RemoveInline(Element element)
+		{
+			if (this.children.RemoveElement(element))
+			{
+				this.ResetParent(element);
+
+				this.SetDirty();
+				return true;
+			}
+			return false;
+		}
+		/// <summary>
+		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		public bool RemoveInlineAt(uint textIndex)
+		{
+			Element element;
+			if (this.children.RemoveElementAt(textIndex, out element))
+			{
+				this.ResetParent(element);
+
+				this.SetDirty();
+				return true;
+			}
+			return false;
+		}
+		/// <summary>
+		/// Remove all elements added with <see cref="AddInline"/>
+		/// </summary>
+		/// <param name="element"></param>
+		/// <returns></returns>
+		public void RemoveInlineChildren()
+		{
+			if (this.children.Children.Count > 1)
+				this.SetDirty();
+
+			for (int i = 1; i < this.children.Children.Count; i++)
+				this.ResetParent(this.children.Children[i]);
+			this.children.RemoveAll();
+		}
+
 
 		/// <summary>
 		/// <para>Gets the <see cref="TextValue"/> of this element (See remarks for assignment details)</para>
@@ -520,17 +906,31 @@ namespace Xen.Ex.Graphics2D
 			int spriceCount = 0;
 			int lastIndex = -1;
 			float beginX = 0;
-			if (!font.TryGetCharacterIndex('.',out periodIndex))
+			if (!font.TryGetCharacterIndex('.', out periodIndex))
 				periodIndex = -1;
 			if (textAlign == TextHorizontalAlignment.Justified && spaces == null)
 				spaces = new List<int>();
 
 			StringBuilder text = this.text.value;
 
+			uint insertedElementIndex = children.ResetInsertIndex();
+			uint lineInsertedElementCount = 0;
+
+
 			if (text.Length > 0 && pixelArea.X > 1)
 			{
 				for (int i = 0; i < text.Length; i++)
 				{
+					if (i == insertedElementIndex)
+					{
+						float width;
+
+						//update the inserted element
+						children.SetInsertedElementLayout(ref position, out width);
+						position.X += width;
+						insertedElementIndex = children.GetNextInsertedIndex();
+					}
+
 					char c = text[i];
 
 					switch (c)
@@ -543,7 +943,7 @@ namespace Xen.Ex.Graphics2D
 							if (textAlign == TextHorizontalAlignment.Right ||
 								textAlign == TextHorizontalAlignment.Centre)
 							{
-								Vector2 delta = new Vector2(pixelArea.X-position.X,0);
+								Vector2 delta = new Vector2(pixelArea.X - position.X, 0);
 								if (textAlign == TextHorizontalAlignment.Centre)
 									delta.X *= 0.5f;
 
@@ -553,6 +953,7 @@ namespace Xen.Ex.Graphics2D
 								{
 									sprite.MoveSprite(n, ref delta);
 								}
+								children.MoveRange(ref delta, lineInsertedElementCount);
 							}
 
 							if (textAlign == TextHorizontalAlignment.Justified)
@@ -565,6 +966,7 @@ namespace Xen.Ex.Graphics2D
 							beginX = 0;
 
 							beginLine = sprite.InstanceCount;
+							lineInsertedElementCount = children.GetInsertedCount();
 							break;
 
 						case '\t':
@@ -660,6 +1062,7 @@ namespace Xen.Ex.Graphics2D
 										{
 											sprite.MoveSprite(n, ref delta);
 										}
+										children.MoveRange(ref delta, lineInsertedElementCount);
 									}
 
 									if (textAlign == TextHorizontalAlignment.Justified && spaces.Count > 0)
@@ -672,14 +1075,14 @@ namespace Xen.Ex.Graphics2D
 										if (font.TryGetCharacterIndex(' ', out spaceIndex))
 										{
 											Vector3 spaceSize = font.kerning[spaceIndex];
-											if (gap > ((spaceSize.Y + spaceSize.Z)) *40)
+											if (gap > ((spaceSize.Y + spaceSize.Z)) * 40)
 												gap = 0;
 										}
 
 										spaceIndex = 0;
 										for (int n = beginLine; n < sprite.InstanceCount; n++)
 										{
-											if (spaceIndex != spaces.Count && 
+											if (spaceIndex != spaces.Count &&
 												n == spaces[spaceIndex])
 											{
 												spaceIndex++;
@@ -687,7 +1090,9 @@ namespace Xen.Ex.Graphics2D
 												delta.X = (float)Math.Floor(deltaf);
 											}
 											sprite.MoveSprite(n, ref delta);
+											children.MoveRangeUptoIndex(ref delta, ref lineInsertedElementCount, n);
 										}
+										children.MoveRangeUptoIndex(ref delta, ref lineInsertedElementCount, i + 1);
 										spaces.Clear();
 									}
 
@@ -697,13 +1102,14 @@ namespace Xen.Ex.Graphics2D
 									beginX = 0;
 									if (!char.IsWhiteSpace(text[i]))
 										i--;
+									lineInsertedElementCount = children.GetInsertedCount();
 									continue;
 								}
 
 								Vector2 pos = position;
 
 								if (!sizeToVertical && periodIndex != -1 &&
-									-position.Y > pixelArea.Y - font.lineSpacingF*2 &&
+									-position.Y > pixelArea.Y - font.lineSpacingF * 2 &&
 									position.X + font.glyphWidth[index] > pixelArea.X - 3 * font.glyphWidth[periodIndex])
 								{
 									if (pixelArea.X > 3 * font.glyphWidth[periodIndex])
@@ -755,6 +1161,7 @@ namespace Xen.Ex.Graphics2D
 				{
 					sprite.MoveSprite(n, ref delta);
 				}
+				children.MoveRange(ref delta, lineInsertedElementCount);
 			}
 			if (sizeToVertical)
 			{
@@ -779,6 +1186,7 @@ namespace Xen.Ex.Graphics2D
 
 						for (int n = 0; n < sprite.InstanceCount; n++)
 							sprite.MoveSprite(n, ref delta);
+						children.MoveRange(ref delta, 0);
 					}
 				}
 			}
@@ -832,7 +1240,7 @@ namespace Xen.Ex.Graphics2D
 		public readonly Texture2D textureValue;
 
 		static Dictionary<SpriteFont, ElementFont> mapping
-			= new Dictionary<SpriteFont,ElementFont>();
+			= new Dictionary<SpriteFont, ElementFont>();
 
 		public static implicit operator ElementFont(SpriteFont font)
 		{
@@ -851,7 +1259,7 @@ namespace Xen.Ex.Graphics2D
 				throw new ArgumentNullException();
 
 			//time to rip out all the useful bits
-			
+
 			List<char> _characterMap;
 			List<Rectangle> _croppingData;
 			List<Rectangle> _glyphData;
@@ -877,9 +1285,9 @@ namespace Xen.Ex.Graphics2D
 
 			int maxCharacter = 0;
 			for (int i = 0; i < this.characterMap.Length; i++)
-				maxCharacter = Math.Max(maxCharacter,(int)characterMap[i]);
+				maxCharacter = Math.Max(maxCharacter, (int)characterMap[i]);
 
-			characterIndex = new int[maxCharacter+1];
+			characterIndex = new int[maxCharacter + 1];
 			for (int i = 0; i < characterIndex.Length; i++)
 			{
 				characterIndex[i] = -1;

@@ -118,11 +118,11 @@ namespace Xen.Graphics
 			/// <param name="instance"></param>
 			public void AddInstance(ref Matrix instance)
 			{
-				index++;
 #if DEBUG
 				if (index == instanceLength)
 					throw new IndexOutOfRangeException();
 #endif
+				index++;
 				instances[instanceIndex++].Set(ref instance);
 			}
 
@@ -132,11 +132,11 @@ namespace Xen.Graphics
 			/// <param name="state"></param>
 			public void AddInstance(DrawState state)
 			{
-				index++;
 #if DEBUG
 				if (index == instanceLength)
 					throw new IndexOutOfRangeException();
 #endif
+				index++;
 				instances[instanceIndex++].Set(ref state.ms_World.value);
 			}
 
@@ -146,11 +146,11 @@ namespace Xen.Graphics
 			/// <param name="position"></param>
 			public void AddInstance(ref Vector3 position)
 			{
-				index++;
 #if DEBUG
 				if (index == instanceLength)
 					throw new IndexOutOfRangeException();
 #endif
+				index++;
 				instances[instanceIndex++].Set(ref position);
 			}
 
