@@ -6,6 +6,8 @@ using System.IO;
 using Xen.Graphics.ShaderSystem.CustomTool.FX;
 using Xen.Graphics.ShaderSystem.CustomTool.Dom;
 using System.CodeDom.Compiler;
+using System.Globalization;
+using System.Threading;
 
 namespace Xen.Graphics.ShaderSystem.CustomTool
 {
@@ -26,23 +28,35 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 
 		public byte[] GenerateCode(string inputFileName, string inputFileContent, string fileNameSpace, CodeDomProvider codeProvider)
 		{
+			//make sure the culture is invariant while processing.
+			CultureInfo previousCulture = Thread.CurrentThread.CurrentCulture;
+
 			try
 			{
-				SourceDom source = new SourceDom(new SourceShader(inputFileContent, inputFileName), fileNameSpace, codeProvider);
+				Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-				return Encoding.ASCII.GetBytes(source.GenerateCodeString());
+				try
+				{
+					SourceDom source = new SourceDom(new SourceShader(inputFileContent, inputFileName), fileNameSpace, codeProvider);
+
+					return Encoding.ASCII.GetBytes(source.GenerateCodeString());
+				}
+				catch (CompileException ex)
+				{
+					this.GeneratorErrorCallback(false, 1, ex.Text, ex.Line, ex.Coloumn);
+					Console.WriteLine(string.Format("Error generating shader: {0} (line: {1} col: {2})", ex.Text, ex.Line, ex.Coloumn));
+					return Encoding.ASCII.GetBytes(SourceDom.GenerateErrorString(ex, codeProvider));
+				}
+				catch (Exception ex)
+				{
+					this.GeneratorErrorCallback(false, 1, string.Format("Unhandled exception in XenFX:{0}{1}", Environment.NewLine, ex.ToString()), 0, 0);
+					Console.WriteLine(string.Format("Unhandled exception in XenFX: {0}", ex.ToString()));
+					return Encoding.ASCII.GetBytes(SourceDom.GenerateErrorString(ex, codeProvider));
+				}
 			}
-			catch (CompileException ex)
+			finally
 			{
-				this.GeneratorErrorCallback(false, 1, ex.Text, ex.Line, ex.Coloumn);
-				Console.WriteLine(string.Format("Error generating shader: {0} (line: {1} col: {2})", ex.Text, ex.Line, ex.Coloumn));
-				return Encoding.ASCII.GetBytes(SourceDom.GenerateErrorString(ex, codeProvider));
-			}
-			catch (Exception ex)
-			{
-				this.GeneratorErrorCallback(false, 1, string.Format("Unhandled exception in XenFX:{0}{1}", Environment.NewLine, ex.ToString()), 0, 0);
-				Console.WriteLine(string.Format("Unhandled exception in XenFX: {0}", ex.ToString()));
-				return Encoding.ASCII.GetBytes(SourceDom.GenerateErrorString(ex, codeProvider));
+				Thread.CurrentThread.CurrentCulture = previousCulture;
 			}
 		}
 
