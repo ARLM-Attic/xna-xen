@@ -87,7 +87,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 					compiledShader =
 						ShaderCompiler.CompileFromFile(
-							source.FileName,
+							Path.GetFileName(source.FileName),
 							DecompiledEffect.XboxCompileMacros,
 							new VFetchIncludeHandler(source.FileName, false),
 							source.CompilerOptions,
