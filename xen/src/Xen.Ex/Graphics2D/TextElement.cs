@@ -48,22 +48,18 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="elementOffset"></param>
 		void AddInline(Element element, uint textIndex, ref Vector2 elementOffset);
 		/// <summary>
-		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// Tries to remove an element added with <see cref="AddInline(Element, uint)"/>
 		/// </summary>
 		/// <param name="element"></param>
 		/// <returns></returns>
 		bool RemoveInline(Element element);
 		/// <summary>
-		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// Tries to remove an element added with <see cref="AddInline(Element, uint)"/>
 		/// </summary>
-		/// <param name="element"></param>
-		/// <returns></returns>
 		bool RemoveInlineAt(uint textIndex);
 		/// <summary>
-		/// Remove all elements added with <see cref="AddInline"/>
+		/// Remove all elements added with <see cref="AddInline(Element, uint)"/>
 		/// </summary>
-		/// <param name="element"></param>
-		/// <returns></returns>
 		void RemoveInlineChildren();
 		/// <summary>
 		/// <para>Gets the <see cref="TextValue"/> of this element (See implementation remarks for assignment details)</para>
@@ -76,9 +72,22 @@ namespace Xen.Ex.Graphics2D
 	/// </summary>
 	public enum TextHorizontalAlignment : byte
 	{
+		//useful comments!
+		/// <summary>
+		/// Left alignment
+		/// </summary>
 		Left,
+		/// <summary>
+		/// Right alignment
+		/// </summary>
 		Right,
+		/// <summary>
+		/// Centre alignment
+		/// </summary>
 		Centre,
+		/// <summary>
+		/// Justified alignment
+		/// </summary>
 		Justified,
 	}
 
@@ -404,7 +413,7 @@ namespace Xen.Ex.Graphics2D
 			this.dirty = true;
 		}
 		/// <summary>
-		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// Tries to remove an element added with <see cref="AddInline(Element,uint)"/>
 		/// </summary>
 		/// <param name="element"></param>
 		/// <returns></returns>
@@ -420,10 +429,8 @@ namespace Xen.Ex.Graphics2D
 			return false;
 		}
 		/// <summary>
-		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// Tries to remove an element added with <see cref="AddInline(Element,uint)"/>
 		/// </summary>
-		/// <param name="element"></param>
-		/// <returns></returns>
 		public bool RemoveInlineAt(uint textIndex)
 		{
 			Element element;
@@ -437,10 +444,8 @@ namespace Xen.Ex.Graphics2D
 			return false;
 		}
 		/// <summary>
-		/// Remove all elements added with <see cref="AddInline"/>
+		/// Remove all elements added with <see cref="AddInline(Element,uint)"/>
 		/// </summary>
-		/// <param name="element"></param>
-		/// <returns></returns>
 		public void RemoveInlineChildren()
 		{
 			if (this.children.Children.Count > 1)
@@ -798,8 +803,6 @@ namespace Xen.Ex.Graphics2D
 		/// <summary>
 		/// Adds a child element that is embedded inline at the given text index
 		/// </summary>
-		/// <param name="element"></param>
-		/// <param name="textIndex"></param>
 		public void AddInline(Element element, uint textIndex, Vector2 elementOffset)
 		{
 			AddInline(element, textIndex, ref elementOffset);
@@ -807,8 +810,6 @@ namespace Xen.Ex.Graphics2D
 		/// <summary>
 		/// Adds a child element that is embedded inline at the given text index
 		/// </summary>
-		/// <param name="element"></param>
-		/// <param name="textIndex"></param>
 		public void AddInline(Element element, uint textIndex, ref Vector2 elementOffset)
 		{
 			if (textIndex >= this.text.Length)
@@ -820,7 +821,7 @@ namespace Xen.Ex.Graphics2D
 			this.SetDirty();
 		}
 		/// <summary>
-		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// Tries to remove an element added with <see cref="AddInline(Element,uint)"/>
 		/// </summary>
 		/// <param name="element"></param>
 		/// <returns></returns>
@@ -836,10 +837,8 @@ namespace Xen.Ex.Graphics2D
 			return false;
 		}
 		/// <summary>
-		/// Tries to remove an element added with <see cref="AddInline"/>
+		/// Tries to remove an element added with <see cref="AddInline(Element,uint)"/>
 		/// </summary>
-		/// <param name="element"></param>
-		/// <returns></returns>
 		public bool RemoveInlineAt(uint textIndex)
 		{
 			Element element;
@@ -853,10 +852,8 @@ namespace Xen.Ex.Graphics2D
 			return false;
 		}
 		/// <summary>
-		/// Remove all elements added with <see cref="AddInline"/>
+		/// Remove all elements added with <see cref="AddInline(Element,uint)"/>
 		/// </summary>
-		/// <param name="element"></param>
-		/// <returns></returns>
 		public void RemoveInlineChildren()
 		{
 			if (this.children.Children.Count > 1)

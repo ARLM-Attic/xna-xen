@@ -1,4 +1,4 @@
-//CompilerOptions = NoPreShader, InternalClass, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace
+//CompilerOptions = NoPreShader, InternalClass, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace, SkipConstantValidation
 //ConstantOverride = vs0tci:vs0ci,vs0ti,vs0i;vs1tci:vs1ci,vs1ti,vs1i;vs3tci:vs3ci,vs3ti,vs3i;vs6tci:vs6ci,vs6ti,vs6i;	vs0nci:vs0ni;vs1nci:vs1ni;vs3nci:vs3ni;vs6nci:vs6ni;	vs0ps0tci:vs0ps0i,vs0ps0ti,vs0ps0ci;
 
 #include <asm_vfetch>

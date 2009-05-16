@@ -191,11 +191,17 @@ namespace Xen.Ex.Geometry
 
 		#region IBeginEndDrawBatch Members
 
+		/// <summary>
+		/// Begin drawing this cone as a batch operation
+		/// </summary>
 		public StreamFrequency.InstanceBuffer BeginDrawBatch(DrawState state, int maxInstances)
 		{
 			return state.BeginDrawBatch(maxInstances);
 		}
 
+		/// <summary>
+		/// End drawing this cone as a batch operation
+		/// </summary>
 		public void EndDrawBatch(DrawState state, StreamFrequency.InstanceBuffer buffer)
 		{
 			state.EndDrawBatch(verts, inds, PrimitiveType.TriangleList, buffer);
@@ -205,6 +211,9 @@ namespace Xen.Ex.Geometry
 
 		#region ICullableInstance Members
 
+		/// <summary>
+		/// Cull test an instance of this cone, using a local world matrix for the position
+		/// </summary>
 		public bool CullTest(ICuller culler, ref Matrix instance)
 		{
 			return culler.TestSphere(this.radius, instance.Translation);

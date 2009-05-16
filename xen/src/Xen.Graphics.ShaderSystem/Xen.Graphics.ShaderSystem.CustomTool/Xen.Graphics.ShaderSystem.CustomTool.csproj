@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{A3ABE830-A8B0-4630-BA84-011CC7F60550}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Xen.Graphics.ShaderSystem.CustomTool</RootNamespace>
+    <AssemblyName>Xen.Graphics.ShaderSystem.CustomTool</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>..\..\..\bin\Xen.Graphics.ShaderSystem.CustomTool\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.BaseCodeGeneratorWithSite, Version=1.1.0.0, Culture=neutral, PublicKeyToken=fd07cb18fc57563b">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Microsoft.VisualStudio.BaseCodeGeneratorWithSite.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Xna.Framework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=x86" />
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Common.cs" />
+    <Compile Include="Dom\BytePool.cs" />
+    <Compile Include="Dom\DomCommon.cs" />
+    <Compile Include="Dom\Constants.cs" />
+    <Compile Include="Dom\Preshaders.cs" />
+    <Compile Include="Dom\PreshaderSrc.cs" />
+    <Compile Include="Dom\Registers.cs" />
+    <Compile Include="Dom\Directives.cs" />
+    <Compile Include="Dom\Dom.cs" />
+    <Compile Include="Dom\ShaderBytes.cs" />
+    <Compile Include="Dom\ShaderDom.cs" />
+    <Compile Include="Dom\Textures.cs" />
+    <Compile Include="FX\AsmToHlslAsmConverter.cs" />
+    <Compile Include="FX\Assembly.cs" />
+    <Compile Include="FX\FxDecompiler.cs" />
+    <Compile Include="FX\RegisterSet.cs" />
+    <Compile Include="FX\HlslShader.cs" />
+    <Compile Include="FX\SourceShader.cs" />
+    <Compile Include="FX\Technique.cs" />
+    <Compile Include="FX\VFetchIncludeHandler.cs" />
+    <Compile Include="FX\VFetchMethodExtractor.cs" />
+    <Compile Include="Graphics.cs" />
+    <Compile Include="PluginEntry.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="Tokenizer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Xen.Graphics.ShaderSystem.CustomTool.dll.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="key.snk" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Xen.Graphics.ShaderSystem\Xen.Graphics.ShaderSystem.csproj">
+      <Project>{A5612A1E-91AD-4481-B41F-8B164C7D6054}</Project>
+      <Name>Xen.Graphics.ShaderSystem</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

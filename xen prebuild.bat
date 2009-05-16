@@ -20,6 +20,13 @@ pause
 @echo.
 @echo Prebuilding xen for XNA GS 3.0 (This may take a minute or so...)
 @echo.
+
+@echo Building xen Shader System
+@echo.
+
+%SYSTEMROOT%\Microsoft.NET\Framework\v3.5\MSBuild.exe /p:Configuration=Release /p:Optimize=true /p:DebugSymbols=false /verbosity:minimal .\xen\prebuild\sln\build_ss.sln
+@echo.
+
 @echo Register Visual Studio Custom Tool
 "xen\bin\Xen.Graphics.ShaderSystem.CustomTool\registry\XenFxRegistryTest.exe" "xen\bin\Xen.Graphics.ShaderSystem.CustomTool\registry\XenFxRegistrySetup.exe" "xen\bin\Xen.Graphics.ShaderSystem.CustomTool\Xen.Graphics.ShaderSystem.CustomTool.dll" "XenFX" "{43ACA195-467F-4EEC-A949-5873BBD5413A}"
 @echo Building Xen.Ex Shaders

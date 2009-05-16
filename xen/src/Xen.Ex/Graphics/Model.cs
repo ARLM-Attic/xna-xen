@@ -95,7 +95,7 @@ namespace Xen.Ex.Graphics
 			if (model != null && this.modelData == null)
 			{
 				if (model.skeleton == null)
-					throw new InvalidOperationException("ModelData requires a skeleton to be animated");
+					throw new InvalidOperationException("Unable to initalise the AnimationController assigned to this ModelInstance. ModelData requires a skeleton to be animated. This model cannot have an AnimationController assigned to it");
 
 				this.modelData = model;
 
@@ -107,6 +107,7 @@ namespace Xen.Ex.Graphics
 			}
 		}
 
+		/// <summary></summary>
 		public bool IsDisposed
 		{
 			get { return disposed; }
@@ -126,6 +127,7 @@ namespace Xen.Ex.Graphics
 			get { return modelData; }
 		}
 
+		/// <summary>Number of animations stored in this controller</summary>
 		public int AnimationCount
 		{
 			get
@@ -150,6 +152,7 @@ namespace Xen.Ex.Graphics
 					modelData.animations[i].ClearAnimationStreamCache();
 		}
 
+		/// <summary></summary>
 		public AnimationData GetAnimationData(int index)
 		{
 			if (disposed)
@@ -584,6 +587,7 @@ namespace Xen.Ex.Graphics
 			}
 		}
 
+		/// <summary></summary>
 		public void Dispose()
 		{
 			foreach (AnimationStreamControl stream in this.animations)
@@ -626,8 +630,9 @@ namespace Xen.Ex.Graphics
 		public float PlaybackSpeed 
 		{
 			get { if (AnimationFinished) return 0; return control.AnimationSpeed; } 
-			set { if (AnimationFinished) return; control.AnimationSpeed = value; } 
+			set { if (AnimationFinished) return; control.AnimationSpeed = value; }
 		}
+		/// <summary></summary>
 		public string AnimationName { get { return control.animation.Name; } }
 		/// <summary>
 		/// Current playback time in the duration of this animation instance (seconds)
@@ -642,7 +647,7 @@ namespace Xen.Ex.Graphics
 			get { if (AnimationFinished) return 0; return control.Duration(); }
 		}
 		/// <summary>
-		/// <para>The weighting of this animation instance. 1.0f by default.</para
+		/// <para>The weighting of this animation instance. 1.0f by default.</para>
 		/// <para>When set to 0.0, the animation will have no effect. If set to 0.5f, the animation will only have a 50 percent effect on rotations, translations, etc.</para>
 		/// <para>Modify this value to fade animations in and out</para>
 		/// </summary>
@@ -651,11 +656,13 @@ namespace Xen.Ex.Graphics
 			get { if (AnimationFinished) return 0; return control.weighting; }
 			set { if (AnimationFinished) return; control.weighting = value; }
 		}
+		/// <summary></summary>
 		public bool Enabled
 		{
 			get { if (AnimationFinished) return false; return control.enabled; }
 			set { if (AnimationFinished) return; control.enabled = value; }
 		}
+		/// <summary></summary>
 		public bool Looping
 		{
 			get { if (AnimationFinished) return false; return control.looping; ; }
@@ -683,10 +690,12 @@ namespace Xen.Ex.Graphics
 			return true;
 		}
 
+		/// <summary></summary>
 		public bool StopAnimation()
 		{
 			return StopAnimation(0);
 		}
+		/// <summary></summary>
 		public bool StopAnimation(float fadeOutTime)
 		{
 			if (fadeOutTime < 0)
@@ -1131,7 +1140,7 @@ namespace Xen.Ex.Graphics
 		public virtual void EndMesh(DrawState state, MeshData mesh) { }
 
 		/// <summary>
-		/// <para>Returns true if this provider modifies the world matrix in the <see cref="BeginDraw"/> method</para>
+		/// <para>Returns true if this provider modifies the world matrix in the <see cref="BeginDraw(DrawState)"/> method</para>
 		/// <para>If true, the default CullTest will be skipped until BeginDraw() has been called</para>
 		/// </summary>
 		/// <remarks>Note: This property may be called frequenty, so should not run complex logic - it should simply return either true/false</remarks>
@@ -1164,7 +1173,7 @@ namespace Xen.Ex.Graphics
 			get { return shader; }
 		}
 		/// <summary>
-		/// <para>Returns true if this provider modifies the world matrix in the <see cref="BeginDraw"/> method</para>
+		/// <para>Returns true if this provider modifies the world matrix in the <see cref="ModelInstanceShaderProvider.BeginDraw(DrawState)"/> method</para>
 		/// <para>If true, the default CullTest will be skipped until BeginDraw() has been called</para>
 		/// </summary>
 		/// <remarks>Note: This property may be called frequenty, so should not run complex logic - it should simply return either true/false</remarks>
@@ -1179,7 +1188,7 @@ namespace Xen.Ex.Graphics
 		/// <param name="geometry"></param>
 		/// <param name="lights"></param>
 		/// <returns></returns>
-		/// <remarks>If pushing the world matrix, make sure to pop it in <see cref="EndGeometry"/></remarks>
+		/// <remarks>If pushing the world matrix, make sure to pop it in <see cref="ModelInstanceShaderProvider.EndGeometry"/></remarks>
 		/// <param name="state"></param>
 		public override bool BeginGeometryShaderOverride(DrawState state, GeometryData geometry, MaterialLightCollection lights)
 		{
@@ -1530,8 +1539,6 @@ namespace Xen.Ex.Graphics
 		/// <summary>
 		/// FrustumCull test the model at the given location
 		/// </summary>
-		/// <param name="culler"></param>
-		/// <returns></returns>
 		public bool CullTest(ICuller culler, ref Matrix instance)
 		{
 			if (modelData == null)

@@ -159,8 +159,11 @@ namespace Xen.Ex.Graphics.Processor
 		private int resolutionY;
 		private float resolutionYF;
 
+		/// <summary></summary>
 		public float ResolutionX { get { return resolutionXF; } }
+		/// <summary></summary>
 		public float ResolutionY { get { return resolutionYF; } }
+		/// <summary></summary>
 		public bool RequiresDrawPass { get { return true; } }
 
 		private Xen.Graphics.Modifier.ScissorModifier scissorTest;
@@ -817,6 +820,7 @@ namespace Xen.Ex.Graphics.Processor
 			return true;
 		}
 
+		/// <summary></summary>
 		public void Dispose()
 		{
 			DisposeMember(ref positionSizeBufferA);

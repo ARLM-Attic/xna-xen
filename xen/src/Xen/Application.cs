@@ -809,7 +809,7 @@ namespace Xen
 		}
 
 		/// <summary>
-		///  Indicates whether this application is currently the active application.
+		///  Indicates if this application is currently the active application.
 		/// </summary>
 		public bool IsActive
 		{

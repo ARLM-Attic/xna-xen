@@ -28,6 +28,8 @@ namespace Xen.Ex.Scene
 		//actually used as a post-culler here
 		private PositionCalculatingPreCuller postCuller = new PositionCalculatingPreCuller();
 
+		/// <summary></summary>
+		/// <param name="sortMode">Sorting mode, either front to back, or back to front</param>
 		public DepthDrawSorter(DepthSortMode sortMode)
 		{
 			this.sortMode = sortMode;

@@ -377,6 +377,160 @@ namespace Xen.Camera
 				} 
 			}
 		}
+
+
+
+		#region Project / UnProject
+
+		/// <summary>
+		/// <para>Projects a position in 3D space into draw target pixel coordinates</para>
+		/// <para>Returns false if the projected point is behind the camera</para>
+		/// </summary>
+		/// <param name="position">3D world space position to project into draw target coordinates</param>
+		/// <param name="coordinate">draw target coordinates of the projected position</param>
+		/// <returns>True if the projected position is in front of the camera</returns>
+		/// <param name="target">Draw Target space to project the point onto</param>
+		public bool ProjectToTarget(ref Vector3 position, out Vector2 coordinate, Graphics.DrawTarget target)
+		{
+			if (target == null)
+				throw new ArgumentNullException();
+
+			Vector2 size = target.Size;
+
+			bool result = ProjectToCoordinate(this, ref position, out coordinate, ref size);
+
+			coordinate.X = size.X * (coordinate.X * 0.5f + 0.5f);
+			coordinate.Y = size.Y * (coordinate.Y * 0.5f + 0.5f);
+
+			return result;
+		}
+
+		/// <summary>
+		/// <para>Projects a position in draw target pixel coordinates into a 3D position in world space, based on a projection depth</para>
+		/// <para>NOTE: For 3D Cameras this method is expensive! Where possible use <see cref="DrawState.ProjectFromScreen"/></para>
+		/// </summary>
+		/// <param name="coordinate">Coordinate in draw target pixels to project into world space</param>
+		/// <param name="projectDepth">World space depth to project from the camera position</param>
+		/// <param name="position">projected position</param>
+		/// <param name="target">Draw Target space to unproject the point from</param>
+		public void ProjectFromTarget(ref Vector2 coordinate, float projectDepth, out Vector3 position, Graphics.DrawTarget target)
+		{
+			Vector2 size = target.Size;
+			ProjectFromCoordinate(this, false, ref coordinate, projectDepth, out position, ref size);
+		}
+
+		/// <summary>
+		/// <para>Projects a position in 3D space into [-1,+1] projected coordinates</para>
+		/// <para>[-1,+1] Coordinates are equivalent of the size of a DrawTarget, where (-1,-1) is bottom left, (1,1) is top right and (0,0) is centered</para>
+		/// <para>Returns false if the projected point is behind the camera</para>
+		/// </summary>
+		/// <param name="position">3D world space position to project into [-1,+1] projected coordinates</param>
+		/// <param name="coordinate">[-1,+1] coordinates of the projected position</param>
+		/// <returns>True if the projected position is in front of the camera</returns>
+		public bool ProjectToCoordinate(ref Vector3 position, out Vector2 coordinate)
+		{
+			Vector2 size = Vector2.One;
+			return ProjectToCoordinate(this, ref position, out coordinate, ref size);
+		}
+
+		/// <summary>
+		/// <para>Projects a position in [-1,+1] coordinates into a 3D position in world space, based on a projection depth</para>
+		/// <para>[-1,+1] Coordinates are equivalent of the size of a DrawTarget, where (-1,-1) is bottom left, (1,1) is top right and (0,0) is centered</para>
+		/// <para>NOTE: For 3D Cameras this method is expensive! Where possible use <see cref="DrawState.ProjectFromScreen"/></para>
+		/// </summary>
+		/// <param name="coordinate">Coordinate in [-1,+1] to project into world space</param>
+		/// <param name="projectDepth">World space depth to project from the camera position</param>
+		/// <param name="position">unprojected position</param>
+		public void ProjectFromCoordinate(ref Vector2 coordinate, float projectDepth, out Vector3 position)
+		{
+			Vector2 size = Vector2.One;
+			ProjectFromCoordinate(this, false, ref coordinate, projectDepth, out position, ref size);
+		}
+
+		internal static bool ProjectToCoordinate(ICamera camera, ref Vector3 position, out Vector2 coordinate, ref Vector2 targetSize)
+		{
+			Vector4 worldPositionW = new Vector4(position, 1.0f);
+
+			Matrix mat;
+			camera.GetViewMatrix(out mat);
+			Vector4.Transform(ref worldPositionW, ref mat, out worldPositionW);
+
+			camera.GetProjectionMatrix(out mat, ref targetSize);
+			Vector4.Transform(ref worldPositionW, ref mat, out worldPositionW);
+
+			if (worldPositionW.W != 0)
+				worldPositionW.W = 1.0f / worldPositionW.W;
+
+			coordinate = new Vector2(worldPositionW.X * worldPositionW.W, worldPositionW.Y * worldPositionW.W);
+
+			return worldPositionW.Z * worldPositionW.W > 0;
+		}
+
+
+		//also used by Camera2D
+		internal static void ProjectFromCoordinate(ICamera camera, bool is2D, ref Vector2 screenPosition, float projectDepth, out Vector3 position, ref Vector2 targetSize)
+		{
+			Vector4 coordinate = new Vector4(0, 0, 0.5f, 1);
+			if (targetSize.X != 0)
+				coordinate.X = ((screenPosition.X / targetSize.X) - 0.5f) * 2;
+			if (targetSize.Y != 0)
+				coordinate.Y = ((screenPosition.Y / targetSize.Y) - 0.5f) * 2;
+
+			//this is much slower for 3D Cameras than 2D, due to matrix inversion requirements.
+			Matrix mat;
+
+			if (is2D)
+			{
+				//projection is always identity, so only need the inverse of the view matrix...
+				//which is the camera matrix
+				camera.GetCameraMatrix(out mat);
+			}
+			else
+			{
+				//more complex.
+				Matrix pm;
+				camera.GetProjectionMatrix(out pm, ref targetSize);
+				camera.GetViewMatrix(out mat);
+
+				// OUCH
+				Matrix.Multiply(ref mat, ref pm, out mat); 
+				Matrix.Invert(ref mat, out mat); 
+			}
+
+			Vector4.Transform(ref coordinate, ref mat, out coordinate);
+
+			if (coordinate.W != 0)
+			{
+				coordinate.W = 1.0f / coordinate.W;
+				coordinate.X *= coordinate.W;
+				coordinate.Y *= coordinate.W;
+				coordinate.Z *= coordinate.W;
+				coordinate.W = 1;
+			}
+
+			//this could probably be done better...
+			Vector3 cameraPos;
+			camera.GetCameraPosition(out cameraPos);
+
+			Vector3 difference = new Vector3();
+			difference.X = coordinate.X - cameraPos.X;
+			difference.Y = coordinate.Y - cameraPos.Y;
+			difference.Z = coordinate.Z - cameraPos.Z;
+
+			if (difference.X != 0 || difference.Y != 0 || difference.Y != 0)
+				difference.Normalize();
+
+			difference.X *= projectDepth;
+			difference.Y *= projectDepth;
+			difference.Z *= projectDepth;
+
+			position = new Vector3();
+			position.X = difference.X + cameraPos.X;
+			position.Y = difference.Y + cameraPos.Y;
+			position.Z = difference.Z + cameraPos.Z;
+		}
+
+		#endregion
 	}
 }
 

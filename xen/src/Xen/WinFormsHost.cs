@@ -16,9 +16,10 @@ namespace Xen
 #endif
 	public class WinFormsHostControl : System.Windows.Forms.Control
 	{
-		WinFormsHostGraphicsDeviceService device;
-		Application application;
-		XNAWinFormsHostAppWrapper winFormWrapper;
+		private WinFormsHostGraphicsDeviceService device;
+		private Application application;
+		private XNAWinFormsHostAppWrapper winFormWrapper;
+		private bool autoRedraw = true;
 
 		internal void SetApplication(Application app, XNAWinFormsHostAppWrapper formsWrapper, WinFormsHostGraphicsDeviceService device)
 		{
@@ -56,7 +57,7 @@ namespace Xen
 		/// <param name="e"></param>
 		protected override void OnPaint(System.Windows.Forms.PaintEventArgs e)
 		{
-			if (device != null && !DesignMode && HandleDeviceReset())
+			if (device != null && !DesignMode && HandleDeviceReset() && application.IsInitailised)
 			{
 				// Draw the control using the GraphicsDevice.
 				winFormWrapper.RunMainLoop();
@@ -81,15 +82,25 @@ namespace Xen
 				{
 				}
 
-				Invalidate();
+				if (autoRedraw)
+					Invalidate();
 			}
 			else
 			{
-				// If BeginDraw failed, show an error message using System.Drawing.
+				// If not in a drawable state, show a message using System.Drawing.
 				PaintUsingSystemDrawing(e.Graphics);
 			}
 		}
 
+		/// <summary>
+		/// <para>When true, the form will automatically invalidate itself at the end of a render cycle</para>
+		/// <para>When false, the form will have to be invalidated manually to get it to redraw</para>
+		/// </summary>
+		public bool AutomaticRedraw
+		{
+			get { return autoRedraw; }
+			set { autoRedraw = value; }
+		}
 
 		bool HandleDeviceReset()
 		{
@@ -248,14 +259,16 @@ namespace Xen
 #endif
 	sealed class XNAWinFormsHostAppWrapper : IXNAAppWrapper
 	{
-		WinFormsHostGraphicsDeviceService formsDeviceService;
-		RenderTargetUsage presentation;
-		GameServiceContainer services;
-		XNALogic logic;
-		ContentManager content;
-		WinFormsHostControl control;
-		System.Windows.Forms.Form parentForm;
-		Application parent;
+		private readonly WinFormsHostGraphicsDeviceService formsDeviceService;
+		private readonly RenderTargetUsage presentation;
+		private readonly GameServiceContainer services;
+		private readonly XNALogic logic;
+		private readonly ContentManager content;
+		private readonly WinFormsHostControl control;
+		private readonly System.Windows.Forms.Form parentForm;
+		private readonly Application parent;
+
+		public event EventHandler Exiting;
 
 		internal XNAWinFormsHostAppWrapper(XNALogic logic, Application parent, WinFormsHostControl host)
 		{
@@ -279,7 +292,7 @@ namespace Xen
 
 			parentForm.FormClosed += new System.Windows.Forms.FormClosedEventHandler(parentForm_FormClosed);
 
-			formsDeviceService = new WinFormsHostGraphicsDeviceService(this, this.control.ClientSize.Width, this.control.ClientSize.Width);
+			formsDeviceService = new WinFormsHostGraphicsDeviceService(this, this.control.ClientSize.Width, this.control.ClientSize.Height);
 
 			services = new GameServiceContainer();
 			services.AddService(typeof(IGraphicsDeviceService), formsDeviceService);
@@ -312,6 +325,9 @@ namespace Xen
 
 		void parentForm_FormClosed(object sender, System.Windows.Forms.FormClosedEventArgs e)
 		{
+			if (parentForm != null)
+				parentForm.FormClosed -= new System.Windows.Forms.FormClosedEventHandler(parentForm_FormClosed);
+
 			if (Exiting != null)
 				Exiting(this, EventArgs.Empty);
 		}
@@ -353,8 +369,6 @@ namespace Xen
 			get { return true; }
 		}
 
-		public event EventHandler Exiting;
-
 		public void Run()
 		{
 		}
@@ -377,6 +391,9 @@ namespace Xen
 
 		public void Dispose()
 		{
+			if (parentForm != null)
+				parentForm.FormClosed -= new System.Windows.Forms.FormClosedEventHandler(parentForm_FormClosed);
+
 			if (Exiting != null)
 				Exiting(this, EventArgs.Empty);
 		}

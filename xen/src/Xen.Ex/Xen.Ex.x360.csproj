@@ -24,6 +24,7 @@
     <NoStdLib>true</NoStdLib>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <XnaCompressContent>true</XnaCompressContent>
+    <DocumentationFile>..\..\bin\Xbox 360\Debug\Xen.Ex.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Xbox 360' ">
     <DebugType>pdbonly</DebugType>
@@ -35,6 +36,7 @@
     <NoStdLib>true</NoStdLib>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <XnaCompressContent>true</XnaCompressContent>
+    <DocumentationFile>..\..\bin\Xbox 360\Release\Xen.Ex.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Xna.Framework">

@@ -50,7 +50,7 @@ namespace Xen.Ex.Scene
 		/// </summary>
 		/// <param name="complex">The 'complex' object that is drawn based on the occlusion of the predicate</param>
 		/// <param name="predicate">The 'simple' predicate object</param>
-		/// <param name="item">The minimum predicate pixel count required to draw the 'complex' object</param>
+		/// <param name="minmumPixelCount">The minimum predicate pixel count required to draw the 'complex' object</param>
 		public DrawPredicate(IDraw complex, IDraw predicate, int minmumPixelCount) : this(complex,predicate)
 		{
 			this.MinimumPixelCount = minmumPixelCount;
@@ -61,8 +61,8 @@ namespace Xen.Ex.Scene
 		/// </summary>
 		/// <param name="complex">The 'complex' object that is drawn based on the occlusion of the predicate</param>
 		/// <param name="predicate">The 'simple' predicate object</param>
-		/// <param name="item">The minimum predicate pixel count required to draw the 'complex' object</param>
-		/// <param name="initialVisibility">If false, the predicate will treat the query as having failed, this will require a positive query result before the object becomes visible</param>
+		/// <param name="minmumPixelCount">The minimum predicate pixel count required to draw the 'complex' object</param>
+		/// <param name="initialQueryVisibility">If false, the predicate will treat the query as having failed, this will require a positive query result before the object becomes visible</param>
 		public DrawPredicate(IDraw complex, IDraw predicate, int minmumPixelCount, bool initialQueryVisibility)
 			: this(complex, predicate, minmumPixelCount)
 		{

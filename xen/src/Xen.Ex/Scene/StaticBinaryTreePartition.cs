@@ -263,7 +263,7 @@ namespace Xen.Ex.Scene
 			}
 		}
 
-
+		/// <summary></summary>
 		protected override bool CullTestItems(ICuller culler)
 		{
 			return count > 0 && culler.TestBox(ref boundsMin, ref boundsMax);
@@ -289,7 +289,7 @@ namespace Xen.Ex.Scene
 
 
 		//remove children from a node, then add them back to the main list (to be readded next frame)
-		void ReAddChildren(ushort firstChild)
+		private void ReAddChildren(ushort firstChild)
 		{
 			uint child = firstChild;
 			child <<= ChildCountShift;
@@ -306,7 +306,7 @@ namespace Xen.Ex.Scene
 			}
 		}
 
-		ushort GetNewChildArrayBaseIndex()
+		private ushort GetNewChildArrayBaseIndex()
 		{
 			childIndex += ChildCount;
 
@@ -316,7 +316,7 @@ namespace Xen.Ex.Scene
 			return (ushort)(childIndex>>ChildCountShift);
 		}
 
-		ushort GetNewNodeIndex(ushort firstChild)
+		private ushort GetNewNodeIndex(ushort firstChild)
 		{
 			if (nodeCount == this.allNodes.Length)
 				Array.Resize(ref this.allNodes, this.allNodes.Length * 2);
@@ -329,6 +329,7 @@ namespace Xen.Ex.Scene
 			return nodeCount++;
 		}
 
+		/// <summary></summary>
 		protected override void OptimizeContents()
 		{
 			//each node leaf stores an index into the allChildren, and a child count

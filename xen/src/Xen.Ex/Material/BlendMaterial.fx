@@ -1,4 +1,4 @@
-//CompilerOptions = NoPreShader, InternalClass, UseAsmToHlslXboxConverter, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace
+//CompilerOptions = NoPreShader, InternalClass, UseAsmToHlslXboxConverter, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace, SkipConstantValidation
 //ConstantOverride = vs0tcb:vs0b,vs0tb,vs0cb;vs1tcb:vs1b,vs1tb,vs1cb;vs3tcb:vs3b,vs3tb,vs3cb;vs6tcb:vs6b,vs6tb,vs6cb;	vs0ncb:vs0nb;vs1ncb:vs1nb;vs3ncb:vs3nb;vs6ncb:vs6nb;	vs0ps0tcb:vs0ps0b,vs0ps0cb,vs0ps0tb;
 
 /*

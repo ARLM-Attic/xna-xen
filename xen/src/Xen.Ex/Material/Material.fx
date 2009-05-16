@@ -1,4 +1,4 @@
-//CompilerOptions = NoPreShader, InternalClass, UseAsmToHlslXboxConverter, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace
+//CompilerOptions = NoPreShader, InternalClass, UseAsmToHlslXboxConverter, AvoidFlowControl, PoolShaderBytes, DefinePlatform, ParentNamespace, SkipConstantValidation
 //ConstantOverride = vs0tc:vs0c,vs0t,vs0;vs1tc:vs1c,vs1t,vs1;vs3tc:vs3c,vs3t,vs3;vs6tc:vs6c,vs6t,vs6;	vs0nc:vs0n;vs1nc:vs1n;vs3nc:vs3n;vs6nc:vs6n;	ps0t:ps0;ps1t:ps1;ps2t:ps2;ps3t:ps3;ps4t:ps4;	ps0ts:ps0s;ps1ts:ps1s;ps2ts:ps2s;	vs0ps0tc:vs0ps0t,vs0ps0c,vs0ps0;
 
 //The first line of this file (always the very first line) is a shader generator hack, to set the compiler options.

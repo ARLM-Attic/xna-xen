@@ -4,7 +4,7 @@
 //On XBOX, set this using statement to the tutorial you would like to run:
 
 //Modify the next lines to set the example that will run
-//Tutorial_01 to Tutorial_24
+//Tutorial_01 to Tutorial_25
 
 //this next line can be commented out:
 #warning Please select a default tutorial for the xbox project (set on the next line):
@@ -43,7 +43,7 @@ namespace Tutorials
 					{
 						WinFormsExample form = new WinFormsExample();
 						tutorial.Run(form.XenWinFormsHostControl);
-
+						
 						System.Windows.Forms.Application.Run(form);
 					}
 					else

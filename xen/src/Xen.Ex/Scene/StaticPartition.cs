@@ -15,10 +15,15 @@ namespace Xen.Ex.Scene
 		private List<IDraw> drawList = new List<IDraw>();
 		private bool firstDraw = true, processingActive = false, runOptimize = true;
 
+		/// <summary>Implemented by a subclass</summary>
 		protected abstract void AddItem(IDraw item, ref Vector3 minBounds, ref Vector3 maxBounds);
+		/// <summary>Implemented by a subclass</summary>
 		protected abstract void DrawItems(DrawState state);
+		/// <summary>Implemented by a subclass</summary>
 		protected abstract bool CullTestItems(ICuller culler);
+		/// <summary>True once the partition has reached it's optimised state</summary>
 		protected bool IsOptimizedState { get { return !runOptimize; } }
+
 		/// <summary>
 		/// Optional method to override, called when it is expected that all contents have been added.
 		/// </summary>
@@ -339,7 +344,6 @@ namespace Xen.Ex.Scene
 		/// <para>If drawing/culling multiple items with the same parent (Where the world matrix does not change), this method can be used in place of calls to <see cref="BeginPreCullItem"/></para>
 		/// <para>This method is considerably faster than <see cref="BeginPreCullItem"/></para>
 		/// </summary>
-		/// <param name="state"></param>
 		public void ResetPreCullItem()
 		{
 			minBound = new Vector3();
@@ -545,7 +549,6 @@ namespace Xen.Ex.Scene
 		/// <para>If drawing/culling multiple items with the same parent (Where the world matrix does not change), this method can be used in place of calls to <see cref="BeginPreCullItem"/></para>
 		/// <para>This method is faster than <see cref="BeginPreCullItem"/></para>
 		/// </summary>
-		/// <param name="state"></param>
 		public void ResetPreCullItem()
 		{
 			this.count = 0;
@@ -557,9 +560,6 @@ namespace Xen.Ex.Scene
 		/// <para>Call this method to get the computed position. Call after culling/drawing an item. Call <see cref="BeginPreCullItem"/> before culling/drawing the item.</para>
 		/// <para>Returns false if the position could not be determined</para>
 		/// </summary>
-		/// <param name="min"></param>
-		/// <param name="max"></param>
-		/// <returns></returns>
 		public bool TryGetPosition(out Vector3 position)
 		{
 			position = this.position;

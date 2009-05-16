@@ -376,7 +376,7 @@ namespace Xen.Ex.Graphics2D
 		/// </summary>
 		/// <param name="position"></param>
 		/// <param name="size"></param>
-		/// <param name="drawTargetSize"></param>
+		/// <param name="drawTarget"></param>
 		/// <returns></returns>
 		public bool TryGetLayout(out Vector2 position, out Vector2 size, DrawTarget drawTarget)
 		{

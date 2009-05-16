@@ -68,7 +68,9 @@ namespace Xen.Ex.Graphics.Display
 			set { useRotationToScaleVelocityEffect = value; }
 		}
 
-		//draws the particles on a GPU system
+		/// <summary>
+		/// draws the particles on a GPU system
+		/// </summary>
 		protected override void DrawGpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Texture2D positionTex, Texture2D velocityRotation, Texture2D colourTex, Texture2D userValues, bool usesUserValuesPositionBuffer)
 		{
 			//this is very similar to the billboard drawer (see it for reference)
@@ -191,6 +193,9 @@ namespace Xen.Ex.Graphics.Display
 
 #if !XBOX360
 		//draws on CPU particle systems
+		/// <summary>
+		/// draws the particles from a CPU system
+		/// </summary>
 		protected override void DrawCpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Vector4[] positionSize, Vector4[] velocityRotation, Vector4[] colourData, Vector4[] userValues)
 		{
 			//this is very similar to the billboard drawer (see it for reference)

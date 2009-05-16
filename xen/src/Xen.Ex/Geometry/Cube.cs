@@ -163,11 +163,12 @@ namespace Xen.Ex.Geometry
 
 		#region IBeginEndDrawBatch Members
 
+		/// <summary>Begin drawing this cube as a batch operation</summary>
 		public StreamFrequency.InstanceBuffer BeginDrawBatch(DrawState state, int maxInstances)
 		{
 			return state.BeginDrawBatch(maxInstances);
 		}
-
+		/// <summary>End drawing this cube as a batch operation</summary>
 		public void EndDrawBatch(DrawState state, StreamFrequency.InstanceBuffer buffer)
 		{
 			state.EndDrawBatch(verts, inds, PrimitiveType.TriangleList, buffer);
@@ -177,6 +178,9 @@ namespace Xen.Ex.Geometry
 
 		#region ICullableInstance Members
 
+		/// <summary>
+		/// Cull test this box using a local world matrix
+		/// </summary>
 		public bool CullTest(ICuller culler, ref Matrix instance)
 		{
 			return culler.TestBox(ref min, ref max, ref instance);

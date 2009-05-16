@@ -34,7 +34,9 @@ namespace Xen.Ex.Graphics.Display
 		{
 		}
 
-		//implements the method to draw gpu particles
+		/// <summary>
+		/// <para>implements the method to draw gpu particles</para>
+		/// <para>Note: When 'usesUserValuesPositionBuffer' is true, the values 'user1, user2 and user3' (yzw in the UserTexture) store a position offset for the particle</para></summary>
 		protected override void DrawGpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Texture2D positionTex, Texture2D velocityRotation, Texture2D colourTex, Texture2D userValues, bool usesUserValuesPositionBuffer)
 		{
 			Vector2 targetSize = state.DrawTarget.Size;
@@ -168,6 +170,9 @@ namespace Xen.Ex.Graphics.Display
 
 #if !XBOX360
 
+		/// <summary>
+		/// <para>implements the method to draw cpu particles</para>
+		/// </summary>
 		protected override void DrawCpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Vector4[] positionSize, Vector4[] velocityRotation, Vector4[] colourData, Vector4[] userValues)
 		{
 			//this is a bit more complex, but mostly the same as the GPU draw method

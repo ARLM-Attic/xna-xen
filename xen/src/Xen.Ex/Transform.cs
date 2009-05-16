@@ -382,6 +382,7 @@ namespace Xen.Ex
 		}
 		*/
 
+		/// <summary>Interpolate this transform towards the identity transform</summary>
 		public void InterpolateToIdentity(float weighting)
 		{
 			this.Translation.X *= weighting;

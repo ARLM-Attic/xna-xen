@@ -68,7 +68,9 @@ namespace Xen.Ex.Graphics.Display
 		}
 
 
-		//implements the method to draw gpu particles
+		/// <summary>
+		/// implements the method to draw gpu particles
+		/// </summary>
 		protected override void DrawGpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Texture2D positionTex, Texture2D velocityRotation, Texture2D colourTex, Texture2D userValues, bool usesUserValuesPositionBuffer)
 		{
 			Vector2 targetSize = state.DrawTarget.Size;
@@ -211,6 +213,9 @@ namespace Xen.Ex.Graphics.Display
 
 #if !XBOX360
 
+		/// <summary>
+		/// implements the method to draw cpu processed particles
+		/// </summary>
 		protected override void DrawCpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Vector4[] positionSize, Vector4[] velocityRotation, Vector4[] colourData, Vector4[] userValues)
 		{
 			//this is a bit more complex, but mostly the same as the GPU draw method

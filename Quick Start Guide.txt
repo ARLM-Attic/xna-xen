@@ -1,7 +1,7 @@
 Xen: Graphics API for XNA
 www.codeplex.com/xen
 
-version 1.5 (XNA 3.0)
+version 1.6 (XNA 3.0)
 
 
 
@@ -39,10 +39,20 @@ XboxLive: StatusUnknown
 -- Change Log
 
 ----------------
+-- 15/MAY/09
+-- Version 1.6 (BETA)
+
+[Improved] BETA: The shader custom tool has had a major overhaul, and now includes full source code
+[Added] The 'XenShaderUpdate' tool has been added. This program recurses a directory and updates all out of date shaders it finds
+
+[Fixed] A bug where nested particles were not always processed in the correct order
+[Fixed] Many little bugs and minor improvements
+
+NOTE: If updating from 1.5, make sure to run the prebuild!
+
+----------------
 -- 15/APR/09
 -- Version 1.5.3
-
-Minor update before 1.6
 
 [Fixed] A bug where UpdateManager.Remove() would throw an exception when the object was already removed
 [Fixed] A bug where GPU ParticleSystem rand and rand_smooth were swapped on the xbox, due to texture format differences
@@ -180,7 +190,7 @@ Xen RELEASE builds run faster, but provide fewer runtime checks.
 
 
 -----------------------------------------------------------------------------------------------------
--- The CustomTool and registerFX / prebuild:
+-- The CustomTool and unregister FX / prebuild:
 
 
 Before trying to use xen, run the 'prebuild' batch file.
@@ -260,7 +270,7 @@ Xen provides complete replacements for all of these, which form the major parts 
 
 
 -----------------------------------------------------------------------------------------------------
--- Getting started: The Example project
+-- Getting started: The Tutorials project
 
 
 The Tutorials project can be loaded by opening ./xen/Tutorials.sln, this uses the 'prebuild' xen build.
@@ -272,4 +282,4 @@ feature at a time, starting with the base Application class.
 Take a moment to read them, they demonstrate the fundamentals in xen with a minimum of fuss.
 
 
-Thankyou!
+Thank you!

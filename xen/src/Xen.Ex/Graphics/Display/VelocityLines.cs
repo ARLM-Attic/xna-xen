@@ -55,7 +55,9 @@ namespace Xen.Ex.Graphics.Display
 			this.useRotationToScaleVelocityEffect = useRotationValueToScaleVelocityEffect;
 		}
 
-		//draws the particles on a GPU system
+		/// <summary>
+		/// draws the particles on a GPU system
+		/// </summary>
 		protected override void DrawGpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Texture2D positionTex, Texture2D velocityRotation, Texture2D colourTex, Texture2D userValues, bool usesUserValuesPositionBuffer)
 		{
 			Vector2 targetSize = state.DrawTarget.Size;
@@ -167,7 +169,9 @@ namespace Xen.Ex.Graphics.Display
 		}
 
 #if !XBOX360
-		//draws the particles on a CPU particle system
+		/// <summary>
+		/// draws the particles from a CPU system
+		/// </summary>
 		protected override void DrawCpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint particleCount, AlphaBlendState blendMode, Vector4[] positionSize, Vector4[] velocityRotation, Vector4[] colourData, Vector4[] userValues)
 		{
 			Vector2 targetSize = state.DrawTarget.Size;
@@ -239,6 +243,7 @@ namespace Xen.Ex.Graphics.Display
 
 		static string verticesID = typeof(VelocityLineParticles2DElement).FullName + ".vertices";
 
+		/// <summary>Generates a vertex buffer used for drawing lines in GPU or CPU batches</summary>
 		public static void GenerateLinesVertices(DrawState state, ref IVertices vertices)
 		{
 			if (vertices != null)

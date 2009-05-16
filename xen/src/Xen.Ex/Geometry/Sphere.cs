@@ -126,20 +126,24 @@ namespace Xen.Ex.Geometry
 		{
 		}
 
+		/// <summary></summary>
 		public bool CullTest(ICuller culler)
 		{
 			return culler.TestSphere(radius);
-        }
+		}
+		/// <summary></summary>
         public bool CullTest(ICuller culler, float radius)
         {
             return culler.TestSphere(radius);
         }
 
+		/// <summary>Draw the sphere</summary>
 		public void Draw(DrawState state)
 		{
 			verts.Draw(state, inds, PrimitiveType.TriangleList);
 		}
 
+		/// <summary>Draw this sphere as a batch</summary>
 		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances, int instanceCount)
 		{
 			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances, instanceCount);
@@ -147,11 +151,13 @@ namespace Xen.Ex.Geometry
 
 		#region IBeginEndDrawBatch Members
 
+		/// <summary>Begin drawing this sphere as a batch</summary>
 		public StreamFrequency.InstanceBuffer BeginDrawBatch(DrawState state, int maxInstances)
 		{
 			return state.BeginDrawBatch(maxInstances);
 		}
 
+		/// <summary>End drawing this sphere as a batch</summary>
 		public void EndDrawBatch(DrawState state, StreamFrequency.InstanceBuffer buffer)
 		{
 			state.EndDrawBatch(verts, inds, PrimitiveType.TriangleList, buffer);
@@ -161,6 +167,9 @@ namespace Xen.Ex.Geometry
 
 		#region ICullableInstance Members
 
+		/// <summary>
+		/// Cull test this sphere, using a world matrix to provide the position of the sphere
+		/// </summary>
 		public bool CullTest(ICuller culler, ref Matrix instance)
 		{
 			return culler.TestSphere(this.radius, instance.Translation);

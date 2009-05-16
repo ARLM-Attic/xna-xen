@@ -16,7 +16,7 @@ namespace Xen.Ex.Scene
 	/// <remarks>
 	/// <para>This class works by acting as both a DrawTarget Modifier and a PostCuller cull test primitive</para>
 	/// <para>A DrawTarget Modifier is setup/shutdown when the DrawTarget begins/finishes rendering. (see <see cref="IBeginEndDraw"/>)</para>
-	/// <para>During the setup phase, this class adds itself as a PostCuller to the DrawTarget (see <see cref="DrawTargetPushPostCuller"/>, this allows the class to record the bounding boxes and spheres used for successful CullTests performed</para>
+	/// <para>During the setup phase, this class adds itself as a PostCuller to the DrawTarget (see <see cref="DrawState.PushPostCuller"/>, this allows the class to record the bounding boxes and spheres used for successful CullTests performed</para>
 	/// <para>During the shutdown phase, this class draws the recorded sphers/cubes.</para>
 	/// <para>Note: The Camera is not avaliable during cull testing, so the camera must be provided in the constructor of this class. Any CullTests performed with a custom camera will not be visualised correctly by this class</para>
 	/// </remarks>

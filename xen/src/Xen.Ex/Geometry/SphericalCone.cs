@@ -176,20 +176,24 @@ namespace Xen.Ex.Geometry
 			this.inds = new Indices<ushort>(inds);
 		}
 
+		/// <summary>Culltest the cone</summary>
 		public bool CullTest(ICuller culler)
 		{
 			return culler.TestSphere(radius);
-        }
+		}
+		/// <summary>Culltest the cone with a specified radius</summary>
         public bool CullTest(ICuller culler, float radius)
         {
             return culler.TestSphere(radius);
         }
 
+		/// <summary>Draw the cone</summary>
 		public void Draw(DrawState state)
 		{
 			verts.Draw(state, inds, PrimitiveType.TriangleList);
 		}
 
+		/// <summary>Draw the cone as a batch</summary>
 		public void DrawBatch(DrawState state, Callback<bool, int, ICuller> CanDrawItem, Matrix[] instances, int instanceCount)
 		{
 			state.DrawBatch(verts, inds, PrimitiveType.TriangleList, CanDrawItem, instances, instanceCount);
@@ -197,11 +201,15 @@ namespace Xen.Ex.Geometry
 
 		#region IBeginEndDrawBatch Members
 
+		/// <summary>Begin drawing a batch of cone objects
+		/// </summary>
 		public StreamFrequency.InstanceBuffer BeginDrawBatch(DrawState state, int maxInstances)
 		{
 			return state.BeginDrawBatch(maxInstances);
 		}
 
+		/// <summary>End drawing a batch of cone objects
+		/// </summary>
 		public void EndDrawBatch(DrawState state, StreamFrequency.InstanceBuffer buffer)
 		{
 			state.EndDrawBatch(verts, inds, PrimitiveType.TriangleList, buffer);
@@ -211,6 +219,9 @@ namespace Xen.Ex.Geometry
 
 		#region ICullableInstance Members
 
+		/// <summary>
+		/// Culltest the cone with a instance world matrix providing the postion of the cone
+		/// </summary>
 		public bool CullTest(ICuller culler, ref Matrix instance)
 		{
 			return culler.TestSphere(this.radius, instance.Translation);

@@ -136,6 +136,52 @@ namespace Xen.Camera
 		/// </summary>
 		/// <returns></returns>
 		Plane[] GetCullingPlanes();
+
+
+
+		#region Project / UnProject
+
+		/// <summary>
+		/// <para>Projects a position in 3D space into draw target pixel coordinates</para>
+		/// <para>Returns false if the projected point is behind the camera</para>
+		/// </summary>
+		/// <param name="position">3D world space position to project into draw target coordinates</param>
+		/// <param name="coordinate">Draw target coordinates of the projected position</param>
+		/// <returns>True if the projected position is in front of the camera</returns>
+		/// <param name="target">Draw Target space to project the point onto</param>
+		bool ProjectToTarget(ref Vector3 position, out Vector2 coordinate, Graphics.DrawTarget target);
+
+		/// <summary>
+		/// <para>Projects a position in draw target pixel coordinates into a 3D position in world space, based on a projection depth</para>
+		/// <para>NOTE: For 3D Cameras this method is expensive! Where possible use <see cref="DrawState.ProjectFromScreen"/></para>
+		/// </summary>
+		/// <param name="coordinate">Coordinate in draw target pixels to project into world space</param>
+		/// <param name="projectDepth">World space depth to project from the camera position</param>
+		/// <param name="position">projected position</param>
+		/// <param name="target">Draw Target space to unproject the point from</param>
+		void ProjectFromTarget(ref Vector2 coordinate, float projectDepth, out Vector3 position, Graphics.DrawTarget target);
+
+		/// <summary>
+		/// <para>Projects a position in 3D space into [-1,+1] projected coordinates</para>
+		/// <para>[-1,+1] Coordinates are equivalent of the size of a DrawTarget, where (-1,-1) is bottom left, (1,1) is top right and (0,0) is centered</para>
+		/// <para>Returns false if the projected point is behind the camera</para>
+		/// </summary>
+		/// <param name="position">3D world space position to project into [-1,+1] projected coordinates</param>
+		/// <param name="coordinate">[-1,+1] coordinates of the projected position</param>
+		/// <returns>True if the projected position is in front of the camera</returns>
+		bool ProjectToCoordinate(ref Vector3 position, out Vector2 coordinate);
+
+		/// <summary>
+		/// <para>Projects a position in [-1,+1] coordinates into a 3D position in world space, based on a projection depth</para>
+		/// <para>[-1,+1] Coordinates are equivalent of the size of a DrawTarget, where (-1,-1) is bottom left, (1,1) is top right and (0,0) is centered</para>
+		/// <para>NOTE: For 3D Cameras this method is expensive! Where possible use <see cref="DrawState.ProjectFromScreen"/></para>
+		/// </summary>
+		/// <param name="coordinate">Coordinate in [-1,+1] to project into world space</param>
+		/// <param name="projectDepth">World space depth to project from the camera position</param>
+		/// <param name="position">unprojected position</param>
+		void ProjectFromCoordinate(ref Vector2 coordinate, float projectDepth, out Vector3 position);
+
+		#endregion
 	}
 }
 

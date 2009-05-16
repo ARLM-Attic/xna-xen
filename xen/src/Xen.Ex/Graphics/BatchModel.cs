@@ -338,8 +338,6 @@ namespace Xen.Ex.Graphics
 		/// <summary>
 		/// Cull test this instance of the BatchModel
 		/// </summary>
-		/// <param name="culler"></param>
-		/// <returns></returns>
 		public bool CullTest(ICuller culler, ref Matrix instance)
 		{
 			return parent.CullChild(culler, ref instance);

@@ -636,6 +636,7 @@ namespace Xen.Ex.Filters
 		/// Blur the source horizontally to the <paramref name="intermediate"/> target, then blur vertically back to <paramref name="source"/>. (Xbox360 may specify null for <paramref name="intermediate"/> if the render target will fit in 10mib)
 		/// </summary>
 		/// <param name="source"></param>
+		/// <param name="filterFormat">format of the blur filter</param>
 		/// <param name="intermediate">draw target to use as a temporary, intermediate target for blurring</param>
 		public BlurFilter(BlurFilterFormat filterFormat, DrawTargetTexture2D source, DrawTargetTexture2D intermediate) : 
 			this(filterFormat,source,intermediate,source)
@@ -646,6 +647,7 @@ namespace Xen.Ex.Filters
 		/// Blur the source horizontally to the <paramref name="intermediate"/> target, then blur vertically to <paramref name="target"/>.
 		/// </summary>
 		/// <param name="source"></param>
+		/// <param name="filterFormat">format of the blur filter</param>
 		/// <param name="intermediate">draw target to use as a temporary, intermediate target for blurring</param>
 		/// <param name="target"></param>
 		public BlurFilter(BlurFilterFormat filterFormat, DrawTargetTexture2D source, DrawTargetTexture2D intermediate, DrawTargetTexture2D target)

@@ -73,6 +73,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Tutorial 01\Game class.cs" />
     <Compile Include="Tutorial 25\shader.fx.cs">
       <DependentUpon>shader.fx</DependentUpon>
       <AutoGen>True</AutoGen>
@@ -88,7 +89,6 @@
     <Compile Include="Tutorial 17\Keyboard Input.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="Tutorial 01\Game class.cs" />
     <Compile Include="Tutorial 02\Draw sphere.cs" />
     <Compile Include="Tutorial 03\Custom shader.cs" />
     <Compile Include="Tutorial 03\shader.fx.cs">

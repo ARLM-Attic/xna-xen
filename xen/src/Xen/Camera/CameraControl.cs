@@ -713,6 +713,8 @@ namespace Xen
 		private static int renderStackSize = 128;
 		private static bool renderStackSizeUsed = false;
 
+		//this is a general change index for internal matrix state.
+		//it does not represent the current rendeirng frame
 		private int frame;
 
 		private readonly ICullPrimitive[] preCullers = new ICullPrimitive[RenderStackSize], postCullers = new ICullPrimitive[RenderStackSize];
@@ -757,6 +759,11 @@ namespace Xen
 			}
 		}
 #endif
+
+		private void InvalidCamera()
+		{
+			throw new ArgumentNullException("DrawState.Camera == null.\nThe operation being performed requires a camera to be active - this usually means there isn't an active draw target.\nNOTE: Drawing may not be performed directly in the Application Draw() method - no DrawTargets are active in this method, so direct rendering cannot be performed.");
+		}
 
 		/// <summary>
 		/// Pushes a culler onto the pre-culling stack (pre-culling cull tests occurs <i>before</i> the default onscreen Culler). Fast cull operations are usually added here
@@ -814,7 +821,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			for (int i = preCullerCount-1; i >=0; i--)
 			{
@@ -856,7 +863,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
@@ -927,7 +934,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -994,7 +1001,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
@@ -1038,7 +1045,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			Vector3 pos;
 #if XBOX360
@@ -1095,7 +1102,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			Vector3 pos;
 			if (ms_World.isIdentity)
@@ -1153,7 +1160,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1206,7 +1213,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
@@ -1288,7 +1295,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			for (int i = preCullerCount - 1; i >= 0; i--)
 			{
@@ -1366,7 +1373,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 
 			for (int i = preCullerCount - 1; i >= 0; i--)
@@ -1419,7 +1426,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			Vector3 pos;
 #if XBOX360
@@ -1486,7 +1493,7 @@ namespace Xen
 #endif
 #if DEBUG
 			if (camera == null)
-				throw new ArgumentNullException("DrawState.Camera == null");
+				InvalidCamera();
 #endif
 			Vector3 pos;
 			Vector3.Transform(ref position, ref ms_World.value, out pos);
@@ -4245,15 +4252,20 @@ namespace Xen
 
 		#region Project / UnProject
 
+		//this method should really be named ProjectToTarget
+
 		/// <summary>
-		/// <para>Projects a position in 3D space into screen pixel coordinates</para>
+		/// <para>Projects a position in 3D object space into pixel coordinates of the screen (or current DrawTarget)</para>
 		/// <para>Returns false if the projected point is behind the camera</para>
 		/// </summary>
-		/// <param name="position">3D position to project into screen coordinates</param>
+		/// <param name="position">3D position in object space to project into screen coordinates</param>
 		/// <param name="screenCoordinate">screen coordinates of the projected position</param>
 		/// <returns>True if the projected position is in front of the camera</returns>
 		public bool ProjectToScreen(ref Vector3 position, out Vector2 screenCoordinate)
 		{
+			unchecked { frame++; }
+			this.ms_World.UpdateValue(this.frame);
+
 			Vector3 pos;
 			Vector3.Transform(ref position, ref ms_World.value, out pos);
 
@@ -4275,17 +4287,52 @@ namespace Xen
 			screenCoordinate.X = drawTargetSize.X * (screenCoordinate.X * 0.5f + 0.5f);
 			screenCoordinate.Y = drawTargetSize.Y * (screenCoordinate.Y * 0.5f + 0.5f);
 
-			return worldPositionW.Z > 0;
+			return worldPositionW.Z * worldPositionW.W > 0;
 		}
 
 		/// <summary>
-		/// Projects a position in screen coordinates into a 3D position in world space
+		/// <para>Projects a world position in 3D space into pixel coordinates of the screen (or current DrawTarget)</para>
+		/// <para>Returns false if the projected point is behind the camera</para>
+		/// </summary>
+		/// <param name="worldPosition">3D position in world space to project into screen coordinates</param>
+		/// <param name="screenCoordinate">screen coordinates of the projected position</param>
+		/// <returns>True if the projected position is in front of the camera</returns>
+		public bool ProjectWorldToScreen(ref Vector3 worldPosition, out Vector2 screenCoordinate)
+		{
+			unchecked { frame++; }
+			Vector3 pos = worldPosition;
+			Vector4 worldPositionW = new Vector4(pos, 1.0f);
+
+			this.ms_ViewProjection.UpdateValue(this.frame);
+
+			Vector2 drawTargetSize;
+			int index = -1;
+			DrawTarget.GetWidthHeightAsVector(out drawTargetSize, ref index);
+
+			Vector4.Transform(ref worldPositionW, ref this.ms_ViewProjection.value, out worldPositionW);
+
+			if (worldPositionW.W != 0)
+				worldPositionW.W = 1.0f / worldPositionW.W;
+
+			screenCoordinate = new Vector2(worldPositionW.X * worldPositionW.W, worldPositionW.Y * worldPositionW.W);
+
+			screenCoordinate.X = drawTargetSize.X * (screenCoordinate.X * 0.5f + 0.5f);
+			screenCoordinate.Y = drawTargetSize.Y * (screenCoordinate.Y * 0.5f + 0.5f);
+
+			return worldPositionW.Z * worldPositionW.W > 0;
+		}
+
+		//this method should really be named ProjectFromTarget
+
+		/// <summary>
+		/// Projects a position in coordinates of the screen (or current DrawTarget) into a 3D position in world space
 		/// </summary>
 		/// <param name="screenPosition">Position in screen space to project into world space</param>
 		/// <param name="projectDepth">Depth to project from the camera position</param>
-		/// <param name="position">projected position</param>
-		public void ProjectFromScreen(ref Vector2 screenPosition, float projectDepth, out Vector3 position)
+		/// <param name="worldPosition">projected world position</param>
+		public void ProjectFromScreen(ref Vector2 screenPosition, float projectDepth, out Vector3 worldPosition)
 		{
+			unchecked { frame++; }
 			this.ms_ViewProjection_Inverse.UpdateValue(this.frame);
 
 			Vector2 drawTargetSize;
@@ -4309,6 +4356,7 @@ namespace Xen
 				coordinate.W = 1;
 			}
 
+			//this could probably be done better...
 			Vector3 cameraPos;
 			camera.GetCameraPosition(out cameraPos);
 
@@ -4324,10 +4372,10 @@ namespace Xen
 			difference.Y *= projectDepth;
 			difference.Z *= projectDepth;
 
-			position = new Vector3();
-			position.X = difference.X + cameraPos.X;
-			position.Y = difference.Y + cameraPos.Y;
-			position.Z = difference.Z + cameraPos.Z;
+			worldPosition = new Vector3();
+			worldPosition.X = difference.X + cameraPos.X;
+			worldPosition.Y = difference.Y + cameraPos.Y;
+			worldPosition.Z = difference.Z + cameraPos.Z;
 		}
 
 		#endregion

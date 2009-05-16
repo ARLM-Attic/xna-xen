@@ -35,7 +35,7 @@ namespace Tutorials.Tutorial_01
 	//This is a basic implementation of the Application class.
 	//All it will do is draw to the screen, clearing it to blue.
 
-	[DisplayName(Name = "Tutorial 01: Game Class")]
+	[DisplayName(Name = "Tutorial 01: Application Class")]
 	public class Tutorial : Application
 	{
 		//A DrawTarget is a class that performs all the logic needed to complete a draw operation to

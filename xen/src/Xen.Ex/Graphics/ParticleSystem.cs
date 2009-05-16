@@ -117,7 +117,7 @@ namespace Xen.Ex.Graphics
 		/// <summary>
 		/// <para>If true, the ParticleSystem will pause updating when nothing is currently drawing the particle system (default false)</para>
 		/// <para>Setting this to true is recommended for looping effects that may not always have their displayers on screen</para>
-		/// <para>Note: 3D Displays require thier <see cref="ParticleDrawer3D.CullProxy"/> member to be set to perform culling, or to be manually culled by the application</para>
+		/// <para>Note: 3D Displays require thier <see cref="Display.ParticleDrawer3D.CullProxy"/> member to be set to perform culling, or to be manually culled by the application</para>
 		/// </summary>
 		public bool PauseUpdatingWhileCulled
 		{
@@ -443,6 +443,8 @@ namespace Xen.Ex.Graphics
 		//called on the task thread
 		internal void UpdateParticles()
 		{
+			List<ParticleStore> sortedList = ComputeDependantOrderForFrame();
+
 			//first time updating?
 			if (timeStep == 0 && this.systemLogic.OnceEmitter != null)
 			{
@@ -451,12 +453,12 @@ namespace Xen.Ex.Graphics
 					totalParticles += particleStore[i].Count;
 
 				if (totalParticles > 0) // special case, the OnceEmitter has created particles, need to run a processor pass first
-					RunProcessorLogic();
+					RunProcessorLogic(sortedList);
 			}
 
 			//update the particle types
-			for (int i = 0; i < particleStore.Length; i++)
-				particleStore[i].Update(this, timeStep);
+			for (int i = 0; i < sortedList.Count; i++)
+				sortedList[i].Update(this, timeStep);
 
 			//spawn from here
 			activeSpawnDetails = this.userSpawnDetailsBuffer;
@@ -471,17 +473,17 @@ namespace Xen.Ex.Graphics
 				toggle.Run(timeStep, ref activeSpawnDetails);
 
 			//run the processor
-			RunProcessorLogic();
+			RunProcessorLogic(sortedList);
+
+			for (int i = 0; i < this.particleStore.Length; i++)
+				this.particleStore[i].ClearTypeEmitDependance();
 
 			renderStepCount++;
 			timeStep++;
 		}
 
-		//run the per-particle processor (eg, the CPU or GPU processor)
-		private void RunProcessorLogic()
+		private List<ParticleStore> ComputeDependantOrderForFrame()
 		{
-
-			float deltaTime = 1.0f / systemLogic.Frequency;
 
 			//check for recursive particle emitting
 			//(which doesn't work with the way rendering is performed on the xbox)
@@ -518,14 +520,17 @@ namespace Xen.Ex.Graphics
 			sortedList.Reverse();
 			//sorted....
 
+			return sortedList;
+		}
+
+		//run the per-particle processor (eg, the CPU or GPU processor)
+		private void RunProcessorLogic(List<ParticleStore> sortedList)
+		{
+			float deltaTime = 1.0f / systemLogic.Frequency;
 
 			//perform the update in dependant order
-			for (int i = 0; i < particleStore.Length; i++)
+			for (int i = 0; i < sortedList.Count; i++)
 				sortedList[i].UpdateProcessor(timeStep, globalValues, deltaTime);
-
-
-			for (int i = 0; i < this.particleStore.Length; i++)
-				this.particleStore[i].ClearTypeEmitDependance();
 		}
 
 		//can't have particle emit a->b->a in a single frame
@@ -634,7 +639,6 @@ namespace Xen.Ex.Graphics
 		/// <summary>
 		/// Warms the particle system (preloads any resources used)
 		/// </summary>
-		/// <param name="state"></param>
 		public void Warm(Application application)
 		{
 			if (this.systemData == null)

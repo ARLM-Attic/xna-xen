@@ -42,6 +42,7 @@ namespace Xen.Ex.Graphics.Content
 
 #if DEBUG && !XBOX360
 
+		/// <summary></summary>
 		public GeometryBounds(Vector3 max, Vector3 min, float radius, Vector3 radiusCentre)
 		{
 			this.maximum = max;
@@ -52,6 +53,7 @@ namespace Xen.Ex.Graphics.Content
 
 #endif
 
+		/// <summary></summary>
 		public GeometryBounds(BinaryReader reader)
 		{
 			this.maximum = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
@@ -60,7 +62,7 @@ namespace Xen.Ex.Graphics.Content
 			this.radiusCentre = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 		}
 
-		//builds a geometry bounds that encompasses a set of bounds
+		/// <summary>builds a geometry bounds that encompasses a set of bounds</summary>
 		internal GeometryBounds(GeometryBounds[] bounds)
 		{
 			maximum = new Vector3();
@@ -114,6 +116,8 @@ namespace Xen.Ex.Graphics.Content
 
 			this = new GeometryBounds(bounds).Difference(staticBound);
 		}
+
+		/// <summary>Combine this bounds with the specified bounds, return the result</summary>
 		public GeometryBounds Combine(ref GeometryBounds bound)
 		{
 			GeometryBounds previous = this;
@@ -264,6 +268,7 @@ namespace Xen.Ex.Graphics.Content
 
 #if DEBUG && !XBOX360
 
+		/// <summary></summary>
 		public ModelData(string name, MeshData[] meshes, SkeletonData skeleton, AnimationData[] animations)
 		{
 			this.name = name;
@@ -391,6 +396,7 @@ namespace Xen.Ex.Graphics.Content
 
 #if DEBUG && !XBOX360
 
+		/// <summary></summary>
 		public MeshData(string name, GeometryData[] data, AnimationData[] animations)
 		{
 			this.name = name;
@@ -491,17 +497,26 @@ namespace Xen.Ex.Graphics.Content
 		internal readonly bool useVertexColour;
 		private Texture2D textureMap, normalMap;
 
+		/// <summary>Alpha channel value</summary>
 		public float Alpha { get { return alpha; } }
+		/// <summary>Light specular (shine) reflection power. Higher numbers produce more focused specular reflections</summary>
 		public float SpecularPower { get { return specularPower; } }
+		/// <summary>Light diffuse reflection colour</summary>
 		public Vector3 DiffuseColour { get { return diffuse; } }
+		/// <summary>Light emittance</summary>
 		public Vector3 EmissiveColour { get { return emissive; } }
+		/// <summary>Light specular reflection colour</summary>
 		public Vector3 SpecularColour { get { return specular; } }
+		/// <summary>Modulate output colour by the vertex colour</summary>
 		public bool UseVertexColour { get { return useVertexColour; } }
+		/// <summary></summary>
 		public Texture2D Texture { get { return textureMap; } }
+		/// <summary></summary>
 		public Texture2D NormalMap { get { return normalMap; } }
 
 #if DEBUG && !XBOX360
 
+		/// <summary></summary>
 		public MaterialData(
 			float alpha, float specularPower,
 			Vector3 diffuse, Vector3 emissive, Vector3 specular,
@@ -541,6 +556,7 @@ namespace Xen.Ex.Graphics.Content
 
 #if DEBUG && !XBOX360
 
+		/// <summary></summary>
 		public void Write(BinaryWriter writer)
 		{
 			writer.Write(alpha);
@@ -599,6 +615,7 @@ namespace Xen.Ex.Graphics.Content
 		readonly private int maxIndex;
 		readonly private int[] indexData;
 
+		/// <summary></summary>
 		public GeometryData(string name, VertexElement[] elements, byte[] data, int[] indexData, MaterialData material, SkeletonData skeleton, AnimationData[] animations, bool targetXbox)
 		{
 			this.name = name;
@@ -1143,6 +1160,7 @@ namespace Xen.Ex.Graphics.Content
 
 #if DEBUG && !XBOX360
 
+		/// <summary></summary>
 		public AnimationData(string name, int[] indices, KeyFrameData[] keyframes, float duration, float tollerance)
 		{
 			this.name = name;
@@ -1258,8 +1276,6 @@ namespace Xen.Ex.Graphics.Content
 		/// <para>Returns a stream for reading compressed <see cref="Transform"/> data for an animation stream. Read bone transform data using a <see cref="CompressedTransformReader"/></para>
 		/// <para>NOTE: Xen 1.5 decodes some complex animation streams at load time. If this method returns null, the <see cref="Transform"/> stream has already been decompressed (see <see cref="TryGetBoneDecompressedTransforms"/>).</para>
 		/// </summary>
-		/// <param name="boneId"></param>
-		/// <returns></returns>
 		public Stream GetBoneCompressedTransformStream(int boneIndex)
 		{
 			if (keyframeChannels[boneIndex] == null)
@@ -1271,8 +1287,6 @@ namespace Xen.Ex.Graphics.Content
 		/// <para>Gets bone transform data that was decompressed at load time (simple animation streams are not decompressed at load time)</para>
 		/// <para>Returns true if the stream was decompressed. Use <see cref="GetBoneCompressedTransformStream"/> to get the compressed transform stream</para>
 		/// </summary>
-		/// <param name="boneId"></param>
-		/// <returns></returns>
 		public bool TryGetBoneDecompressedTransforms(int boneIndex, out ReadOnlyArrayCollection<Transform> transforms)
 		{
 			transforms = ReadOnlyArrayCollection<Transform>.Empty;
@@ -1401,11 +1415,13 @@ namespace Xen.Ex.Graphics.Content
 		readonly float time;
 		readonly Transform[] transforms;
 		
+		/// <summary></summary>
 		public KeyFrameData(float time, Transform[] transforms)
 		{
 			this.time = time;
 			this.transforms = transforms;
 		}
+		/// <summary></summary>
 		public KeyFrameData(float time, Matrix[] transforms)
 		{
 			this.time = time;
@@ -1414,12 +1430,15 @@ namespace Xen.Ex.Graphics.Content
 				this.transforms[i] = new Transform(ref transforms[i]);
 		}
 
-
+		/// <summary>
+		/// Gets the local bone transforms for this keyframe
+		/// </summary>
 		public ReadOnlyArrayCollection<Transform> BoneTransforms
 		{
 			get { return new ReadOnlyArrayCollection<Transform>(transforms); }
 		}
 
+		/// <summary>Gets the time value of this keyframe</summary>
 		public float Time { get { return time; } }
 	}
 
@@ -1437,6 +1456,7 @@ namespace Xen.Ex.Graphics.Content
 #if DEBUG && !XBOX360
 		internal readonly Matrix[] boneLocalMatrices;
 
+		/// <summary></summary>
 		public SkeletonData(Matrix[] boneTransforms, BoneData[] bones)
 		{
 			this.boneLocalMatrices = boneTransforms;
@@ -1553,7 +1573,7 @@ namespace Xen.Ex.Graphics.Content
 		}
 #endif
 		/// <summary>
-		/// Applies the inverse of the <see cref="TransformHierarchy"/> method. (This operation is considerably slower and should not be performed at runtime)
+		/// Applies the inverse of the <see cref="TransformHierarchy(Transform[])"/> method. (This operation is considerably slower and should not be performed at runtime)
 		/// </summary>
 		/// <param name="transforms"></param>
 		public void TransformHierarchyInverse(Transform[] transforms)
@@ -1576,7 +1596,7 @@ namespace Xen.Ex.Graphics.Content
 		}
 #if DEBUG && !XBOX360
 		/// <summary>
-		/// Applies the inverse of the <see cref="TransformHierarchy"/> method. (This operation is considerably slower and should not be performed at runtime)
+		/// Applies the inverse of the <see cref="TransformHierarchy(Matrix[])"/> method. (This operation is considerably slower and should not be performed at runtime)
 		/// </summary>
 		/// <param name="transforms"></param>
 		public void TransformHierarchyInverse(Matrix[] transforms)
@@ -1786,6 +1806,7 @@ namespace Xen.Ex.Graphics.Content
 
 #if DEBUG && !XBOX360
 
+		/// <summary></summary>
 		public BoneData(string name, int boneIndex, int parent, int[] children)
 		{
 			this.name = name;

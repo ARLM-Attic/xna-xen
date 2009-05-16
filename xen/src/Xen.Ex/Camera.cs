@@ -228,6 +228,15 @@ namespace Xen.Ex.Camera
 			CameraMatrix = rotation;
 		}
 
+		/// <summary>
+		/// Sets the <see cref="Camera3D.CameraMatrix"/> to a matrix that will make the camera look at a target
+		/// </summary>
+		/// <param name="cameraPosition"></param>
+		/// <param name="lookAtTarget"></param>
+		/// <param name="upVector"></param>
+		/// <remarks>
+		/// <para>Using <see cref="Matrix.CreateLookAt(Vector3,Vector3,Vector3)"/> is not recommended because it creats a View matrix, so it cannot be used for non-camera matrices. The <see cref="Camera3D.CameraMatrix"/> of a camera is the Inverse (<see cref="Matrix.Invert(Matrix)"/>) of the View Matrix (<see cref="ICamera.GetViewMatrix(out Matrix)"/>), so trying to set the camera matrix using Matrix.CreateLookAt will produce highly unexpected results.
+		/// </para></remarks>
 		public override void LookAt(ref Vector3 lookAtTarget, ref Vector3 cameraPosition, ref Vector3 upVector)
 		{
 			base.LookAt(ref lookAtTarget, ref cameraPosition, ref upVector);

@@ -21,7 +21,7 @@ namespace Xen.Ex.Graphics.Content
 		/// Draw GPU processed particles (this method is called internally)
 		/// </summary>
 		/// <param name="state"></param><param name="particleType"></param><param name="count"></param>
-		/// <param name="positionSize"></param><param name="velocityRotation"></param><param name="colour"></param><param name="userValues">
+		/// <param name="colour"></param><param name="positionSize"></param><param name="userValues"></param><param name="velocityRotation"></param>
 		void DrawGpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint count, Texture2D positionSize, Texture2D velocityRotation, Texture2D colour, Texture2D userValues);
 #if !XBOX360
 		/// <summary>
@@ -897,7 +897,6 @@ namespace Xen.Ex.Graphics.Content
 		/// Fire this trigger once, at a given location and size
 		/// </summary>
 		/// <param name="particleEmitPositon"></param>
-		/// <param name="rotation"></param>
 		/// <param name="size"></param>
 		public void FireTrigger(ref Vector3 particleEmitPositon, float size)
 		{
@@ -912,7 +911,6 @@ namespace Xen.Ex.Graphics.Content
 		/// Fire this trigger once, at a given location and size
 		/// </summary>
 		/// <param name="particleEmitPositon"></param>
-		/// <param name="rotation"></param>
 		/// <param name="size"></param>
 		public void FireTrigger(Vector3 particleEmitPositon, float size)
 		{
@@ -975,7 +973,6 @@ namespace Xen.Ex.Graphics.Content
 		/// <param name="size"></param>
 		/// <param name="velocity"></param>
 		/// <param name="colour"></param>
-		/// <param name="userValues"></param>
 		public void FireTrigger(ref Vector3 particleEmitPositon, float size, ref Vector3 velocity, float rotation, ref Vector4 colour)
 		{
 			ParticleSpawnValues values = ParticleSpawnValues.Default;
@@ -1182,7 +1179,7 @@ namespace Xen.Ex.Graphics.Content
 			}
 		}
 		/// <summary>
-		/// <para>Gets/Sets the default colour of particle emitted by this toggle trigger
+		/// <para>Gets/Sets the default colour of particle emitted by this toggle trigger</para>
 		/// <para>Note: Setting a default colour for particle systems that do not access colour values will have no effect (the colour values are optimized out)</para>
 		/// </summary>
 		public Vector4 DefaultParticleEmitColour
@@ -1697,9 +1694,13 @@ namespace Xen.Ex.Graphics.Content
 	/// </summary>
 	public enum ParticleSystemActionType
 	{
+		/// <summary>A chance based action</summary>
 		Chance,
+		/// <summary>An emitter action</summary>
 		Emit,
+		/// <summary>An interval based action</summary>
 		Every,
+		/// <summary>A looped action</summary>
 		Loop
 	}
 

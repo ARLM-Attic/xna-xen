@@ -52,7 +52,7 @@ namespace Xen.Ex.Graphics.Display
 
 		/// <summary>
 		/// <para>Set this property to a non-null value to override the blend state defined in the particle XML</para>
-		/// <para>Note: All particle drawers perform RGB * Alpha modulation in the pixel shader, <see cref="AlphaBlendState.SourceBlend"/> should be set <see cref="Blend.One"/> in place of <see cref="Blend.SourceAlpha"/>.</para>
+		/// <para>Note: All particle drawers perform RGB * Alpha modulation in the pixel shader, <see cref="Xen.Graphics.State.AlphaBlendState.SourceBlend"/> should be set <see cref="Blend.One"/> in place of <see cref="Blend.SourceAlpha"/>.</para>
 		/// </summary>
 		public new Nullable<AlphaBlendState> AlphaBlendState
 		{
@@ -92,8 +92,9 @@ namespace Xen.Ex.Graphics.Display
 				this.DrawGpuParticles(state, particleType, count, alphaBlendState ?? particleType.BlendMode, positionSize, velocityRotation, colour, userValues, particleType.GpuBufferPosition);
 		}
 
-		//Note:
-		//When 'usesUserValuesPositionBuffer' is true, the values 'user1, user2 and user3' (yzw in the UserTexture) store a position offset for the particle
+		/// <summary>
+		///Note: When 'usesUserValuesPositionBuffer' is true, the values 'user1, user2 and user3' (yzw in the UserTexture) store a position offset for the particle 
+		/// </summary>
 		protected abstract void DrawGpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint count, AlphaBlendState blendMode, Texture2D positionSize, Texture2D velocityRotation, Texture2D colour, Texture2D userValues, bool usesUserValuesPositionBuffer);
 
 #if !XBOX360
@@ -132,7 +133,7 @@ namespace Xen.Ex.Graphics.Display
 		/// <summary>
 		/// Mask drawing for a specified particle type (enable or disable drawing of the particle type in the particle system)
 		/// </summary>
-		/// <param name="particleType"></param>
+		/// <param name="particleTypeIndex"></param>
 		/// <param name="draw"></param>
 		public void SetParticleTypeDrawMask(int particleTypeIndex, bool draw)
 		{
@@ -227,7 +228,7 @@ namespace Xen.Ex.Graphics.Display
 
 		/// <summary>
 		/// <para>Set this property to a non-null value to override the blend state defined in the particle XML</para>
-		/// <para>Note: All particle drawers perform RGB * Alpha modulation in the pixel shader, <see cref="AlphaBlendState.SourceBlend"/> should be set <see cref="Blend.One"/> in place of <see cref="Blend.SourceAlpha"/>.</para>
+		/// <para>Note: All particle drawers perform RGB * Alpha modulation in the pixel shader, <see cref="Xen.Graphics.State.AlphaBlendState.SourceBlend"/> should be set <see cref="Blend.One"/> in place of <see cref="Blend.SourceAlpha"/>.</para>
 		/// </summary>
 		public Nullable<AlphaBlendState> AlphaBlendState
 		{
@@ -258,16 +259,14 @@ namespace Xen.Ex.Graphics.Display
 		/// <summary>
 		/// Mask drawing for a specified particle type (enable or disable drawing of the particle type in the particle system)
 		/// </summary>
-		/// <param name="particleType"></param>
-		/// <param name="draw"></param>
+		/// <param name="particleTypeIndex"></param><param name="draw"></param>
 		public void SetParticleTypeDrawMask(int particleTypeIndex, bool draw)
 		{
 			ParticleDrawer2DElement.SetParticleTypeDrawMask(ref this.drawMask, particleTypeIndex, draw);
 		}
 		/// <summary>
 		/// Set a mask bit that will enable/disable drawing of all particle types
-		/// </summary>
-		/// <param name="draw"></param>
+		/// </summary><param name="draw"></param>
 		public void SetParticleTypeDrawMaskAllTypes(bool draw)
 		{
 			this.drawMask = draw ? uint.MaxValue : 0;
@@ -305,8 +304,12 @@ namespace Xen.Ex.Graphics.Display
 				this.DrawGpuParticles(state, particleType, count, alphaBlendState ?? particleType.BlendMode, positionSize, velocityRotation, colour, userValues, particleType.GpuBufferPosition);
 		}
 
-		//Note:
-		//When 'usesUserValuesPositionBuffer' is true, the values 'user1, user2 and user3' (yzw in the UserTexture) store a position offset for the particle
+		
+		/// <summary>
+		/// <para>Method to override to draw 3D particles</para>
+		/// <para>Note: When 'usesUserValuesPositionBuffer' is true, the values 'user1, user2 and user3' (yzw in the UserTexture) store a position offset for the particle</para></summary>
+		/// <param name="state"></param><param name="particleType"></param><param name="count"></param><param name="blendMode"></param>
+		/// <param name="positionSize"></param><param name="velocityRotation"></param><param name="colour"></param><param name="userValues"></param><param name="usesUserValuesPositionBuffer"></param>
 		protected abstract void DrawGpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint count, AlphaBlendState blendMode, Texture2D positionSize, Texture2D velocityRotation, Texture2D colour, Texture2D userValues, bool usesUserValuesPositionBuffer);
 		
 #if !XBOX360
@@ -319,6 +322,8 @@ namespace Xen.Ex.Graphics.Display
 		/// <summary>
 		/// This method is only present on Windows builds
 		/// </summary>
+		/// <param name="blendMode"></param><param name="colour"></param><param name="count"></param><param name="particleType"></param>
+		/// <param name="positionSize"></param><param name="state"></param><param name="userValues"></param><param name="velocityRotation"></param>
 		protected abstract void DrawCpuParticles(DrawState state, Content.ParticleSystemTypeData particleType, uint count, AlphaBlendState blendMode, Vector4[] positionSize, Vector4[] velocityRotation, Vector4[] colour, Vector4[] userValues);
 #endif
 
