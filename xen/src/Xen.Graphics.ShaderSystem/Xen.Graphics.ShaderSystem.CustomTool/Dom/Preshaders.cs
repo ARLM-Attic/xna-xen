@@ -90,7 +90,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				method.Statements.Add(preconstants);
 
 				//add temporary registers
-				for (int i = 0; i < vertexPreShader.MaxTempRegisters; i++)
+				for (int i = 0; i < pixelPreShader.MaxTempRegisters; i++)
 				{
 					CodeStatement temp = new CodeVariableDeclarationStatement(typeof(Vector4), "r" + i);
 					method.Statements.Add(temp);
