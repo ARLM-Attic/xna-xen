@@ -641,5 +641,22 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			}
 		}
 
+		public override void AddChangedCondition(IShaderDom shader, Action<CodeExpression> add)
+		{
+			if (psSamplers.Count > 0)
+			{
+				//add the PS sampler mask
+				CodeExpression mask = new CodeFieldReferenceExpression(shader.Instance, "psm");
+				add(new CodeBinaryOperatorExpression(mask, CodeBinaryOperatorType.IdentityInequality, new CodePrimitiveExpression(0)));
+			}
+
+			if (vsSamplers.Count > 0)
+			{
+				//add the VS sampler mask
+				CodeExpression mask = new CodeFieldReferenceExpression(shader.Instance, "vsm");
+				add(new CodeBinaryOperatorExpression(mask, CodeBinaryOperatorType.IdentityInequality, new CodePrimitiveExpression(0)));
+			}
+		}
+
 	}
 }

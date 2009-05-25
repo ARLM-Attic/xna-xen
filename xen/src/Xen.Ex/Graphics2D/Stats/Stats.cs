@@ -820,8 +820,8 @@ namespace Xen.Ex.Graphics2D.Statistics
 			overscanPixels = (float)state.DrawTarget.Width * 0.05f;
 #endif
 
-			toggleText.Position = new Vector2(overscanPixels, -overscanPixels);
-			toggleTextGamepad.Position = new Vector2(overscanPixels, -overscanPixels);
+			toggleText.Position = new Vector2((float)Math.Floor(overscanPixels), (float)Math.Floor(-overscanPixels));
+			toggleTextGamepad.Position = new Vector2((float)Math.Floor(overscanPixels), (float)Math.Floor(-overscanPixels));
 
 			if (!enabled)
 				return;
@@ -833,7 +833,7 @@ namespace Xen.Ex.Graphics2D.Statistics
 
 			size.X -= overscanPixels;
 
-			float x = overscanPixels, y = -overscanPixels, height = 0;
+			float x = (float)Math.Floor(overscanPixels), y = (float)Math.Floor(-overscanPixels), height = 0;
 			for (int i = 0; i < graphs.Length; i++)
 			{
 				if (graphs[i].Visible == false)

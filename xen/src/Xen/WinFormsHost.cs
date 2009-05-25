@@ -185,7 +185,7 @@ namespace Xen
 			parameters.BackBufferFormat = SurfaceFormat.Color;
 
 			parameters.EnableAutoDepthStencil = true;
-			parameters.AutoDepthStencilFormat = DepthFormat.Depth24;
+			parameters.AutoDepthStencilFormat = DepthFormat.Depth24Stencil8;
 		}
 
 		public void CreateDevice(RenderTargetUsage usage, WinFormsHostControl host)
@@ -269,6 +269,7 @@ namespace Xen
 		private readonly Application parent;
 
 		public event EventHandler Exiting;
+		private int mouseWheel;
 
 		internal XNAWinFormsHostAppWrapper(XNALogic logic, Application parent, WinFormsHostControl host)
 		{
@@ -290,6 +291,7 @@ namespace Xen
 			if (parentForm == null)
 				throw new ArgumentException("Unable to find Parent Form for display handle");
 
+			parentForm.MouseWheel += new System.Windows.Forms.MouseEventHandler(parentControl_MouseWheel);
 			parentForm.FormClosed += new System.Windows.Forms.FormClosedEventHandler(parentForm_FormClosed);
 
 			formsDeviceService = new WinFormsHostGraphicsDeviceService(this, this.control.ClientSize.Width, this.control.ClientSize.Height);
@@ -308,7 +310,7 @@ namespace Xen
 			width = control.ClientSize.Width;
 			height = control.ClientSize.Height;
 
-			parent.SetWindowSizeAndFormat(width, height, format);
+			parent.SetWindowSizeAndFormat(width, height, format, DepthFormat.Depth24Stencil8);
 
 			parent.SetupGraphicsDeviceManager(null, ref presentation);
 
@@ -326,11 +328,20 @@ namespace Xen
 		void parentForm_FormClosed(object sender, System.Windows.Forms.FormClosedEventArgs e)
 		{
 			if (parentForm != null)
+			{
 				parentForm.FormClosed -= new System.Windows.Forms.FormClosedEventHandler(parentForm_FormClosed);
+				parentForm.MouseWheel -= new System.Windows.Forms.MouseEventHandler(parentControl_MouseWheel);
+			}
 
 			if (Exiting != null)
 				Exiting(this, EventArgs.Empty);
 		}
+
+		void parentControl_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
+		{
+			mouseWheel += e.Delta;
+		}
+
 
 		public GraphicsDevice GraphicsDevice
 		{
@@ -392,7 +403,10 @@ namespace Xen
 		public void Dispose()
 		{
 			if (parentForm != null)
+			{
 				parentForm.FormClosed -= new System.Windows.Forms.FormClosedEventHandler(parentForm_FormClosed);
+				parentForm.MouseWheel -= new System.Windows.Forms.MouseEventHandler(parentControl_MouseWheel);
+			}
 
 			if (Exiting != null)
 				Exiting(this, EventArgs.Empty);
@@ -414,7 +428,12 @@ namespace Xen
 
 		internal void AdjustWindowSize(int width, int height)
 		{
-			parent.SetWindowSizeAndFormat(width, height, SurfaceFormat.Color);
+			parent.SetWindowSizeAndFormat(width, height, SurfaceFormat.Color, DepthFormat.Depth24Stencil8);
+		}
+
+		int? IXNAAppWrapper.GetMouseWheelValue()
+		{
+			return mouseWheel;
 		}
 	}
 

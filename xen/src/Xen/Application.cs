@@ -27,6 +27,7 @@ namespace Xen
 		void Exit();
 		GameWindow Window { get; }
 		IntPtr WindowHandle { get; }
+		int? GetMouseWheelValue();
 	}
 
 
@@ -241,6 +242,10 @@ namespace Xen
 
 				mouse = Mouse.GetState();
 
+				int? mouseWheel = xnaGame.GetMouseWheelValue(); //GetState doesn't work for WinForms mouse wheel..
+				if (mouseWheel != null)
+					mouse = new MouseState(mouse.X, mouse.Y, mouseWheel.Value, mouse.LeftButton, mouse.MiddleButton, mouse.RightButton, mouse.XButton1, mouse.XButton2);
+
 				Point p = new Point(windowForm.Width / 2, windowForm.Height / 2);
 
 				if (centreMouse && windowFocused)
@@ -338,12 +343,12 @@ namespace Xen
 #endif
 			presentation = RenderTargetUsage.PlatformContents;
 
-			parent.SetWindowSizeAndFormat(graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,graphics.PreferredBackBufferFormat);
+			parent.SetWindowSizeAndFormat(graphics.PreferredBackBufferWidth,graphics.PreferredBackBufferHeight,graphics.PreferredBackBufferFormat, graphics.PreferredDepthStencilFormat);
 
 			parent.SetupGraphicsDeviceManager(graphics, ref presentation);
 
 			//values may have changed in SetupGraphicsDeviceManager
-			parent.SetWindowSizeAndFormat(graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight, graphics.PreferredBackBufferFormat);
+			parent.SetWindowSizeAndFormat(graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight, graphics.PreferredBackBufferFormat, graphics.PreferredDepthStencilFormat);
 		}
 
 		void PreparingDeviceSettings(object sender, PreparingDeviceSettingsEventArgs e)
@@ -406,6 +411,11 @@ namespace Xen
 		{
 			this.IsFixedTimeStep = false;
 			logic.Update(gameTime.TotalRealTime.Ticks, gameTime.TotalGameTime.Ticks);
+		}
+
+		int? IXNAAppWrapper.GetMouseWheelValue()
+		{
+			return null;
 		}
 	}
 
@@ -666,6 +676,7 @@ namespace Xen
 		internal float approximateFrameRate;
 		private GraphicsDevice graphics;
 		private SurfaceFormat screenFormat;
+		private DepthFormat depthFormat;
 		private MultiSampleType screenMultisample;
 		private int graphicsIndex;
 		internal int graphicsId;
@@ -991,12 +1002,13 @@ namespace Xen
 		{
 		}
 
-		internal void SetWindowSizeAndFormat(int width, int height, SurfaceFormat format)
+		internal void SetWindowSizeAndFormat(int width, int height, SurfaceFormat format, DepthFormat depthFormat)
 		{
 			this.windowWidth = width;
 			this.windowHeight = height;
 
-			screenFormat = format;
+			this.screenFormat = format;
+			this.depthFormat = depthFormat;
 			screenMultisample = MultiSampleType.None;
 		}
 
@@ -1062,7 +1074,8 @@ namespace Xen
 #else
 			this.graphicsId = System.Diagnostics.Process.GetCurrentProcess().Id;
 #endif
-			screenFormat = graphics.PresentationParameters.BackBufferFormat;
+			this.screenFormat = graphics.PresentationParameters.BackBufferFormat;
+			this.depthFormat = graphics.PresentationParameters.EnableAutoDepthStencil ? graphics.PresentationParameters.AutoDepthStencilFormat : DepthFormat.Unknown;
 			screenMultisample = graphics.PresentationParameters.MultiSampleType;
 
 			if (graphics != this.graphics)
@@ -1124,6 +1137,10 @@ namespace Xen
 		internal SurfaceFormat GetScreenFormat()
 		{
 			return screenFormat;
+		}
+		internal DepthFormat GetScreenDepthFormat()
+		{
+			return depthFormat;
 		}
 		internal MultiSampleType GetScreenMultisample()
 		{

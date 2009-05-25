@@ -39,6 +39,19 @@ XboxLive: StatusUnknown
 -- Change Log
 
 ----------------
+-- 25/MAY/09
+-- Version 1.6.1 (Minor bug fix release)
+
+[Fixed] 2D ElementRect ClipChildren is now more robust
+[Fixed] DrawStatisticsDisplay is correctly pixel aligned
+[Fixed] Shaders now mark as Changed when their samplers are modified
+[Fixed] MouseState mouse wheel value now works in WinForms builds
+[Fixed] Worked around an XNA bug with Instancing and Tiling on the xbox
+[Fixed] WinForms host correctly creates a stencil buffer 
+[Added] DrawTargets have a SurfaceDepthFormat property
+
+
+----------------
 -- 15/MAY/09
 -- Version 1.6 (BETA)
 

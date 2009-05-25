@@ -32,6 +32,10 @@ namespace Tutorials.Tutorial_10
 	//The mesh file used here is 'tiny_4anim.x'. This mesh is in the Content project.
 	//NOTE: the mesh uses the 'Model - Xen' Content processor!
 	//
+	//XNA also supports the adobe FBX model format.
+	//To export a compatible .X file from 3D Studio max, users have reported the
+	//'Panda-X' exporter works the best.
+	//
 	//To get access to this content processor, the Content project must reference
 	//Xen.Ex.ModelImporter.
 	//This .dll can be found in ../bin/Xen.Ex.ModelImporter/Xen.Ex.ModelImporter.dll

@@ -51,7 +51,6 @@ namespace Xen.Ex.Graphics2D
 	public abstract class Element : IDraw
 	{
 		private bool enabled = true, clipTestActive;
-		internal byte depth = 0;
 		private HorizontalAlignment hAlign;
 		private VerticalAlignment vAlign;
 		private AlphaBlendState blend = AlphaBlendState.None;
@@ -102,7 +101,6 @@ namespace Xen.Ex.Graphics2D
 		protected void SetParentToThis(Element element)
 		{
 			element.parent = this;
-			element.UpdateDepth();
 		}
 		/// <summary>
 		/// Set parent to null
@@ -111,16 +109,6 @@ namespace Xen.Ex.Graphics2D
 		protected void ResetParent(Element element)
 		{
 			element.parent = null;
-			element.depth = 0;
-		}
-
-		private void UpdateDepth()
-		{
-			this.depth = (byte)((parent.depth + 1) & 0xFF);
-			List<Element> children = Children;
-			if (children != null)
-				foreach (Element child in children)
-					child.UpdateDepth();
 		}
 
 		/// <summary>
@@ -251,12 +239,11 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="state"></param>
 		public void Draw(DrawState state)
 		{
-			Draw(state, state.DrawTarget.Size);
+			Draw(state, state.DrawTarget.Size, 255);
 		}
 
-		private void Draw(DrawState state, Vector2 scale)
+		private void Draw(DrawState state, Vector2 scale, byte clipDepth)
 		{
-			byte stencil = (byte)(255-depth);
 			Element parent = this.parent;
 
 
@@ -298,16 +285,34 @@ namespace Xen.Ex.Graphics2D
 			if (clipTestActive)
 			{
 				stencilState.Enabled = true;
-				stencilState.ReferenceValue = stencil;
-				stencilState.StencilFunction = CompareFunction.Less;
+				stencilState.ReferenceValue = clipDepth;
+				stencilState.StencilFunction = CompareFunction.Equal;
+				stencilState.StencilPassOperation = StencilOperation.Keep;
 			}
+
+			bool clearStencil = false;
 			if (this.ClipsChildren)
 			{
-				stencilState.Enabled = true;
-				stencilState.ReferenceValue = stencil;
-				stencilState.StencilPassOperation = StencilOperation.Replace;
+				clearStencil = clipDepth == 255;
+				clipDepth--;
+
+				if (!clipTestActive)
+				{
+					//check there actually is a stencil buffer
+#if DEBUG
+					DepthFormat format = state.DrawTarget.SurfaceDepthFormat ?? DepthFormat.Unknown;
+
+					if (format != DepthFormat.Depth24Stencil8)
+						throw new InvalidOperationException("ElementRect.ClipChildren requires the DrawTarget has a valid Depth Buffer with an 8bit Stencil Buffer");
+#endif
+
+					stencilState.Enabled = true;
+					stencilState.ReferenceValue = clipDepth;
+					stencilState.StencilPassOperation = StencilOperation.Replace;
+				}
+				else
+					stencilState.StencilPassOperation = StencilOperation.Decrement;
 			}
-			bool clearStencil = this.ClipsChildren && !clipTestActive;
 
 			if ((scale.X != 0 && scale.Y != 0))
 			{
@@ -336,7 +341,7 @@ namespace Xen.Ex.Graphics2D
 				if (children != null)
 					foreach (Element child in children)
 						if (((IDraw)child).CullTest(state))
-							child.Draw(state,size);
+							child.Draw(state, size, clipDepth);
 
 				if (clearStencil)
 				{
@@ -705,7 +710,7 @@ namespace Xen.Ex.Graphics2D
 		{
 			get
 			{
-				return clipChildren;
+				return clipChildren && this.children != null;
 			}
 		}
 

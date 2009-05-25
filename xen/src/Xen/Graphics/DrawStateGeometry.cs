@@ -40,6 +40,10 @@ namespace Xen
 			{
 				get { return this.instanceMatricesData.Length - index; }
 			}
+			public int WrittenIndices
+			{
+				get { return index; }
+			}
 
 			public Graphics.StreamFrequency.InstanceMatrix[] Prepare(out int startIndex)
 			{
@@ -85,11 +89,40 @@ namespace Xen
 
 		private StreamBuffer GetBuffer(int count)
 		{
+#if XBOX360
+			StreamBuffer closestBuffer = null;
+
+			//on the xbox,
+			//when tiling is active, a buffer can not be reused within the frame
+			//technically it can, but XNA detects it and thinks the entire buffer is
+			//being rewritten (which it isn't) and throws an exception.
+
 			foreach (StreamBuffer buf in streamBuffers)
 			{
-				if (buf.FreeIndices > count)
+				if (buf.WrittenIndices == 0 &&
+					buf.FreeIndices >= count)
+				{
+					if (closestBuffer == null)
+						closestBuffer = buf;
+					else
+					{
+						if (buf.FreeIndices > closestBuffer.FreeIndices)
+							closestBuffer = buf;
+					}
+				}
+			}
+
+			if (closestBuffer != null)
+				return closestBuffer;
+
+#else
+			foreach (StreamBuffer buf in streamBuffers)
+			{
+				if (buf.FreeIndices >= count)
 					return buf;
 			}
+#endif
+
 			StreamBuffer buffer = new StreamBuffer(count);
 			streamBuffers.Add(buffer);
 			return buffer;

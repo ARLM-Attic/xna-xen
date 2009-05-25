@@ -77,6 +77,11 @@ namespace Xen.Graphics
 		/// </summary>
 		public abstract SurfaceFormat SurfaceFormat { get; }
 		/// <summary>
+		/// <para>Gets the depth format of the depth buffer for this draw target</para>
+		/// <para>If null, the target does not have a depth buffer</para>
+		/// </summary>
+		public abstract DepthFormat? SurfaceDepthFormat { get; }
+		/// <summary>
 		/// Gets the multisample level of the draw target
 		/// </summary>
 		public abstract MultiSampleType MultiSampleType { get; }
@@ -517,6 +522,13 @@ namespace Xen.Graphics
 			get { return application.GetScreenFormat(); }
 		}
 		/// <summary>
+		/// Gets the depth format of the depth buffer for the screen
+		/// </summary>
+		public override DepthFormat? SurfaceDepthFormat
+		{
+			get { return application.GetScreenDepthFormat(); } 
+		}
+		/// <summary>
 		/// Gets the multisample level for this draw target
 		/// </summary>
 		public override MultiSampleType MultiSampleType
@@ -701,6 +713,13 @@ namespace Xen.Graphics
 			get { return targets[0].SurfaceFormat; }
 		}
 		/// <summary>
+		/// <para>Gets the depth format of the depth buffer for this draw texture</para>
+		/// </summary>
+		public override DepthFormat? SurfaceDepthFormat
+		{
+			get { return targets[0].SurfaceDepthFormat; }
+		}
+		/// <summary>
 		/// Gets the multisample level for the first draw target in the group
 		/// </summary>
 		public override MultiSampleType MultiSampleType
@@ -882,6 +901,14 @@ namespace Xen.Graphics
 		public override SurfaceFormat SurfaceFormat
 		{
 			get { return format; }
+		}
+		/// <summary>
+		/// <para>Gets the depth format of the depth buffer for this draw texture</para>
+		/// <para>When this value is null, the target does not have a depth buffer</para>
+		/// </summary>
+		public override DepthFormat? SurfaceDepthFormat
+		{
+			get { return depthFormat; }
 		}
 		/// <summary>
 		/// Gets the multisample level for this draw target
@@ -1690,6 +1717,14 @@ namespace Xen.Graphics
 		public override SurfaceFormat SurfaceFormat
 		{
 			get { return format; }
+		}
+		/// <summary>
+		/// <para>Gets the depth format of the depth buffer for this draw texture</para>
+		/// <para>When this value is null, the target does not have a depth buffer</para>
+		/// </summary>
+		public override DepthFormat? SurfaceDepthFormat
+		{
+			get { return depthFormat; }
 		}
 		/// <summary>
 		/// Gets the multisample level for this draw target
