@@ -54,14 +54,47 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			bool breakOnNewLine = false;
 			bool isNewLine = false;
 
+			//parsing a top level type declaration, eg, float4 test = ...;
+			//will be set to false when hitting the '=' or a brace.
+			//this is used to detect annotations on types (and ignore them!)
+			bool processingTypeDeclaration = depth == 0;
+
 			while (tokenizer.NextToken())
 			{
 				if (isNewLine)
 				{
 					if (tokenizer.Token.Length == 1 &&
 						tokenizer.Token[0] == '#') //#include, #if, etc.
+					{
 						breakOnNewLine = true;
+						processingTypeDeclaration = false;
+					}
 				}
+
+				if (processingTypeDeclaration && (tokenizer.Token == "=" || tokenizer.BraceDepth > 0))
+					processingTypeDeclaration = false;
+
+
+				//detect annotations (in a <> block)
+				if (processingTypeDeclaration && tokenizer.Token == "<")
+				{
+					//skip the annotation entirely.
+
+					int blockDepth = 1;
+					//parse until the matching '>'
+					while (tokenizer.NextToken() && blockDepth != 0)
+					{
+						if (tokenizer.Token.Length == 1)
+						{
+							if (tokenizer.Token[0] == '<')
+								blockDepth++;
+							else
+							if (tokenizer.Token[0] == '>')
+								blockDepth--;
+						}
+					}
+				}
+
 
 				if (tokenizer.TokenIsNewLine)
 					isNewLine = true;
@@ -79,6 +112,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					list.Add(new HlslStructure(buffer.ToArray(), nodes.ToArray(), true));
 
 					buffer.Clear();
+					processingTypeDeclaration = tokenizer.BraceDepth == 0;
+
 					continue;
 				}
 

@@ -24,9 +24,15 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		{
 			this.targetPC = targetPC;
 			this.rootFile = rootFile;
+			this.usingVfetch = true;
+		}
+		public VFetchIncludeHandler(string rootFile)
+		{
+			this.rootFile = rootFile;
+			this.usingVfetch = false;
 		}
 		
-		private readonly bool targetPC;
+		private readonly bool targetPC, usingVfetch;
 		private bool requiresPreProcess;
 		private readonly string rootFile;
 
@@ -37,7 +43,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 		public override Stream Open(CompilerIncludeHandlerType includeType, string includePath)
 		{
-			if (includePath.ToLower() == IncludeSymbol)
+			if (usingVfetch && includePath.ToLower() == IncludeSymbol)
 			{
 				requiresPreProcess = true;
 				if (targetPC)

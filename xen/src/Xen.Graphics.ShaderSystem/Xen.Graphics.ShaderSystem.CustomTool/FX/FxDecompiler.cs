@@ -53,9 +53,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 			if (platform != Platform.Both)
 				include = new VFetchIncludeHandler(source.FileName, true); //ALWAYS target the PC for the vfetch macro
+			else
+				include = new VFetchIncludeHandler(source.FileName); //Acts as a generic handler
 
 			CompiledEffect compiledEffect = Effect.CompileEffectFromSource(source.ShaderSource, macros, include, source.CompilerOptions, target);
-
+			
 			if (!compiledEffect.Success)
 				Common.ThrowError(compiledEffect.ErrorsAndWarnings, source.ShaderSource);
 			
