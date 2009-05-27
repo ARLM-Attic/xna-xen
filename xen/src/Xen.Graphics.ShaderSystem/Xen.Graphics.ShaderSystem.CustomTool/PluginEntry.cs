@@ -37,7 +37,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 
 				try
 				{
-					SourceDom source = new SourceDom(new SourceShader(inputFileContent, inputFileName), fileNameSpace, codeProvider);
+					SourceDom source = new SourceDom(new SourceShader(inputFileContent, inputFileName, true), fileNameSpace, codeProvider);
 
 					return Encoding.ASCII.GetBytes(source.GenerateCodeString());
 				}
@@ -65,7 +65,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 		{
 			CodeDomProvider provider = new Microsoft.CSharp.CSharpCodeProvider();
 
-			SourceDom source = new SourceDom(new SourceShader(inputFileContent, inputFileName), "test", provider);
+			SourceDom source = new SourceDom(new SourceShader(inputFileContent, inputFileName, true), "test", provider);
 
 			string src = source.GenerateCodeString();
 			System.Windows.Forms.Clipboard.SetText(src);

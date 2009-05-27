@@ -39,7 +39,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		public Dom.BytePool BytePoolPC { get { return bytePoolPc; } }
 		public Dom.BytePool BytePoolXbox { get { return bytePoolXbox; } }
 
-		public SourceShader(string shaderSource, string filename)
+		public SourceShader(string shaderSource, string filename, bool extractAsmTechniques)
 		{
 			this.shaderSource = shaderSource;
 			this.filename = filename;
@@ -78,7 +78,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			if (!mixedMode)
 				xboxAsmTechniques = new List<AsmTechnique>();
 
-			this.ExtractAsmTechniques();
+			if (extractAsmTechniques)
+				this.ExtractAsmTechniques();
 		}
 
 		private void ExtractAsmTechniques()
@@ -139,7 +140,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 								if (File.Exists(path))
 								{
 									//load the file and parse it as well
-									SourceShader include = new SourceShader(File.ReadAllText(path), path);
+									SourceShader include = new SourceShader(File.ReadAllText(path), path, false);
 									includedSource.Add(include);
 								}
 							}
