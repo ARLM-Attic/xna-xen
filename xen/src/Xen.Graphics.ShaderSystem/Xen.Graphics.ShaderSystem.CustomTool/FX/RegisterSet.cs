@@ -123,7 +123,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			Dictionary<string, Register> registers = new Dictionary<string, Register>();
 
 			Tokenizer tokenizer = new Tokenizer(header, false, true, true);
-			string[] lines = header.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+			string[] lines = header.Split('\n');
 			int state = 0;
 
 			while (tokenizer.NextToken())
