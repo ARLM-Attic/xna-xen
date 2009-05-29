@@ -187,13 +187,15 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 						break;
 
 					case ",":
-						ops.Add(new AsmOp(op.ToArray()));
+						if (op.Count > 0)
+							ops.Add(new AsmOp(op.ToArray()));
 						op.Clear();
 						break;
 
 					case "\n":
 					case "\r":
-						ops.Add(new AsmOp(op.ToArray()));
+						if (op.Count > 0)
+							ops.Add(new AsmOp(op.ToArray()));
 						op.Clear();
 
 						if (target != null)

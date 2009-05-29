@@ -39,6 +39,18 @@ XboxLive: StatusUnknown
 -- Change Log
 
 ----------------
+-- 29/MAY/09
+-- Version 1.6.2 (Cumulative updates to the shader processor)
+
+[Fixed] The shader compiler now skips ASM extraction for include header files, preventing a 'No Techniques' exception in the HLSL FX Compiler
+[Fixed] A small bug in the shader compiler where line splitting would wrongly remove empty lines
+[Fixed] An issue where an include handler wasn't always being used with CompileFromSource() shader compiling
+[Fixed] An issue where techniques that had annotations would be ignored by the shader compiler
+[Fixed] Two issues where partial precision would cause errors with Xbox shaders
+[Fixed] A bug with Preshader constant extraction
+[Fixed] Added support for some basic flow control instructions in the Xbox shader HLSL processor
+
+----------------
 -- 25/MAY/09
 -- Version 1.6.1 (Minor bug fix release)
 

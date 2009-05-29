@@ -87,7 +87,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 					RegisterSet set = asmTechnique.VertexShader.RegisterSet;
 					int maxConstant = set.FloatRegisterCount;
 
-					this.vsBytesXbox = AsmToHlslAsmConverter.Convert(asmTechnique.VertexShader, TargetPlatform.Xbox360, maxConstant, source.DebugHlslProcessXboxShader); 
+					AsmToHlslAsmConverter converter = new AsmToHlslAsmConverter(asmTechnique.VertexShader, TargetPlatform.Xbox360, maxConstant, source.DebugHlslProcessXboxShader);
+
+					this.vsBytesXbox = converter.GetOutput(); 
 				}
 
 				//do it all again for the pixel shader
@@ -98,7 +100,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 					RegisterSet set = asmTechnique.PixelShader.RegisterSet;
 					int maxConstant = set.FloatRegisterCount;
 
-					this.psBytesXbox = AsmToHlslAsmConverter.Convert(asmTechnique.PixelShader, TargetPlatform.Xbox360, maxConstant, source.DebugHlslProcessXboxShader);
+					AsmToHlslAsmConverter converter = new AsmToHlslAsmConverter(asmTechnique.PixelShader, TargetPlatform.Xbox360, maxConstant, source.DebugHlslProcessXboxShader);
+
+					this.psBytesXbox = converter.GetOutput();
 				}
 				//done!
 			}

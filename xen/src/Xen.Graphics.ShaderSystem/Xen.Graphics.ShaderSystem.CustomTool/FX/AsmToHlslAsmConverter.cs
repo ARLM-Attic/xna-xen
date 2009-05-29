@@ -26,7 +26,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 	 * A few PC ASM commands are not supported on the xbox, such as norm(),
 	 * so these are written as their HLSL equivalent.
 	 * 
-	 * Flow control currently is not supported by this system.
+	 * Flow control currently is only partially supported by this system.
 	 * 
 	 * This may seem a bit strange, however it's sometimes required, as the tool requires
 	 * that xbox and pc shaders are identical in their constants and output,
@@ -40,11 +40,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 	 */
 	public class AsmToHlslAsmConverter
 	{
-		public static byte[] Convert(AsmListing source, TargetPlatform platform, int maxConstants, bool throwOnError)
-		{
-			return new AsmToHlslAsmConverter(source, platform, maxConstants, throwOnError).output;
-		}
-
+		//wrapper for a shader input or output
 		struct InputOutput
 		{
 			public InputOutput(string name, string mapping)
@@ -79,6 +75,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		private byte[] output;
 		private int maxConstant, maxRegister, maxInteger;
 		private bool useTemp;
+		private int loopIndex;
 
 		//shaders sometimes assign constant array values, 
 		//if this happens, convert them to temps
@@ -88,6 +85,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		private List<InputOutput> inputs, outputs;
 		private StringBuilder source;
 		private Dictionary<int, string> localConstants;
+		private Dictionary<int, string> localIntegerConstants;
 
 		static string[] VSprofiles = new string[] { "vs_1_1", "vs_2_0", "vs_2_a", "vs_3_0" };
 		static string[] PSprofiles = new string[] { "ps_2_0", "ps_2_a", "ps_2_b", "ps_3_0" };
@@ -97,7 +95,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 		private ShaderProfile profile;
 
-		private AsmToHlslAsmConverter(AsmListing asmSource, Microsoft.Xna.Framework.TargetPlatform platform, int shaderMaxConstants, bool throwOnError)
+
+
+		public AsmToHlslAsmConverter(AsmListing asmSource, Microsoft.Xna.Framework.TargetPlatform platform, int shaderMaxConstants, bool throwOnError)
 		{
 			maxConstant = -1;
 			if (shaderMaxConstants != 0)
@@ -109,6 +109,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			this.outputs = new List<InputOutput>();
 			this.assignedConstants = new Dictionary<int, bool>();
 			this.localConstants = new Dictionary<int, string>();
+			this.localIntegerConstants = new Dictionary<int, string>();
 
 			for (int i = 0; i < 256; i++)
 				assignedConstants.Add(i, false);
@@ -191,7 +192,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			if (!shader.Success)
 			{
 				//tried the best.. if it failed, ohh well, go back to AssembleFromSource
-				//probably used flow control?
+				//probably used complex flow control?
 				string rawAsm = asmSource.ToString();
 
 				shader = ShaderCompiler.AssembleFromSource(rawAsm, null, null, CompilerOptions.None, platform);
@@ -201,6 +202,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			}
 
 			output = shader.GetShaderCode();
+		}
+
+		public byte[] GetOutput()
+		{
+			return output;
 		}
 
 		private void BuildMethod()
@@ -283,6 +289,15 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				source.Append(kvp.Value);
 				source.AppendLine(");");
 			}
+			foreach (KeyValuePair<int, string> kvp in localIntegerConstants)
+			{
+				source.Append("\tint4 _i");
+				source.Append(kvp.Key);
+				source.Append(" = int4(");
+				source.Append(kvp.Value);
+				source.AppendLine(");");
+			}
+
 			if (maxRegister > 0)
 			{
 				for (int i = 0; i < maxRegister; i++)
@@ -338,6 +353,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 				string name = command.args[0][0];
 
+				if (name.EndsWith("_pp")) //xbox doens't support partial precision
+					name = name.Substring(0, name.Length - 3);
+
 				if ((profile == ShaderProfile.PS_2_0 ||
 					profile == ShaderProfile.PS_2_A ||
 					profile == ShaderProfile.PS_2_B) &&
@@ -356,6 +374,10 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				//vertex shader declare
 
 				string name = command.name.Substring(4);
+
+				if (name.EndsWith("_pp")) //xbox doens't support partial precision
+					name = name.Substring(0, name.Length - 3);
+
 				//last two digits may be a number
 				int index = 0;
 				if (name.Length > 0 && char.IsNumber(name[name.Length - 1]))
@@ -645,7 +667,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			//modify the commands to work with local variables,
 			//and deal with asm commands not supported on the xbox
 
-			if (cmd.name.EndsWith("_pp")) // no partial precision
+			if (cmd.name.EndsWith("_pp")) // no partial precision on the xbox
 				cmd.name = cmd.name.Substring(0, cmd.name.Length - 3);
 
 			if (cmd.name == "def")
@@ -661,6 +683,21 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					string value = cmd.Arg(1) + "," + cmd.Arg(2) + "," + cmd.Arg(3) + "," + cmd.Arg(4);
 
 					localConstants.Add(index, value);
+					return false;
+				}
+			}
+			if (cmd.name == "defi")
+			{
+				//integer constant variation
+
+				if (cmd.args.Length == 5 &&
+					cmd.args[0][0].Length > 1 &&
+					cmd.args[0][0][0] == 'i')
+				{
+					int index = int.Parse(cmd.args[0][0].Substring(1));
+					string value = cmd.Arg(1) + "," + cmd.Arg(2) + "," + cmd.Arg(3) + "," + cmd.Arg(4);
+
+					localIntegerConstants.Add(index, value);
 					return false;
 				}
 			}
@@ -700,19 +737,68 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				}
 			}
 
-
+			//These are the commands that do not exist in Xbox assembly (XPS / XVS)
+			//They may have equivalents, however for the most part, their HLSL version is used.
 			switch (cmd.name)
 			{
+				case "rep":
+					//a loop, on an integer constant.
+					cmd = new Command("for (int rep_i{0}=0; rep_i{0}<{1}.x; rep_i{0}++) {2}", (loopIndex++).ToString(), cmd.Arg(0), "{");
+					break;
+				case "loop":
+					//a loop, using a local constant.
+					cmd = new Command("for (int {0}=0; {0}<{1}.x; {0}++) {2}", cmd.Arg(0), cmd.Arg(1), "{");
+					break;
+
+					//if blocks...
+					//if_gt if_lt if_ge if_le if_eq if_ne
+
+				case "if_eq"://equal
+					cmd = new Command("if ({0} == {1}) {2}", cmd.Arg(0),cmd.Arg(1), "{");
+					break;
+				case "if_ne"://not equal
+					cmd = new Command("if ({0} != {1}) {2}", cmd.Arg(0), cmd.Arg(1), "{");
+					break;
+				case "if_gt":
+					cmd = new Command("if ({0} > {1}) {2}", cmd.Arg(0), cmd.Arg(1), "{");
+					break;
+				case "if_ge":
+					cmd = new Command("if ({0} >= {1}) {2}", cmd.Arg(0), cmd.Arg(1), "{");
+					break;
+				case "if_lt":
+					cmd = new Command("if ({0} < {1}) {2}", cmd.Arg(0), cmd.Arg(1), "{");
+					break;
+				case "if_le":
+					cmd = new Command("if ({0} <= {1}) {2}", cmd.Arg(0), cmd.Arg(1), "{");
+					break;
+
+				case "else":
+					cmd = new Command("{0}else{1}", "}","{");
+					break;
+
+				case "endif":
+				case "endrep":
+				case "endloop":
+					//end of a loop
+					cmd = new Command("{0}", "}");
+					break;
+
+				case "texkill":
+					//use Clip() instead
+					cmd = new Command("clip({0});", cmd.Arg(0));
+					break;
+
 				case "nrm":
 					//normalize command is not supported on the xbox.
 					// nrm _r0.xyz ,_r1
 					//becomes
-					// _r0.xxx = (_r1 / length(_r1.xyz)).xxx
+					// _r0.mask = (_r1 / length(_r1.xyz)).mask
 
 					cmd = new Command("{0} = ({1} / length({1}.xyz)){2};", cmd.Arg(0), cmd.Arg(1), cmd.Swizzle(0));
 					break;
 
 				case "mova":
+					//assign an integer to a float
 					cmd = new Command("_a0 = {0};", cmd.Arg(1));
 					break;
 
@@ -745,6 +831,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					return false;
 
 				case "slt":
+					//less than
 					cmd = new Command("{0} = ((float4)({1} < {2} ? 1.0 : 0.0)){3};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Swizzle(0));
 					break;
 
