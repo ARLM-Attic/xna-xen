@@ -414,12 +414,12 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 				for (int i = 0; i < hs.Elements.Length; i++)
 				{
-					if (hs.Elements[i] == "VertexShader")
+					if (hs.Elements[i].Equals("VertexShader", StringComparison.InvariantCultureIgnoreCase))
 						type = 1;
-					if (hs.Elements[i] == "PixelShader")
+					if (hs.Elements[i].Equals("PixelShader", StringComparison.InvariantCultureIgnoreCase))
 						type = 2;
 
-					if (hs.Elements[i] == "compile")
+					if (hs.Elements[i].Equals("compile", StringComparison.InvariantCultureIgnoreCase))
 						target = hs.Elements[i + 1];
 
 					if (hs.Elements[i] == ")")
