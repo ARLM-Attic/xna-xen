@@ -330,6 +330,11 @@ namespace Xen
 		/// </summary>
 		public void Dispose()
 		{
+			if (items != null)
+			{
+				CallUnload();
+				items.Clear();
+			}
 			if (service != null)
 			{
 				service.DeviceDisposing -= new EventHandler(DeviceResetting);
@@ -342,11 +347,6 @@ namespace Xen
 			{
 				manager.Dispose();
 				manager = null;
-			}
-			if (items != null)
-			{
-				CallUnload();
-				items.Clear();
 			}
 			buffer = null;
 			items = null;
