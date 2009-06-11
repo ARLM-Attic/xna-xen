@@ -39,6 +39,16 @@ XboxLive: StatusUnknown
 -- Change Log
 
 ----------------
+-- 11/JUN/09
+-- Version 1.6.3
+
+[Added] DrawDynamicVertices and DrawDynamicIndexedVertices methods in the DrawState object. These methods wrap XNA DrawUserPrimitves and DrawUserIndexedPrimitves, however they deal with the VertexDeclaration for you and keep track of state.
+[Added] A shader Technique can now be given a string attribute 'BaseTypes' which specify a comma delimited list of type names to implement (Thanks Darren!). With this, you can define custom interfaces for your shaders to implement.
+[Fixed] A bug with Dispose ordering in the ContentRegister
+[Fixed] A number of small bugs to do with integer shader values, as 99.9% of the time they are processed as floats
+[Fixed] Missed detection of certain keywords in a shader, such as 'VertexShader' which are not case sensitive
+
+----------------
 -- 29/MAY/09
 -- Version 1.6.2 (Cumulative updates to the shader processor)
 

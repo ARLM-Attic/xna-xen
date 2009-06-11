@@ -86,6 +86,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			classDom.Attributes = MemberAttributes.Final | MemberAttributes.Public;
 			classDom.TypeAttributes = TypeAttributes.Sealed | TypeAttributes.Public | TypeAttributes.Class;
 
+
 			//provide a useful comment to the class
 			GenerateClassComment();
 
@@ -115,6 +116,17 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				classDom.BaseTypes.Add(new CodeTypeReference(shaderExtendsFrom));
 			else
 				classDom.BaseTypes.Add(new CodeTypeReference(typeof(BaseShader)));
+
+			//add custom base types to the shader
+			//these are defined in TechniqueExtraData
+			AsmTechnique asmTechnique = this.source.GetAsmTechnique(this.techniqueName, this.platform);
+
+			if (asmTechnique.TechniqueExtraData != null && asmTechnique.TechniqueExtraData.ClassBaseTypes != null)
+			{
+				foreach (string baseTypeName in asmTechnique.TechniqueExtraData.ClassBaseTypes)
+					classDom.BaseTypes.Add(new CodeTypeReference(baseTypeName));
+			}
+
 
 			this.directives = directives;
 

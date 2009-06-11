@@ -209,6 +209,12 @@ mul c5.xyz, c7.xyz,
 					if ((reg.Length > 3 + start && char.IsNumber(reg[start + 3])))
 						indexSize++;
 				}
+
+				if (reg.StartsWith("ob", StringComparison.InvariantCultureIgnoreCase))
+				{
+					throw new CompileException("Error: Preshader is attempting to write to a boolean register. This is currently not supported by the preshader CodeDom generator.");
+				}
+
 				int index = int.Parse(reg.Substring(start + 1, indexSize));
 
 				if (reg[start] == 'r') // temp reg

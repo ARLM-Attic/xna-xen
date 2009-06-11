@@ -308,14 +308,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		{
 			for (int i = 0; i < this.registers.Length; i++)
 			{
-				if (this.registers[i].Category == RegisterCategory.Float4)
+				//find the matching reg in the FX registers
+				foreach (Register fx in fxRegisters)
 				{
-					//find the matching reg in the FX registers
-					foreach (Register fx in fxRegisters)
-					{
-						if (fx.Name == this.registers[i].Name)
-							this.registers[i].Semantic = fx.Semantic;
-					}
+					if (fx.Name == this.registers[i].Name)
+						this.registers[i].Semantic = fx.Semantic;
 				}
 			}
 		}

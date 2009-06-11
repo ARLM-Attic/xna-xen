@@ -16,6 +16,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		public TextureSamplerState[] PixelSamplerStates, VertexSamplerStates;
 		public Register[] TechniqueTextures;
 		public int[] PixelSamplerTextureIndex, VertexSamplerTextureIndex;
+		public string[] ClassBaseTypes;
 	}
 
 	//this class takes an FX file, and decompiled it into raw shader assmebly
@@ -71,7 +72,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				for (int i = 0; i < registers.Length; i++)
 				{
 					if (effect.Parameters[i].ParameterType == EffectParameterType.Single ||
-						effect.Parameters[i].ParameterType == EffectParameterType.Int32)
+						effect.Parameters[i].ParameterType == EffectParameterType.Int32 ||
+						effect.Parameters[i].ParameterType == EffectParameterType.Bool)
 					{
 						registers[i].Name = effect.Parameters[i].Name;
 						registers[i].Semantic = effect.Parameters[i].Semantic;
@@ -126,6 +128,21 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 			foreach (EffectTechnique technique in effect.Techniques)
 			{
+				//Thanks to Darren Grant (again :)
+				//annotate a Technique with 'BaseTypes' and the generates class will inherit from those types
+				string[] baseTypes = new string[0];
+				foreach (EffectAnnotation annotation in technique.Annotations)
+				{
+					if (annotation.Name.Equals("BaseTypes", StringComparison.InvariantCulture) ||
+						annotation.Name.Equals("BaseType", StringComparison.InvariantCulture))
+					{
+						baseTypes = annotation.GetValueString().Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+						for (int i = 0; i < baseTypes.Length; i++)
+							baseTypes[i] = baseTypes[i].Trim();
+					}
+				}
+
 				Vector4[] psConstants = new Vector4[maxPsConst]; // pixel 
 				Vector4[] vsConstants = new Vector4[maxVsConst]; // not-pixel 
 
@@ -204,6 +221,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				defaults.PixelSamplerTextureIndex = psTexturesIndex;
 				defaults.VertexSamplerTextureIndex = vsTexturesIndex;
 				defaults.TechniqueTextures = textures.ToArray();
+				defaults.ClassBaseTypes = baseTypes;
 
 				if (this.techniqueDefaults.ContainsKey(technique.Name) == false)
 					this.techniqueDefaults.Add(technique.Name, defaults);

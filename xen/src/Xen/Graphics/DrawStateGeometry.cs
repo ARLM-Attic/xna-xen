@@ -445,5 +445,301 @@ namespace Xen
 				application.declarationBuilder.ValidateVertexDeclarationForShader(decl, boundShader, vertType);
 		}
 #endif
+
+
+
+		//drawing dynamic vertices
+
+
+		/// <summary>
+		/// <para>Draw dynamic vertices as primitives with extended parametres, using an index buffer (indices)</para>
+		/// <para>NOTE: When using this method, the vertex and index data will be copied every frame.</para>
+		/// <para>This method is best for volatile vertex data that is changing every frame.</para>
+		/// <para>Use a dynamic Vertices object for dynamic data that changes less frequently, or requires use with a VerticesGroup objcet.</para>
+		/// </summary>
+		/// <param name="vertices">source vertex data to use for drawing vertices</param>
+		/// <param name="indices">indices to use when drawing</param>
+		/// <param name="primitiveType">Primitive type to use when drawing the buffer</param>
+		/// <param name="primitveCount">The number of primitives to draw</param>
+		/// <param name="startIndex">The start index in the index buffer (defaults to the first index - 0)</param>
+		/// <param name="vertexOffset">Starting offset into the vertex buffer (defaults to the first vertex - 0)</param>
+		/// <param name="maximumIndex">The maximum index used by the index buffer. This determines how many vertices will be copied (zero will copy all vertices)</param>
+		public void DrawDynamicIndexedVertices<VertexType>(VertexType[] vertices, int[] indices, PrimitiveType primitiveType, int primitveCount, int startIndex, int maximumIndex, int vertexOffset) where VertexType : struct
+		{
+			DrawDynamicVerticesArray(vertices, indices, primitiveType, primitveCount, startIndex, vertexOffset, maximumIndex);
+		}
+		/// <summary>
+		/// <para>Draw dynamic vertices as primitives with extended parametres, using an index buffer (indices)</para>
+		/// <para>NOTE: When using this method, the vertex and index data will be copied every frame.</para>
+		/// <para>This method is best for volatile vertex data that is changing every frame.</para>
+		/// <para>Use a dynamic Vertices object for dynamic data that changes less frequently, or requires use with a VerticesGroup objcet.</para>
+		/// </summary>
+		/// <param name="vertices">source vertex data to use for drawing vertices</param>
+		/// <param name="indices">indices to use when drawing</param>
+		/// <param name="primitiveType">Primitive type to use when drawing the buffer</param>
+		/// <param name="primitveCount">The number of primitives to draw</param>
+		/// <param name="startIndex">The start index in the index buffer (defaults to the first index - 0)</param>
+		/// <param name="vertexOffset">Starting offset into the vertex buffer (defaults to the first vertex - 0)</param>
+		/// <param name="maximumIndex">The maximum index used by the index buffer. This determines how many vertices will be copied (zero will copy all vertices)</param>
+		public void DrawDynamicIndexedVertices<VertexType>(VertexType[] vertices, short[] indices, PrimitiveType primitiveType, int primitveCount, int startIndex, int maximumIndex, int vertexOffset) where VertexType : struct
+		{
+			DrawDynamicVerticesArray(vertices, indices, primitiveType, primitveCount, startIndex, vertexOffset, maximumIndex);
+		}
+
+		/// <summary>
+		/// <para>Draw dynamic vertices as primitives with extended parametres</para>
+		/// <para>NOTE: When using this method, the vertex data will be copied every frame.</para>
+		/// <para>This method is best for volatile vertex data that is changing every frame.</para>
+		/// <para>Use a dynamic Vertices object for dynamic data that changes less frequently, or requires use with a VerticesGroup objcet.</para>
+		/// </summary>
+		/// <param name="vertices">source vertex data to use for drawing vertices</param>
+		/// <param name="primitiveType">Primitive type to use when drawing the buffer</param>
+		/// <param name="primitveCount">The number of primitives to draw</param>
+		/// <param name="vertexOffset">Starting offset into the vertex buffer (defaults to the first vertex - 0)</param>
+		public void DrawDynamicVertices<VertexType>(VertexType[] vertices, PrimitiveType primitiveType, int primitveCount, int vertexOffset) where VertexType : struct
+		{
+			DrawDynamicVerticesArray(vertices, null, primitiveType, primitveCount, 0, vertexOffset, 0);
+		}
+
+
+		private void DrawDynamicVerticesArray<VertexType>(VertexType[] vertices, Array indices, PrimitiveType primitiveType, int primitveCount, int startIndex, int vertexOffset, int maximumIndex) where VertexType : struct
+		{
+			if (DrawTarget == null)
+				throw new InvalidOperationException("Vertices Draw calls should be done within the Draw() call of a DrawTarget object. (otherwise the draw target is undefined)");
+			if (vertices == null)
+				throw new ArgumentException();
+
+			Graphics.IDeviceIndexBuffer devib = (Graphics.IDeviceIndexBuffer)indices;
+			VertexDeclaration vd = application.declarationBuilder.GetDeclaration<VertexType>(graphics);
+
+#if DEBUG
+			ValidateVertexDeclarationForShader(vd, typeof(VertexType));
+#endif
+
+			VertexDeclaration = vd;
+
+			int vertexCount = vertices.Length;
+			if (indices != null)
+				vertexCount = indices.Length;
+
+			int primitives = 0;
+			switch (primitiveType)
+			{
+				case PrimitiveType.LineList:
+					primitives = vertexCount / 2;
+					break;
+				case PrimitiveType.LineStrip:
+					primitives = vertexCount - 1;
+					break;
+				case PrimitiveType.PointList:
+					primitives = vertexCount;
+					break;
+				case PrimitiveType.TriangleList:
+					primitives = vertexCount / 3;
+					break;
+				case PrimitiveType.TriangleFan:
+				case PrimitiveType.TriangleStrip:
+					primitives = vertexCount - 2;
+					break;
+			}
+
+			ApplyRenderStateChanges(vertexCount);
+
+			if (primitveCount > primitives ||
+				primitveCount <= 0)
+				throw new ArgumentException("primitiveCount");
+
+#if DEBUG
+			CalcBoundTextures();
+#endif
+
+			if (indices != null)
+			{
+				if (maximumIndex <= 0)
+					maximumIndex = vertexCount - 1;
+
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DrawIndexedPrimitiveCallCount);
+#endif
+
+				if (indices is int[])
+					graphics.DrawUserIndexedPrimitives<VertexType>(primitiveType, vertices, vertexOffset, maximumIndex + 1, (int[])indices, startIndex, primitveCount);
+				else
+					graphics.DrawUserIndexedPrimitives<VertexType>(primitiveType, vertices, vertexOffset, maximumIndex + 1, (short[])indices, startIndex, primitveCount);
+			}
+			else
+			{
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DrawPrimitivesCallCount);
+#endif
+
+				graphics.DrawUserPrimitives<VertexType>(primitiveType, vertices, vertexOffset, primitveCount);
+			}
+
+			//draw indexed primitives mucks up the stream settings.
+			//Need to clear out the internal tracking data
+			for (int i = 0; i < vertexStreams.Length; i++)
+			{
+				vertexStreams[i].vb = null;
+				vertexStreams[i].offset = -1;
+				vertexStreams[i].stride = -1;
+			}
+			indexBuffer = null;
+
+#if DEBUG
+			switch (primitiveType)
+			{
+				case PrimitiveType.LineList:
+				case PrimitiveType.LineStrip:
+					application.currentFrame.LinesDrawn += primitveCount;
+					break;
+				case PrimitiveType.PointList:
+					application.currentFrame.PointsDrawn += primitveCount;
+					break;
+				case PrimitiveType.TriangleList:
+				case PrimitiveType.TriangleFan:
+				case PrimitiveType.TriangleStrip:
+					application.currentFrame.TrianglesDrawn += primitveCount;
+					break;
+			}
+#endif
+		}
+
+
+		/// <summary>
+		/// <para>Draw dynamic vertices as primitives, using an optional index buffer (indices)</para>
+		/// <para>NOTE: When using this method, the vertex and index data will be copied every frame.</para>
+		/// <para>This method is best for volatile vertex data that is changing every frame.</para>
+		/// <para>Use a dynamic Vertices object for dynamic data that changes less frequently, or requires use with a VerticesGroup objcet.</para>
+		/// </summary>
+		/// <param name="vertices">source vertex data to use for drawing vertices</param>
+		/// <param name="indices">indices to use when drawing (may be null)</param>
+		/// <param name="primitiveType">Primitive type to use when drawing the buffer</param>
+		public void DrawDynamicIndexedVertices<VertexType>(VertexType[] vertices, int[] indices, PrimitiveType primitiveType) where VertexType : struct
+		{
+			DrawDynamicVerticesArray(vertices, indices, primitiveType);
+		}
+		/// <summary>
+		/// <para>Draw dynamic vertices as primitives, using an optional index buffer (indices)</para>
+		/// <para>NOTE: When using this method, the vertex and index data will be copied every frame.</para>
+		/// <para>This method is best for volatile vertex data that is changing every frame.</para>
+		/// <para>Use a dynamic Vertices object for dynamic data that changes less frequently, or requires use with a VerticesGroup objcet.</para>
+		/// </summary>
+		/// <param name="vertices">source vertex data to use for drawing vertices</param>
+		/// <param name="indices">indices to use when drawing (may be null)</param>
+		/// <param name="primitiveType">Primitive type to use when drawing the buffer</param>
+		public void DrawDynamicIndexedVertices<VertexType>(VertexType[] vertices, short[] indices, PrimitiveType primitiveType) where VertexType : struct
+		{
+			DrawDynamicVerticesArray(vertices, indices, primitiveType);
+		}
+
+		/// <summary>
+		/// <para>Draw dynamic vertices as primitives</para>
+		/// <para>NOTE: When using this method, the vertex data will be copied every frame.</para>
+		/// <para>This method is best for volatile vertex data that is changing every frame.</para>
+		/// <para>Use a dynamic Vertices object for dynamic data that changes less frequently, or requires use with a VerticesGroup objcet.</para>
+		/// </summary>
+		/// <param name="vertices">source vertex data to use for drawing vertices</param>
+		/// <param name="primitiveType">Primitive type to use when drawing the buffer</param>
+		public void DrawDynamicVertices<VertexType>(VertexType[] vertices, PrimitiveType primitiveType) where VertexType : struct
+		{
+			DrawDynamicVerticesArray(vertices, null, primitiveType);
+		}
+
+		private void DrawDynamicVerticesArray<VertexType>(VertexType[] vertices, Array indices, PrimitiveType primitiveType) where VertexType : struct
+		{
+			if (DrawTarget == null)
+				throw new InvalidOperationException("Vertices Draw calls should be done within the Draw() call of a DrawTarget object. (otherwise the draw target is undefined)");
+			if (vertices == null)
+				throw new ArgumentException();
+
+			Graphics.IDeviceIndexBuffer devib = (Graphics.IDeviceIndexBuffer)indices;
+			VertexDeclaration vd = application.declarationBuilder.GetDeclaration<VertexType>(graphics);
+
+#if DEBUG
+			ValidateVertexDeclarationForShader(vd, typeof(VertexType));
+#endif
+
+			VertexDeclaration = vd;
+
+			int vertexCount = vertices.Length;
+			if (indices != null)
+				vertexCount = indices.Length;
+
+			int primitives = 0;
+			switch (primitiveType)
+			{
+				case PrimitiveType.LineList:
+					primitives = vertexCount / 2;
+					break;
+				case PrimitiveType.LineStrip:
+					primitives = vertexCount - 1;
+					break;
+				case PrimitiveType.PointList:
+					primitives = vertexCount;
+					break;
+				case PrimitiveType.TriangleList:
+					primitives = vertexCount / 3;
+					break;
+				case PrimitiveType.TriangleFan:
+				case PrimitiveType.TriangleStrip:
+					primitives = vertexCount - 2;
+					break;
+			}
+
+			ApplyRenderStateChanges(vertexCount);
+
+#if DEBUG
+			CalcBoundTextures();
+#endif
+
+			if (indices != null)
+			{
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DrawIndexedPrimitiveCallCount);
+#endif
+
+				if (indices is int[])
+					graphics.DrawUserIndexedPrimitives<VertexType>(primitiveType, vertices, 0, vertices.Length, (int[])indices, 0, primitives);
+				else
+					graphics.DrawUserIndexedPrimitives<VertexType>(primitiveType, vertices, 0, vertices.Length, (short[])indices, 0, primitives);
+			}
+			else
+			{
+#if DEBUG
+				System.Threading.Interlocked.Increment(ref application.currentFrame.DrawPrimitivesCallCount);
+#endif
+
+				graphics.DrawUserPrimitives<VertexType>(primitiveType, vertices, 0, primitives);
+			}
+
+			//draw indexed primitives mucks up the stream settings.
+			//Need to clear out the internal tracking data
+			for (int i = 0; i < vertexStreams.Length; i++)
+			{
+				vertexStreams[i].vb = null;
+				vertexStreams[i].offset = -1;
+				vertexStreams[i].stride = -1;
+			}
+			indexBuffer = null;
+
+#if DEBUG
+			switch (primitiveType)
+			{
+				case PrimitiveType.LineList:
+				case PrimitiveType.LineStrip:
+					application.currentFrame.LinesDrawn += primitives;
+					break;
+				case PrimitiveType.PointList:
+					application.currentFrame.PointsDrawn += primitives;
+					break;
+				case PrimitiveType.TriangleList:
+				case PrimitiveType.TriangleFan:
+				case PrimitiveType.TriangleStrip:
+					application.currentFrame.TrianglesDrawn += primitives;
+					break;
+			}
+#endif
+		}
 	}
 }

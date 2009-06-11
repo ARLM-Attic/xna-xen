@@ -81,6 +81,10 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 					else
 						ExtractSemantic(shader, reg);
 				}
+				else if (reg.Semantic != null && reg.Category != RegisterCategory.Texture)
+				{
+					throw new CompileException(string.Format("Error parsing semantic for '{1} {0}'. Semantic bound types may only be processed as Float4 or Texture registers", reg.Name, reg.Type));
+				}
 			}
 		}
 
@@ -137,7 +141,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 		private void ExtractSemantic(IShaderDom shader, Register reg)
 		{
 			string semantic = reg.Semantic;
-			
+
 			Type dataType = null;
 			switch (reg.Rank)
 			{
@@ -172,6 +176,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				case RegisterRank.IntNx4:
 				{
 					//ints are almost always mapped to floats for semantic bound types (EG vertex count)
+					//since the register category has been validated to Float4, this is the case here
 					switch (reg.Type)
 					{
 						case "int":
@@ -189,6 +194,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 							break;
 					}
 				}
+				break;
+				case RegisterRank.Bool:
+				dataType = typeof(Single);
 				break;
 			}
 			
@@ -757,16 +765,22 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			{
 				case "float":
 				case "float1"://?
+				case "int": // integers or bools may be processed as floats by the FX compiler
+				case "int1":
+				case "bool":
 					dataType = typeof(float);
 					hasSetMethod = false;
 					break;
 				case "float2":
+				case "int2":
 					dataType = typeof(Vector2);
 					break;
 				case "float3":
+				case "int3":
 					dataType = typeof(Vector3);
 					break;
 				case "float4":
+				case "int4":
 					dataType = typeof(Vector4);
 					break;
 

@@ -63,6 +63,26 @@ namespace Tutorials.Tutorial_05
 		CustomVertex[] vertexData;
 
 
+		//
+		// NOTE:
+		//
+		// ----------------------
+		//  New to Xen 1.6.3:
+		// ----------------------
+		//
+		// The DrawState object has had the methods 'DrawDynamicVertices<>' and 'DrawDynamicIndexedVertices<>' added.
+		// These methods wrap XNA DrawUserPrimitives and DrawUserIndexedPrimitives. Like existing Vertices<> objects,
+		// these methods take care of the VertexDeclaration and render state for your.
+		//
+		// For volatile dynamic data (data that changes every frame) these methods are just as efficient as the
+		// method demonstrated in this example. In some cases, it can be simpler to use this method too.
+		//
+		// These methods do not require a Vertices<> or Indices<> object, as they copy the entire vertex/index array
+		// every frame when you make the draw call.
+		//
+		// For dynamic data that may not change every frame, using the method in this example is recommended.
+		//
+
 		//setup and create the vertices/indices
 		public DynamicQuadGeometry()
 		{
