@@ -700,6 +700,11 @@ void VS_ONCE(
 		//ignore
 		#region attributes
 
+		bool IShader.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem state, int name_uid, bool value)
+		{
+			throw new NotImplementedException();
+		}
+
 		bool IShader.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem state, int name_uid, float[] value)
 		{
 			throw new NotImplementedException();

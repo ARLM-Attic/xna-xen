@@ -66,6 +66,10 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 					psSamplers.Add(reg);
 
 					int textureIndex = extras.PixelSamplerTextureIndex[reg.Index];
+
+					if (textureIndex == -1)
+						ThrowSamplerNoTextureException(reg);
+
 					textures[textureIndex].PsSamplers.Add(reg.Index);
 
 					//add the sampler to 'allSamplers'
@@ -88,6 +92,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 					vsSamplers.Add(reg);
 
 					int textureIndex = extras.VertexSamplerTextureIndex[reg.Index];
+					if (textureIndex == -1)
+						ThrowSamplerNoTextureException(reg);
+
 					textures[textureIndex].VsSamplers.Add(reg.Index);
 
 					//add the sampler to 'allSamplers'
@@ -103,6 +110,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 					ss.VsIndex = reg.Index;
 				}
 			}
+		}
+
+		private static void ThrowSamplerNoTextureException(Register reg)
+		{
+			throw new CompileException(string.Format("Texture Sampler '{0} {1}' is not bound to a named Texture{2}The sampler must define a default sampler state, in the example format:{2}{2}texture{3} {1}Texture;{2}{0} {1} = sampler_state{2}{4}{2}\tTexture = ({1}Texture);{2}{5}; ", reg.Type, reg.Name, Environment.NewLine, reg.Type.Length >= 7 ? reg.Type.Substring(7) : "", "{", "}"));
 		}
 
 		public override void AddMembers(IShaderDom shader, Action<CodeTypeMember, string> add, Platform platform)

@@ -45,7 +45,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 	public sealed class RegisterSet
 	{
 		private readonly Register[] registers;
-		private int calculatedFloatRegisters = -1, minFloatRegisters = -1;
+		private int calculatedFloatRegisters = -1, minFloatRegisters = -1, minBooleanRegisters = -1, calculatedBooleanRegisters = -1;
 
 		public int RegisterCount { get { return registers.Length; } }
 		public Register GetRegister(int index) { return registers[index]; }
@@ -81,10 +81,32 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				return Math.Max(calculatedFloatRegisters, minFloatRegisters);
 			}
 		}
+		public int BooleanRegisterCount
+		{
+			get
+			{
+				if (calculatedBooleanRegisters == -1)
+				{
+					int maxConstant = 0;
+					for (int i = 0; i < RegisterCount; i++)
+					{
+						Register reg = GetRegister(i);
+						if (reg.Category == RegisterCategory.Boolean)
+							maxConstant = Math.Max(maxConstant, reg.Index+reg.Size);
+					}
+					calculatedBooleanRegisters = maxConstant;
+				}
+				return Math.Max(calculatedBooleanRegisters, minBooleanRegisters);
+			}
+		}
 
 		public void SetMinFloatRegisterCount(int count)
 		{
 			minFloatRegisters = count;
+		}
+		public void SetMinBooleanRegisterCount(int count)
+		{
+			minBooleanRegisters = count;
 		}
 
 		public IEnumerator<Register> GetEnumerator()
@@ -157,6 +179,28 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 								{
 									state = 2; //done, go to registers
 									break;
+								}
+
+								if (type == "struct")
+								{
+									string structContents = "";
+									string structName = "";
+									try
+									{
+										while (tokenizer.Token != "{")
+											tokenizer.NextToken();
+										tokenizer.ReadBlock();
+										structContents = tokenizer.Token;
+										tokenizer.NextToken();
+										structName = tokenizer.Token;
+									}
+									catch
+									{
+									}
+									finally
+									{
+										throw new CompileException(string.Format("Shader compiler cannot map the custom constant structure '{0} {1}' into a compatible XNA data structure", structName, structContents.Replace(Environment.NewLine, "").Replace("//","")));
+									}
 								}
 
 								string name = tokenizer.Token;

@@ -222,7 +222,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 				if (hs.BraceEnclosedChildren) 
 				{
-					if (hs.Elements.Length > 0 && hs.Elements[0] == "technique")
+					if (hs.Elements.Length > 0 && hs.Elements[0].Equals("technique", StringComparison.InvariantCultureIgnoreCase))
 					{
 						//figure out the platform, based on #if blocks stack.
 						Platform platform = Platform.Both;

@@ -14,6 +14,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 	{
 		private readonly RegisterSet vsReg, psReg, vsPreReg, psPreReg;
 		private readonly Vector4[] vsDefault, psDefault;
+		private readonly bool[] vsBooleanDefault, psBooleanDefault;
 		private readonly Dictionary<string, CodeExpression> staticArrays;
 
 		public ShaderRegisters(SourceShader source, string techniqueName, Platform platform)
@@ -36,6 +37,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			{
 				psDefault = technique.TechniqueExtraData.PixelShaderConstants;
 				vsDefault = technique.TechniqueExtraData.VertexShaderConstants;
+
+				psBooleanDefault = technique.TechniqueExtraData.PixelShaderBooleanConstants;
+				vsBooleanDefault = technique.TechniqueExtraData.VertexShaderBooleanConstants;
 			}
 		}
 
@@ -82,6 +86,27 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				add(field, "Pixel preshader register storage");
 			}
 
+
+			//now do the boolean registers
+			if (vsReg.BooleanRegisterCount > 0)
+			{
+				//create the vertex boolean registers
+				CodeMemberField field = new CodeMemberField(typeof(bool[]), shader.VertexShaderBooleanRegistersRef.FieldName);
+				field.Attributes = MemberAttributes.Private | MemberAttributes.Final;
+
+				add(field, "Vertex shader boolean register storage");
+			}
+			//now the PS
+			if (psReg.BooleanRegisterCount > 0)
+			{
+				//create the vertex boolean registers
+				CodeMemberField field = new CodeMemberField(typeof(bool[]), shader.PixelShaderBooleanRegistersRef.FieldName);
+				field.Attributes = MemberAttributes.Private | MemberAttributes.Final;
+
+				add(field, "Pixel shader boolean register storage");
+			}
+
+
 			//add any statics created
 			foreach (KeyValuePair<string, CodeExpression> array in staticArrays)
 			{
@@ -90,6 +115,27 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				field.InitExpression = array.Value;
 
 				add(field, "Register default values");
+			}
+		}
+
+		public override void AddMembers(IShaderDom shader, Action<CodeTypeMember, string> add, Platform platform)
+		{
+			if (platform != Platform.Both)
+				return;
+
+			//add change values for boolean registers
+			if (vsReg.BooleanRegisterCount > 0)
+			{
+				CodeMemberField field = new CodeMemberField(typeof(bool), shader.VertexShaderBooleanRegistersChangedRef.FieldName);
+				field.Attributes = MemberAttributes.Private | MemberAttributes.Final;
+				add(field, null);
+			}
+			//now the PS
+			if (psReg.BooleanRegisterCount > 0)
+			{
+				CodeMemberField field = new CodeMemberField(typeof(bool), shader.PixelShaderBooleanRegistersChangedRef.FieldName);
+				field.Attributes = MemberAttributes.Private | MemberAttributes.Final;
+				add(field, null);
 			}
 		}
 
@@ -118,7 +164,6 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 						new CodePrimitiveExpression(offset), new CodeFieldReferenceExpression(shader.ShaderClassEx, name)); // start from zero
 					add(shader.ETS(setCall));
 				}
-
 			}
 
 			//and the PS
@@ -162,6 +207,47 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				CodeExpression create = new CodeObjectCreateExpression(typeof(ConstantArray),
 					new CodePrimitiveExpression(psPreReg.FloatRegisterCount)); //create with the number of registers
 				add(new CodeAssignStatement(shader.PixelPreShaderRegistersRef, create));
+			}
+
+			//boolean registers
+			if (vsReg.BooleanRegisterCount > 0)
+			{
+				//assign
+				CodeExpression create = new CodeArrayCreateExpression(typeof(bool),
+					new CodePrimitiveExpression(vsReg.BooleanRegisterCount)); //create with the number of registers
+
+				add(new CodeAssignStatement(shader.VertexShaderBooleanRegistersRef, create));
+				add(new CodeAssignStatement(shader.VertexShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(true)));
+
+				//if any are default non-zero, assign them.
+				if (vsBooleanDefault != null)
+				{
+					for (int i = 0; i < this.vsBooleanDefault.Length && i < vsReg.BooleanRegisterCount; i++)
+					{
+						if (this.vsBooleanDefault[i])
+							add(new CodeAssignStatement(new CodeArrayIndexerExpression(shader.VertexShaderBooleanRegistersRef, new CodePrimitiveExpression(i)), new CodePrimitiveExpression(true)));
+					}
+				}
+			}
+			//and the PS...
+			if (psReg.BooleanRegisterCount > 0)
+			{
+				//assign
+				CodeExpression create = new CodeArrayCreateExpression(typeof(bool),
+					new CodePrimitiveExpression(psReg.BooleanRegisterCount)); //create with the number of registers
+
+				add(new CodeAssignStatement(shader.PixelShaderBooleanRegistersRef, create));
+				add(new CodeAssignStatement(shader.PixelShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(true)));
+
+				//if any are default non-zero, assign them.
+				if (psBooleanDefault != null)
+				{
+					for (int i = 0; i < this.psBooleanDefault.Length && i < psReg.BooleanRegisterCount; i++)
+					{
+						if (this.psBooleanDefault[i])
+							add(new CodeAssignStatement(new CodeArrayIndexerExpression(shader.PixelShaderBooleanRegistersRef, new CodePrimitiveExpression(i)), new CodePrimitiveExpression(true)));
+					}
+				}
 			}
 		}
 		
@@ -230,7 +316,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 				add(assign, null);
 
-				CodeExpression condition = new CodeBinaryOperatorExpression(vreg, CodeBinaryOperatorType.IdentityInequality, new CodePrimitiveExpression(null));
+				CodeExpression condition = new CodeBinaryOperatorExpression(preg, CodeBinaryOperatorType.IdentityInequality, new CodePrimitiveExpression(null));
 				if (setConstantsCondition != null)
 					setConstantsCondition = new CodeBinaryOperatorExpression(condition, CodeBinaryOperatorType.BooleanOr, setConstantsCondition);
 				else
@@ -243,6 +329,50 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetShaderConstants", vreg, preg);
 
 				//invoke if the constants are not null.
+
+				add(new CodeConditionStatement(setConstantsCondition, shader.ETS(invoke)), null);
+			}
+
+
+			setConstantsCondition = null;
+
+			//set the boolean registers
+			if (vsReg.BooleanRegisterCount > 0 ||
+				psReg.BooleanRegisterCount > 0)
+			{
+				CodeExpression vsb = new CodePrimitiveExpression(null);
+				CodeExpression psb = new CodePrimitiveExpression(null);
+
+				if (vsReg.BooleanRegisterCount > 0)
+				{
+					CodeVariableDeclarationStatement vs_var = new CodeVariableDeclarationStatement(typeof(bool[]), "vcb", new CodePrimitiveExpression(null));
+					add(vs_var, null);
+					vsb = new CodeVariableReferenceExpression(vs_var.Name);
+					CodeConditionStatement changed = new CodeConditionStatement(shader.VertexShaderBooleanRegistersChangedRef,
+						new CodeAssignStatement(vsb, shader.VertexShaderBooleanRegistersRef),
+						new CodeAssignStatement(shader.VertexShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(false)));
+					add(changed, null);
+					setConstantsCondition = new CodeBinaryOperatorExpression(vsb, CodeBinaryOperatorType.IdentityInequality, new CodePrimitiveExpression(null));
+				}
+				if (psReg.BooleanRegisterCount > 0)
+				{
+					CodeVariableDeclarationStatement ps_var = new CodeVariableDeclarationStatement(typeof(bool[]), "pcb", new CodePrimitiveExpression(null));
+					add(ps_var, null);
+					psb = new CodeVariableReferenceExpression(ps_var.Name);
+					CodeConditionStatement changed = new CodeConditionStatement(shader.PixelShaderBooleanRegistersChangedRef,
+						new CodeAssignStatement(psb, shader.PixelShaderBooleanRegistersRef),
+						new CodeAssignStatement(shader.PixelShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(false)));
+					add(changed, null);
+
+					CodeBinaryOperatorExpression condition = new CodeBinaryOperatorExpression(psb, CodeBinaryOperatorType.IdentityInequality, new CodePrimitiveExpression(null));
+					if (setConstantsCondition == null)
+						setConstantsCondition = condition;
+					else
+						setConstantsCondition = new CodeBinaryOperatorExpression(setConstantsCondition, CodeBinaryOperatorType.BooleanOr, condition);
+				}
+				//invoke the call to set the constants
+				//set the shaders
+				CodeMethodInvokeExpression invoke = new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetShaderBooleanConstants", vsb, psb);
 
 				add(new CodeConditionStatement(setConstantsCondition, shader.ETS(invoke)), null);
 			}

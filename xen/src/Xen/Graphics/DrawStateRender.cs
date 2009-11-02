@@ -122,6 +122,9 @@ namespace Xen
 
 			vertexShaderConstantsToBind = null;
 			pixelShaderConstantsToBind = null;
+
+			vertexShaderBooleanConstantsToBind = null;
+			pixelShaderBooleanConstantsToBind = null;
 		}
 
 		internal void UnbindBuffer(VertexBuffer vb)
@@ -262,6 +265,11 @@ namespace Xen
 				graphics.SetPixelShaderConstant(0, pixelShaderConstantsToBind);
 				pixelShaderConstantsToBind = null;
 			}
+			if (pixelShaderBooleanConstantsToBind != null)
+			{
+				graphics.SetPixelShaderConstant(0, pixelShaderBooleanConstantsToBind);
+				pixelShaderBooleanConstantsToBind = null;
+			}
 
 			if (vertexShaderConstantsToBind != null)
 			{
@@ -269,6 +277,14 @@ namespace Xen
 				vertexShaderConstantsToBind = null;
 #if XBOX360
 				//must reassign the vertex shader on the xbox whenever the shader constants have changed...
+				boundVertexShader = null;
+#endif
+			}
+			if (vertexShaderBooleanConstantsToBind != null)
+			{
+				graphics.SetVertexShaderConstant(0, vertexShaderBooleanConstantsToBind);
+				vertexShaderBooleanConstantsToBind = null;
+#if XBOX360
 				boundVertexShader = null;
 #endif
 			}

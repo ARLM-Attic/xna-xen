@@ -9,9 +9,10 @@
     <RootNamespace>Xen.Ex</RootNamespace>
     <AssemblyName>Xen.Ex</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <XnaFrameworkVersion>v3.0</XnaFrameworkVersion>
+    <XnaFrameworkVersion>v3.1</XnaFrameworkVersion>
     <XnaPlatform>Windows</XnaPlatform>
     <XnaCrossPlatformGroupID>c56f46c4-6170-4bdc-a400-f32a30ed4ceb</XnaCrossPlatformGroupID>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -24,7 +25,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -33,7 +33,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;WINDOWS;XNA_3_0</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;WINDOWS;XNA_3_1</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
@@ -46,7 +46,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;WINDOWS;XNA_3_0</DefineConstants>
+    <DefineConstants>TRACE;WINDOWS;XNA_3_1</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
@@ -56,14 +56,8 @@
     <DocumentationFile>..\..\bin\x86\Release\Xen.Ex.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Xna.Framework, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=x86">
-      <Private>False</Private>
-      <SpecificVersion>True</SpecificVersion>
-    </Reference>
-    <Reference Include="Microsoft.Xna.Framework.Game, Version=3.0.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d, processorArchitecture=MSIL">
-      <Private>False</Private>
-      <SpecificVersion>True</SpecificVersion>
-    </Reference>
+    <Reference Include="Microsoft.Xna.Framework, Version=3.1.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d" />
+    <Reference Include="Microsoft.Xna.Framework.Game, Version=3.1.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d" />
     <Reference Include="mscorlib">
       <Private>False</Private>
     </Reference>
@@ -115,14 +109,18 @@
     </Compile>
     <Compile Include="Graphics2D\SimpleElement.cs" />
     <Compile Include="Graphics2D\SpriteElement.cs" />
-    <Compile Include="Graphics2D\Stats\Shader.fx.cs">
-      <DependentUpon>Shader.fx</DependentUpon>
+    <Compile Include="Graphics2D\Statistics\Shader.fx.cs">
+      <SubType>Code</SubType>
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
+      <DependentUpon>Shader.fx</DependentUpon>
     </Compile>
-    <Compile Include="Graphics2D\Stats\Stats.cs" />
+    <Compile Include="Graphics2D\Statistics\Stats.cs" />
     <Compile Include="Graphics2D\TextElement.cs" />
     <Compile Include="Graphics\BatchModel.cs" />
+    <Compile Include="Graphics\Avatar.cs" />
+    <Compile Include="Graphics\AnimationCommon.cs" />
+    <Compile Include="Graphics\AvatarContent.cs" />
     <Compile Include="Graphics\Display\Billboard3D.fx.cs">
       <DependentUpon>Billboard3D.fx</DependentUpon>
       <AutoGen>True</AutoGen>
@@ -236,9 +234,9 @@
       <ProductName>Windows Installer 3.1</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Xna.Framework.3.0">
+    <BootstrapperPackage Include="Microsoft.Xna.Framework.3.1">
       <Visible>False</Visible>
-      <ProductName>Microsoft XNA Framework Redistributable 3.0</ProductName>
+      <ProductName>Microsoft XNA Framework Redistributable 3.1</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
@@ -255,7 +253,7 @@
       <Generator>XenFX</Generator>
       <LastGenOutput>Shader.fx.cs</LastGenOutput>
     </None>
-    <None Include="Graphics2D\Stats\Shader.fx">
+    <None Include="Graphics2D\Statistics\Shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>Shader.fx.cs</LastGenOutput>
     </None>

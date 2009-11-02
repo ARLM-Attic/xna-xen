@@ -106,8 +106,16 @@ namespace Xen.Ex.Graphics
 
 			if (geometry == null)
 				SetupGeometry();
+			
+			ContainmentType cullModel = ContainmentType.Contains;
 
-			ContainmentType cullModel = state.Culler.IntersectBox(ref modelData.staticBounds.minimum, ref modelData.staticBounds.maximum);
+			//if there is just one geometry object, then the ICullable.CullTest() call will have been suficient.
+			bool skipCullTest = this.modelData != null && this.modelData.meshes.Length == 1 && this.modelData.meshes[0].geometry.Length == 1;
+
+			if (!skipCullTest)
+			{
+				cullModel = state.Culler.IntersectBox(ref modelData.staticBounds.minimum, ref modelData.staticBounds.maximum);
+			}
 
 			int geometryIndex = 0;
 			bool drawn = false;

@@ -108,7 +108,6 @@ float scale = 1;
 //See the tutorial code file for examples of setting the global colour, binding the static instance, and
 //setting the attribute value.
 
-
 //--------------------------------------------------------------//
 // vertex shader, scales the mesh by the scale attribute
 //--------------------------------------------------------------//

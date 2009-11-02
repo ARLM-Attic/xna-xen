@@ -140,6 +140,77 @@ namespace Xen.Input.Mapping
 		}
 
 		/// <summary>
+		/// Method that may be used when overriding one of the 'UpdateState' methods
+		/// </summary>
+		protected void SetFaceButtonStates(UpdateState gameState, InputState state, bool AButtonState, bool BButtonState, bool XButtonState, bool YButtonState)
+		{
+			long tick = gameState.TotalTimeTicks;
+
+			state.buttons.a.SetState(AButtonState, tick);
+			state.buttons.b.SetState(BButtonState, tick);
+			state.buttons.x.SetState(XButtonState, tick);
+			state.buttons.y.SetState(YButtonState, tick);
+		}
+		/// <summary>
+		/// Method that may be used when overriding one of the 'UpdateState' methods
+		/// </summary>
+		protected void SetDpadStates(UpdateState gameState, InputState state, bool DPadDownButtonState, bool DPadUpButtonState, bool DPadLeftButtonState, bool DPadRightButtonState)
+		{
+			long tick = gameState.TotalTimeTicks;
+
+			state.buttons.dpadD.SetState(DPadDownButtonState, tick);
+			state.buttons.dpadU.SetState(DPadUpButtonState, tick);
+			state.buttons.dpadL.SetState(DPadLeftButtonState, tick);
+			state.buttons.dpadR.SetState(DPadRightButtonState, tick);
+		}
+		/// <summary>
+		/// Method that may be used when overriding one of the 'UpdateState' methods
+		/// </summary>
+		protected void SetShoulderButtonStates(UpdateState gameState, InputState state, bool leftShoulderButtonState, bool rightShoulderButtonState)
+		{
+			long tick = gameState.TotalTimeTicks;
+
+			state.buttons.shoulderL.SetState(leftShoulderButtonState, tick);
+			state.buttons.shoulderR.SetState(rightShoulderButtonState, tick);
+		}
+		/// <summary>
+		/// Method that may be used when overriding one of the 'UpdateState' methods
+		/// </summary>
+		protected void SetStickButtonStates(UpdateState gameState, InputState state, bool leftStickClickButtonState, bool rightStickClickButtonState)
+		{
+			long tick = gameState.TotalTimeTicks;
+
+			state.buttons.leftStickClick.SetState(leftStickClickButtonState, tick);
+			state.buttons.rightStickClick.SetState(rightStickClickButtonState, tick);
+		}
+		/// <summary>
+		/// Method that may be used when overriding one of the 'UpdateState' methods
+		/// </summary>
+		protected void SetSpecialButtonStates(UpdateState gameState, InputState state, bool backButtonState, bool startButtonState)
+		{
+			long tick = gameState.TotalTimeTicks;
+
+			state.buttons.back.SetState(backButtonState, tick);
+			state.buttons.start.SetState(startButtonState, tick);
+		}
+		/// <summary>
+		/// Method that may be used when overriding one of the 'UpdateState' methods
+		/// </summary>
+		protected void SetTriggerStates(UpdateState gameState, InputState state, float leftTriggerState, float rightTriggerState)
+		{
+			state.triggers.leftTrigger = leftTriggerState;
+			state.triggers.rightTrigger = rightTriggerState;
+		}
+		/// <summary>
+		/// Method that may be used when overriding one of the 'UpdateState' methods
+		/// </summary>
+		protected void SetStickStates(UpdateState gameState, InputState state, Vector2 leftStickState, Vector2 rightStickState)
+		{
+			state.sticks.leftStick = leftStickState;
+			state.sticks.rightStick = rightStickState;
+		}
+
+		/// <summary>
 		/// Override this method to change how raw keyboard and mouse input values are translated to a <see cref="InputState"/> object
 		/// </summary>
 		/// <param name="gameState"></param>
@@ -171,10 +242,8 @@ namespace Xen.Input.Mapping
 			state.triggers.leftTrigger = mapping.LeftTrigger.GetValue(inputState, false);
 			state.triggers.rightTrigger = mapping.RightTrigger.GetValue(inputState, false);
 
-			Vector2 v;		
-#if XBOX360
-			v = new Vector2();
-#endif
+			Vector2 v = new Vector2();
+
 			v.Y = mapping.LeftStickForward.GetValue(inputState, false) + mapping.LeftStickBackward.GetValue(inputState, true);
 			v.X = mapping.LeftStickLeft.GetValue(inputState, true) + mapping.LeftStickRight.GetValue(inputState, false);
 
@@ -382,7 +451,10 @@ namespace Xen.Input.Mapping
 			}
 		}
 #if !XBOX360
-		internal float GetValue(KeyboardMouseState inputState, bool invert)
+		/// <summary>
+		/// Get the value as a float
+		/// </summary>
+		public float GetValue(KeyboardMouseState inputState, bool invert)
 		{
 			if (!inputState.WindowFocused)
 				return 0;
@@ -443,7 +515,10 @@ namespace Xen.Input.Mapping
 			}
 		}
 
-		internal bool GetValue(KeyboardMouseState inputState)
+		/// <summary>
+		/// Get the value as a boolean
+		/// </summary>
+		public bool GetValue(KeyboardMouseState inputState)
 		{
 			if (!inputState.WindowFocused)
 				return false;
@@ -469,22 +544,28 @@ namespace Xen.Input.Mapping
 				return inputState.KeyboardState.IsKeyDown(key);
 		}
 #else
-	internal float GetValue(KeyboardMouseState inputState, bool invert)
-	{
-		KeyboardState ks = inputState.KeyboardState;
-
-		if (ks.IsKeyDown(key))
+		/// <summary>
+		/// Get the value as a float
+		/// </summary>
+		public float GetValue(KeyboardMouseState inputState, bool invert)
 		{
-			if (invert)
-				return -1;
-			return 1;
+			KeyboardState ks = inputState.KeyboardState;
+
+			if (ks.IsKeyDown(key))
+			{
+				if (invert)
+					return -1;
+				return 1;
+			}
+			return 0;
 		}
-		return 0;
-	}
-	internal bool GetValue(KeyboardMouseState inputState)
-	{
-		return inputState.KeyboardState.IsKeyDown(key);
-	}
+		/// <summary>
+		/// Get the value as a boolean
+		/// </summary>
+		public bool GetValue(KeyboardMouseState inputState)
+		{
+			return inputState.KeyboardState.IsKeyDown(key);
+		}
 #endif
 
 		/// <summary>
@@ -553,7 +634,7 @@ namespace Xen.Input.Mapping
 			b = Keys.E;
 			x = Keys.Z;
 			y = Keys.C;
-#if XNA_3_0
+#if XNA_3_0 || XNA_3_1
 			back = Keys.Escape;
 #else
 			back = Keys.Back; //The escape key doesn't work in XNA 2!

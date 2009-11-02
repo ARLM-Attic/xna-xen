@@ -17,10 +17,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 	{
 		private readonly PreshaderSrc pixelPreShader, vertexPreShader;
 		private readonly CodeStatementCollection pixelPreShaderStatements, vertexPreShaderStatements;
+		private readonly AsmTechnique technique;
 
 		public Preshaders(SourceShader source, string techniqueName, Platform platform)
 		{
-			AsmTechnique technique = source.GetAsmTechnique(techniqueName, platform);
+			technique = source.GetAsmTechnique(techniqueName, platform);
 
 			if (technique.PixelPreShader != null)
 			{
@@ -28,6 +29,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				pixelPreShader = new PreshaderSrc(technique.PixelPreShader, pixelPreShaderStatements);
 
 				technique.PixelShader.RegisterSet.SetMinFloatRegisterCount(pixelPreShader.MaxConstantRegisterAccess);
+				technique.PixelShader.RegisterSet.SetMinBooleanRegisterCount(pixelPreShader.MaxBooleanConstantRegisterWrite);
 			}
 
 			if (technique.VertexPreShader != null)
@@ -36,6 +38,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				vertexPreShader = new PreshaderSrc(technique.VertexPreShader, vertexPreShaderStatements);
 
 				technique.VertexShader.RegisterSet.SetMinFloatRegisterCount(vertexPreShader.MaxConstantRegisterAccess);
+				technique.VertexShader.RegisterSet.SetMinBooleanRegisterCount(vertexPreShader.MaxBooleanConstantRegisterWrite);
 			}
 		}
 
@@ -59,10 +62,14 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				method.Statements.Add(constants);
 				method.Statements.Add(preconstants);
 
+				//if using boolean constants..
+				if (technique.VertexShader.RegisterSet.BooleanRegisterCount > 0)
+					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(bool[]), "b", shader.VertexShaderBooleanRegistersRef));
+
 				//add temporary registers
 				for (int i = 0; i < vertexPreShader.MaxTempRegisters; i++)
 				{
-					CodeStatement temp = new CodeVariableDeclarationStatement(typeof(Vector4), "r" + i);
+					CodeStatement temp = new CodeVariableDeclarationStatement(typeof(Vector4), "r" + i, new CodeObjectCreateExpression(typeof(Vector4)));
 					method.Statements.Add(temp);
 				}
 
@@ -71,11 +78,13 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				//finally, update the changed values
 				method.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(shader.VertexPreShaderRegistersRef, "change"), new CodePrimitiveExpression(false)));
 				method.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(shader.VertexShaderRegistersRef, "change"), new CodePrimitiveExpression(true)));
+				if (technique.VertexShader.RegisterSet.BooleanRegisterCount > 0)
+					method.Statements.Add(new CodeAssignStatement(shader.VertexShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(true)));
 
 				add(method, "Vertex PreShader");
 			}
 
-			//do it all again for pixel shaders
+			//do it all again for pixel shaders (yeah, this could be broken down to a single method...)
 			if (pixelPreShader != null)
 			{
 				CodeMemberMethod method = new CodeMemberMethod();
@@ -89,10 +98,14 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				method.Statements.Add(constants);
 				method.Statements.Add(preconstants);
 
+				//if using boolean constants..
+				if (technique.PixelShader.RegisterSet.BooleanRegisterCount > 0)
+					method.Statements.Add(new CodeVariableDeclarationStatement(typeof(bool[]), "b", shader.PixelShaderBooleanRegistersRef));
+
 				//add temporary registers
 				for (int i = 0; i < pixelPreShader.MaxTempRegisters; i++)
 				{
-					CodeStatement temp = new CodeVariableDeclarationStatement(typeof(Vector4), "r" + i);
+					CodeStatement temp = new CodeVariableDeclarationStatement(typeof(Vector4), "r" + i, new CodeObjectCreateExpression(typeof(Vector4)));
 					method.Statements.Add(temp);
 				}
 				method.Statements.AddRange(pixelPreShaderStatements);
@@ -100,6 +113,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				//finally, update the changed values
 				method.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(shader.PixelPreShaderRegistersRef, "change"), new CodePrimitiveExpression(false)));
 				method.Statements.Add(new CodeAssignStatement(new CodeFieldReferenceExpression(shader.PixelShaderRegistersRef, "change"), new CodePrimitiveExpression(true)));
+				if (technique.PixelShader.RegisterSet.BooleanRegisterCount > 0)
+					method.Statements.Add(new CodeAssignStatement(shader.PixelShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(true)));
 
 				add(method, "Pixel PreShader");
 			}

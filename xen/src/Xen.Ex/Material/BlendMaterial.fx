@@ -48,7 +48,7 @@ sampler2D CustomNormalMapSampler : register(s1) = sampler_state
 float4 v_lights[24] : register(c10); //max 6
 float4 p_lights[16] : register(c0); //max 4
 
-//blend matrices, stored at the end of the VS, max is 71. stored as float4x3
+//blend matrices, stored at the end of the VS, max is 72. stored as float4x3
 
 float4 blendMatrices[72*3] : register(c34);
 
@@ -89,6 +89,7 @@ void VS_blend(
 			uniform bool outputNormals)
 {
 
+	//don't worry about the transpose, it gets optimised out and this is actually very efficient.
 	float4x3 blendMatrix
 				 = transpose(float3x4(
 					blendMatrices[indices.x*3+0] * weights.x + blendMatrices[indices.y*3+0] * weights.y + blendMatrices[indices.z*3+0] * weights.z + blendMatrices[indices.w*3+0] * weights.w,
@@ -96,8 +97,8 @@ void VS_blend(
 					blendMatrices[indices.x*3+2] * weights.x + blendMatrices[indices.y*3+2] * weights.y + blendMatrices[indices.z*3+2] * weights.z + blendMatrices[indices.w*3+2] * weights.w
 				   ));
 				   
-	float3 worldPosition =	mul(pos_in,blendMatrix);  
-	wpos = mul(float4(worldPosition,1),world);
+	float3 blendPosition =	mul(pos_in,blendMatrix);  
+	wpos = mul(float4(blendPosition,1),world);
 	
 	pos_out = mul(wpos,viewProj);
 	
@@ -181,6 +182,7 @@ void VS_norm_blend(
 			uniform bool useVertexColours)
 {
 
+	//don't worry about the transpose, it gets optimised out and this is actually very efficient.
 	float4x3 blendMatrix
 				 = transpose(float3x4(
 					blendMatrices[indices.x*3+0] * weights.x + blendMatrices[indices.y*3+0] * weights.y + blendMatrices[indices.z*3+0] * weights.z + blendMatrices[indices.w*3+0] * weights.w,
@@ -188,8 +190,8 @@ void VS_norm_blend(
 					blendMatrices[indices.x*3+2] * weights.x + blendMatrices[indices.y*3+2] * weights.y + blendMatrices[indices.z*3+2] * weights.z + blendMatrices[indices.w*3+2] * weights.w
 				   ));
 				   		   
-	float3 worldPosition =	mul(pos_in,blendMatrix);  
-	wpos = float4(mul(float4(worldPosition,1),world).xyz,1);
+	float3 blendPosition =	mul(pos_in,blendMatrix);  
+	wpos = float4(mul(float4(blendPosition,1),world).xyz,1);
 	
 	pos_out = mul(wpos,viewProj);
 	

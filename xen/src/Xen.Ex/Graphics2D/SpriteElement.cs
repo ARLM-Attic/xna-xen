@@ -649,6 +649,17 @@ namespace Xen.Ex.Graphics2D
 			instances[index].M12 = position.Y;
 		}
 		/// <summary>
+		/// Copies in position data for all sprites, using an array
+		/// </summary>
+		public void SetSpritePositions(Vector2[] positions)
+		{
+			for (int n = 0; n < positions.Length && n < instances.Length; n++)
+			{
+				instances[n].M11 = positions[n].X;
+				instances[n].M12 = positions[n].Y;
+			}
+		}
+		/// <summary>
 		/// Get the position of a sprite that has been added to this element
 		/// </summary>
 		/// <param name="index">index of the added sprite</param>
@@ -945,13 +956,13 @@ namespace Xen.Ex.Graphics2D
 				Matrix world;
 				state.GetWorldMatrix(out world);
 				shader.SetSpriteWorldMatrix(ref world);
-				shader.CustomTexture = texture;
+				shader.CustomTexture = texture ?? Xen.Ex.Material.WhiteTexture.GetTexture(state);
 				shader.Bind(state);
 			}
 			else
 			{
 				Graphics2D.NonInstancingSprite shader = state.GetShader<Graphics2D.NonInstancingSprite>();
-				shader.CustomTexture = texture;
+				shader.CustomTexture = texture ?? Xen.Ex.Material.WhiteTexture.GetTexture(state); 
 				shader.Bind(state);
 			}
 		}

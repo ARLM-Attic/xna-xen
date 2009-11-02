@@ -73,7 +73,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 		private AsmListing listing;
 		private byte[] output;
-		private int maxConstant, maxRegister, maxInteger;
+		private int maxConstant, maxRegister, maxInteger, maxBoolean;
 		private bool useTemp;
 		private int loopIndex;
 
@@ -86,6 +86,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		private StringBuilder source;
 		private Dictionary<int, string> localConstants;
 		private Dictionary<int, string> localIntegerConstants;
+		private Dictionary<int, string> localBooleanConstants;
 
 		static string[] VSprofiles = new string[] { "vs_1_1", "vs_2_0", "vs_2_a", "vs_3_0" };
 		static string[] PSprofiles = new string[] { "ps_2_0", "ps_2_a", "ps_2_b", "ps_3_0" };
@@ -97,11 +98,14 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 
 
-		public AsmToHlslAsmConverter(AsmListing asmSource, Microsoft.Xna.Framework.TargetPlatform platform, int shaderMaxConstants, bool throwOnError)
+		public AsmToHlslAsmConverter(AsmListing asmSource, Microsoft.Xna.Framework.TargetPlatform platform, int shaderMaxConstants, int shaderMaxBooleanConstants, bool throwOnError)
 		{
 			maxConstant = -1;
 			if (shaderMaxConstants != 0)
 				maxConstant = shaderMaxConstants;
+			maxBoolean = -1;
+			if (shaderMaxBooleanConstants != 0)
+				maxBoolean = shaderMaxBooleanConstants;
 			maxRegister = -1;
 
 			this.samplers = new List<InputOutput>();
@@ -109,6 +113,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			this.outputs = new List<InputOutput>();
 			this.assignedConstants = new Dictionary<int, bool>();
 			this.localConstants = new Dictionary<int, string>();
+			this.localBooleanConstants = new Dictionary<int, string>();
 			this.localIntegerConstants = new Dictionary<int, string>();
 
 			for (int i = 0; i < 256; i++)
@@ -221,6 +226,12 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				source.Append(maxConstant);
 				source.AppendLine("] : register(c0);");
 			}
+			if (maxBoolean > 0)
+			{
+				source.Append("bool _b[");
+				source.Append(maxBoolean);
+				source.AppendLine("] : register(b0);");
+			}
 
 			foreach (InputOutput sampler in samplers)
 			{
@@ -286,6 +297,14 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				source.Append("\tfloat4 _c");
 				source.Append(kvp.Key);
 				source.Append(" = float4(");
+				source.Append(kvp.Value);
+				source.AppendLine(");");
+			}
+			foreach (KeyValuePair<int, string> kvp in localBooleanConstants)
+			{
+				source.Append("\tbool _b");
+				source.Append(kvp.Key);
+				source.Append(" = (bool)(");
 				source.Append(kvp.Value);
 				source.AppendLine(");");
 			}
@@ -602,6 +621,32 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				{
 					int number = int.Parse(arg.Substring(1)) + 1;
 					maxInteger = Math.Max(maxInteger, number);
+
+					if (indexer == null)
+					{
+						if (!localIntegerConstants.ContainsKey(number))
+							arg = "a[" + arg.Substring(1) + "]";
+					}
+					else
+					{
+						arg = "a[" + arg.Substring(1) + " + " + indexer + "]";
+					}
+				}
+				//integer index
+				if (arg[0] == 'b')
+				{
+					int number = int.Parse(arg.Substring(1)) + 1;
+					maxBoolean = Math.Max(maxBoolean, number);
+
+					if (indexer == null)
+					{
+						if (!localBooleanConstants.ContainsKey(number))
+							arg = "b[" + arg.Substring(1) + "]";
+					}
+					else
+					{
+						arg = "b[" + arg.Substring(1) + " + " + indexer + "]";
+					}
 				}
 
 				//output
@@ -701,6 +746,21 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					return false;
 				}
 			}
+			if (cmd.name == "defb")
+			{
+				//boolean constant variation
+
+				if (cmd.args.Length == 2 &&
+					cmd.args[0][0].Length > 1 &&
+					cmd.args[0][0][0] == 'b')
+				{
+					int index = int.Parse(cmd.args[0][0].Substring(1));
+					string value = cmd.Arg(1);
+
+					localBooleanConstants.Add(index, value);
+					return false;
+				}
+			}
 
 			for (int i = 0; i < cmd.args.Length; i++)
 			{
@@ -753,6 +813,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					//if blocks...
 					//if_gt if_lt if_ge if_le if_eq if_ne
 
+				case "if"://if boolean
+					cmd = new Command("if ({0}) {1}", cmd.Arg(0), "{");
+					break;
 				case "if_eq"://equal
 					cmd = new Command("if ({0} == {1}) {2}", cmd.Arg(0),cmd.Arg(1), "{");
 					break;

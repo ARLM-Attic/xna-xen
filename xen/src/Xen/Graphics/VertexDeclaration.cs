@@ -830,10 +830,56 @@ namespace Xen.Graphics
 				//problems..
 				shader.GetVertexInput(sv,out use, out index);
 
+				//generate an error describing the problem,
+				
+				//fill it in with details about the state
+				string vertexType = "VerticesGroup"; 
+				string vertexDecl = "vertex structure";
+				string shaderType = string.Format("type {0}",shader.GetType());
+
+				string errorFormat = @"Error: The current vertex shader is attempting to read data that is not present in the vertices being drawn.{5}The shader currently in use ({0}) has a vertex shader that reads '{1}{2}' from each vertex.{5}However, the {3} being drawn does not contain a '{1}{2}' value in it's {4}.";
+
 				if (verticesType != null)
-					throw new InvalidOperationException(string.Format("Cannot use shader of type \'{0}\' with Vertices<{1}> object as it does not include element \'{2}{3}\'", shader.GetType().FullName, verticesType.FullName, use, index));
-				else
-					throw new InvalidOperationException(string.Format("Cannot use shader of type \'{0}\' with current VerticesGroup object as it does not include element \'{1}{2}\'", shader.GetType().FullName, use, index));
+					vertexType = string.Format("Vertices<{0}> object", verticesType.FullName);
+
+				//add some helpers in some common situations...
+				if (shader.GetType().IsPublic == false &&
+					shader.GetType().Namespace == "Xen.Ex.Material")
+				{
+					shaderType = "MaterialShader";
+
+					if (use == VertexElementUsage.Tangent || use == VertexElementUsage.Binormal)
+					{
+						errorFormat += Environment.NewLine;
+						errorFormat += "NOTE: MaterialShader properties may change the vertex data it tries to access. Using a Normal Map requires the vertices have Tangents and Binormals.";
+					}
+					if (use == VertexElementUsage.Color)
+					{
+						errorFormat += Environment.NewLine;
+						errorFormat += "NOTE: MaterialShader properties may change the vertex data it tries to access. Setting 'UseVertexColour' to true requires the vertices have Color0 data.";
+					}
+					if (use == VertexElementUsage.Normal)
+					{
+						errorFormat += Environment.NewLine;
+						errorFormat += "NOTE: MaterialShader properties may change the vertex data it tries to access. Enabling lighting requires the vertices have Normals.";
+					}
+				}
+
+				if (verticesType == typeof(byte))
+				{
+					vertexType = "XNA vertex data";
+					vertexDecl = "vertex declaration";
+
+					if (use == VertexElementUsage.Tangent || use == VertexElementUsage.Binormal)
+					{
+						errorFormat += Environment.NewLine;
+						errorFormat += "NOTE: If you are drawing a ModelInstance, the Xen Model Importer can generate Tangent/Binormal data by setting the 'Generate Tangent Frames' Content Processor property for the file to true.";
+					}
+				}
+
+				string error = string.Format(errorFormat, shaderType, use, index, vertexType, vertexDecl, Environment.NewLine);
+
+				throw new InvalidOperationException(error);
 			}
 		}
 #endif

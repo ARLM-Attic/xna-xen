@@ -702,7 +702,11 @@ namespace Xen.Graphics.Modifier
 				//force a depth clear on the screen when using DiscardContents on windows
 				if (skipDepthClearOptimize && usage == RenderTargetUsage.DiscardContents)
 				{
-					op |= ClearOptions.DepthBuffer | ClearOptions.Stencil;
+					if (state.DrawTarget != null && state.DrawTarget.HasDepthBuffer)
+						op |= ClearOptions.DepthBuffer;
+					if (state.DrawTarget != null && state.DrawTarget.HasStencilBuffer)
+						op |= ClearOptions.Stencil;
+
 					if (!this.ClearDepthEnabled)
 						depth = 1;
 					if (!this.ClearStencilEnabled)

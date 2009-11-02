@@ -29,8 +29,9 @@ namespace Tutorials.Tutorial_11
 		private ModelInstance model;
 
 		//NEW CODE
-		//An animation controller animates a mesh instance
+		//An animation controller animates a model instance
 		private AnimationController animationController;
+		//This structure is a handle to an animation
 		private AnimationInstance animation;
 
 		//NEW CODE

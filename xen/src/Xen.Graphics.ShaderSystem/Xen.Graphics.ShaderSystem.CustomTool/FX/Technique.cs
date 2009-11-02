@@ -42,42 +42,39 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 			while (assemblyTokens.NextToken())
 			{
-				switch (assemblyTokens.Token)
+				if (assemblyTokens.Token.Equals("technique", StringComparison.InvariantCultureIgnoreCase))
 				{
-					case "technique":
-						//should be format:
-						//technique NAME
-						//{
-						//}
+					//should be format:
+					//technique NAME
+					//{
+					//}
 
+					assemblyTokens.NextToken();
+					string name = assemblyTokens.Token;
+
+					assemblyTokens.NextToken();
+
+					//may be a line break
+					if (assemblyTokens.Token.Trim().Length == 0)
 						assemblyTokens.NextToken();
-						string name = assemblyTokens.Token;
 
-						assemblyTokens.NextToken();
+					//should be a {
+					if (assemblyTokens.Token != "{")
+						throw new CompileException("Unexpected token in assembly technique declaration, expected '{': " + assemblyTokens.Token);
 
-						//may be a line break
-						if (assemblyTokens.Token.Trim().Length == 0)
-							assemblyTokens.NextToken();
+					// read the entire technique {} block
+					if (!assemblyTokens.ReadBlock())
+						throw new CompileException("Unexpected end of string in assembly technique pass declaration");
 
-						//should be a {
-						if (assemblyTokens.Token != "{")
-							throw new CompileException("Unexpected token in assembly technique declaration, expected '{': " + assemblyTokens.Token);
+					AsmTechnique asm = new AsmTechnique(name, assemblyTokens.Token, fx.GetTechniqueDefaultValues(name));
 
-						// read the entire technique {} block
-						if (!assemblyTokens.ReadBlock())
-							throw new CompileException("Unexpected end of string in assembly technique pass declaration");
+					if (!shader.SkipConstantValidation)
+					{
+						//do some extra validation to make sure pixel inputs match vertex outputs
+						asm.ValidatePixleShaderInput(shader, platform);
+					}
 
-						AsmTechnique asm = new AsmTechnique(name, assemblyTokens.Token, fx.GetTechniqueDefaultValues(name));
-
-						if (!shader.SkipConstantValidation)
-						{
-							//do some extra validation to make sure pixel inputs match vertex outputs
-							asm.ValidatePixleShaderInput(shader, platform);
-						}
-
-						techniqes.Add(asm);
-
-						break;
+					techniqes.Add(asm);
 				}
 			}
 
@@ -135,7 +132,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 			while (tokenizer.NextToken())
 			{
-				if (tokenizer.Token == "pass")
+				if (tokenizer.Token.Equals("pass", StringComparison.InvariantCultureIgnoreCase))
 				{
 					//may have a name next...
 					tokenizer.NextToken();

@@ -1,0 +1,710 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>XenLogo</name>
+    </assembly>
+    <members>
+        <member name="T:Xen.Logo.XenLogo">
+            <summary>
+            Displays the Xen Graphics API logo for approximately 8 seconds
+            </summary>
+        </member>
+        <member name="M:Xen.Logo.XenLogo.#ctor(Xen.Application)">
+            <summary>Construct the logo</summary>
+        </member>
+        <member name="M:Xen.Logo.XenLogo.Draw(Xen.DrawState)">
+            <summary>
+            Draw the logo
+            </summary>
+        </member>
+        <member name="M:Xen.Logo.XenLogo.Dispose">
+            <summary>
+            Dispose the effect resources early. The resources will automatically be disposed when the effect completes.
+            </summary>
+        </member>
+        <member name="P:Xen.Logo.XenLogo.ClearBackground">
+            <summary>
+            Gets/Sets if the effect will clear the background colour to black
+            </summary>
+        </member>
+        <member name="P:Xen.Logo.XenLogo.EffectFinished">
+            <summary>
+            This value will return true when the effect has completed
+            </summary>
+        </member>
+        <member name="T:Xen.Logo.VelocityBillboardParticles2DElement">
+            <summary>
+            <para>Draws 2D <see cref="T:Xen.Ex.Graphics2D.Element"/> particles as Billboard Sprites (Rotation is generated per particle)</para>
+            <para>Particles will be scaled by thier velocity length, and rotated in the direction they are travelling</para>
+            <para>For use with a <see cref="T:Xen.Ex.Graphics.ParticleSystem"/> instance.</para>
+            </summary>
+        </member>
+        <member name="M:Xen.Logo.VelocityBillboardParticles2DElement.#ctor(Xen.Ex.Graphics.ParticleSystem,System.Boolean,System.Single)">
+            <summary>
+            Construct the Velocity Billboard particles
+            </summary>
+            <param name="system"></param>
+            <param name="useRotationValueToScaleVelocityEffect"><para>When true, the per particle rotation value will be used to scale the velocity stretching effect</para><para>Allowing per-particle scaling based on velocity</para></param>
+            <param name="velocityExtentionScale">Scale factor to extend the particles</param>
+        </member>
+        <member name="M:Xen.Logo.VelocityBillboardParticles2DElement.#ctor(Xen.Ex.Graphics.ParticleSystem,System.Boolean)">
+            <summary>
+            Construct the particle drawer
+            </summary>
+            <param name="system"></param>
+            <param name="useRotationValueToScaleVelocityEffect"><para>When true, the per particle rotation value will be used to scale the velocity stretching effect</para><para>Allowing per-particle scaling based on velocity</para></param>
+        </member>
+        <member name="M:Xen.Logo.VelocityBillboardParticles2DElement.DrawGpuParticles(Xen.DrawState,Xen.Ex.Graphics.Content.ParticleSystemTypeData,System.UInt32,Xen.Graphics.State.AlphaBlendState,Microsoft.Xna.Framework.Graphics.Texture2D,Microsoft.Xna.Framework.Graphics.Texture2D,Microsoft.Xna.Framework.Graphics.Texture2D,Microsoft.Xna.Framework.Graphics.Texture2D,System.Boolean)">
+            <summary>
+            draws the particles on a GPU system
+            </summary>
+        </member>
+        <member name="P:Xen.Logo.VelocityBillboardParticles2DElement.VelocityExtentionScale">
+            <summary>
+            Gets/Sets a scale factor to control how much the particles are extended by their velocity
+            </summary>
+        </member>
+        <member name="P:Xen.Logo.VelocityBillboardParticles2DElement.UseRotationValueToScaleVelocityEffect">
+            <summary>
+            <para>Gets/Sets a boolean flag to indicate that the Rotation value will be used to scale the Velocity scaling effect</para>
+            <para>When true, the per particle rotation value will be used to scale the velocity stretching effect</para>
+            </summary>
+        </member>
+        <member name="T:Xen.Logo.DrawVelocityParticles_GpuTex">
+            <summary><para>Technique 'DrawVelocityParticles_GpuTex' generated from file 'VelocityBillboard.fx'</para><para>Vertex Shader: approximately 39 instruction slots used (4 texture, 35 arithmetic), 6 registers</para><para>Pixel Shader: approximately 3 instruction slots used (1 texture, 2 arithmetic), 0 registers</para></summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.#ctor">
+            <summary>Construct an instance of the 'DrawVelocityParticles_GpuTex' shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.gdInit(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Setup shader static values</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.Bind(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Bind the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.WarmShader(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Warm (Preload) the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.Changed">
+            <summary>True if a shader constant has changed since the last Bind()</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.GetVertexInputCount">
+            <summary>Returns the number of vertex inputs used by this shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.GetVertexInput(System.Int32,Microsoft.Xna.Framework.Graphics.VertexElementUsage@,System.Int32@)">
+            <summary>Returns a vertex input used by this shader</summary><param name="i"/><param name="usage"/><param name="index"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.GetShaderConstantHash(System.Boolean)">
+            <summary>Gets an array containing approximate hash codes for the constants used by this shader (Used for validation when merging two shaders)</summary><param name="ps"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.gd">
+            <summary>Static graphics ID</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.vs">
+            <summary>Static vertex shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.ps">
+            <summary>Static pixel shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.cid0">
+            <summary>Name ID for 'textureSizeOffset'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.SetTextureSizeOffset(Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set the shader value 'float3 textureSizeOffset'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.cid1">
+            <summary>Name ID for 'velocityScale'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.SetVelocityScale(Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set the shader value 'float2 velocityScale'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.sc0">
+            <summary>Change ID for Semantic bound attribute 'worldViewProj'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.psm">
+            <summary>Pixel Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.vsm">
+            <summary>Vertex Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.ts0">
+            <summary>Sampler state for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.ts1">
+            <summary>Sampler state for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.ts2">
+            <summary>Sampler state for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.tx0">
+            <summary>Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.tx2">
+            <summary>Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.tx4">
+            <summary>Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.sid0">
+            <summary>Name uid for sampler for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.sid1">
+            <summary>Name uid for sampler for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.sid2">
+            <summary>Name uid for sampler for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.tid0">
+            <summary>Name uid for texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.tid2">
+            <summary>Name uid for texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.tid4">
+            <summary>Name uid for texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.vin">
+            <summary>array storing vertex usages, and element indices</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.vsb">
+            <summary>Static vertex shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.psb">
+            <summary>Static pixel shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex.vreg">
+            <summary>Vertex shader register storage</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set a shader attribute of type 'Vector2' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set a shader attribute of type 'Vector3' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.SetSamplerState(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Xen.Graphics.State.TextureSamplerState)">
+            <summary>Set a shader sampler of type 'TextureSamplerState' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex.SetTexture(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Graphics.Texture2D)">
+            <summary>Set a shader texture of type 'Texture2D' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.TextureSizeOffset">
+            <summary>Assign the shader value 'float3 textureSizeOffset'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.VelocityScale">
+            <summary>Assign the shader value 'float2 velocityScale'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.DisplaySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.PositionSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.VelocitySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.PositionTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.VelocityTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex.DisplayTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="T:Xen.Logo.DrawVelocityParticlesColour_GpuTex">
+            <summary><para>Technique 'DrawVelocityParticlesColour_GpuTex' generated from file 'VelocityBillboard.fx'</para><para>Vertex Shader: approximately 41 instruction slots used (6 texture, 35 arithmetic), 6 registers</para><para>Pixel Shader: approximately 3 instruction slots used (1 texture, 2 arithmetic), 0 registers</para></summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.#ctor">
+            <summary>Construct an instance of the 'DrawVelocityParticlesColour_GpuTex' shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.gdInit(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Setup shader static values</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.Bind(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Bind the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.WarmShader(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Warm (Preload) the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.Changed">
+            <summary>True if a shader constant has changed since the last Bind()</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.GetVertexInputCount">
+            <summary>Returns the number of vertex inputs used by this shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.GetVertexInput(System.Int32,Microsoft.Xna.Framework.Graphics.VertexElementUsage@,System.Int32@)">
+            <summary>Returns a vertex input used by this shader</summary><param name="i"/><param name="usage"/><param name="index"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.GetShaderConstantHash(System.Boolean)">
+            <summary>Gets an array containing approximate hash codes for the constants used by this shader (Used for validation when merging two shaders)</summary><param name="ps"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.gd">
+            <summary>Static graphics ID</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.vs">
+            <summary>Static vertex shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.ps">
+            <summary>Static pixel shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.cid0">
+            <summary>Name ID for 'textureSizeOffset'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.SetTextureSizeOffset(Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set the shader value 'float3 textureSizeOffset'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.cid1">
+            <summary>Name ID for 'velocityScale'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.SetVelocityScale(Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set the shader value 'float2 velocityScale'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.sc0">
+            <summary>Change ID for Semantic bound attribute 'worldViewProj'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.psm">
+            <summary>Pixel Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.vsm">
+            <summary>Vertex Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.ts0">
+            <summary>Sampler state for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.ts1">
+            <summary>Sampler state for 'Sampler2D ColourSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.ts2">
+            <summary>Sampler state for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.ts3">
+            <summary>Sampler state for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tx0">
+            <summary>Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tx1">
+            <summary>Bound texture for 'Texture2D ColourTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tx2">
+            <summary>Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tx4">
+            <summary>Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.sid0">
+            <summary>Name uid for sampler for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.sid1">
+            <summary>Name uid for sampler for 'Sampler2D ColourSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.sid2">
+            <summary>Name uid for sampler for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.sid3">
+            <summary>Name uid for sampler for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tid0">
+            <summary>Name uid for texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tid1">
+            <summary>Name uid for texture for 'Texture2D ColourTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tid2">
+            <summary>Name uid for texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.tid4">
+            <summary>Name uid for texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.vin">
+            <summary>array storing vertex usages, and element indices</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.vsb">
+            <summary>Static vertex shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.psb">
+            <summary>Static pixel shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex.vreg">
+            <summary>Vertex shader register storage</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set a shader attribute of type 'Vector2' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set a shader attribute of type 'Vector3' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.SetSamplerState(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Xen.Graphics.State.TextureSamplerState)">
+            <summary>Set a shader sampler of type 'TextureSamplerState' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex.SetTexture(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Graphics.Texture2D)">
+            <summary>Set a shader texture of type 'Texture2D' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.TextureSizeOffset">
+            <summary>Assign the shader value 'float3 textureSizeOffset'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.VelocityScale">
+            <summary>Assign the shader value 'float2 velocityScale'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.DisplaySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.ColourSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D ColourSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.PositionSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.VelocitySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.PositionTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.ColourTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D ColourTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.VelocityTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex.DisplayTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="T:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset">
+            <summary><para>Technique 'DrawVelocityParticles_GpuTex_UserOffset' generated from file 'VelocityBillboard.fx'</para><para>Vertex Shader: approximately 42 instruction slots used (6 texture, 36 arithmetic), 6 registers</para><para>Pixel Shader: approximately 3 instruction slots used (1 texture, 2 arithmetic), 0 registers</para></summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.#ctor">
+            <summary>Construct an instance of the 'DrawVelocityParticles_GpuTex_UserOffset' shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.gdInit(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Setup shader static values</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.Bind(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Bind the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.WarmShader(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Warm (Preload) the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.Changed">
+            <summary>True if a shader constant has changed since the last Bind()</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.GetVertexInputCount">
+            <summary>Returns the number of vertex inputs used by this shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.GetVertexInput(System.Int32,Microsoft.Xna.Framework.Graphics.VertexElementUsage@,System.Int32@)">
+            <summary>Returns a vertex input used by this shader</summary><param name="i"/><param name="usage"/><param name="index"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.GetShaderConstantHash(System.Boolean)">
+            <summary>Gets an array containing approximate hash codes for the constants used by this shader (Used for validation when merging two shaders)</summary><param name="ps"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.gd">
+            <summary>Static graphics ID</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.vs">
+            <summary>Static vertex shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.ps">
+            <summary>Static pixel shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.cid0">
+            <summary>Name ID for 'textureSizeOffset'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.SetTextureSizeOffset(Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set the shader value 'float3 textureSizeOffset'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.cid1">
+            <summary>Name ID for 'velocityScale'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.SetVelocityScale(Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set the shader value 'float2 velocityScale'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.sc0">
+            <summary>Change ID for Semantic bound attribute 'worldViewProj'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.psm">
+            <summary>Pixel Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.vsm">
+            <summary>Vertex Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.ts0">
+            <summary>Sampler state for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.ts1">
+            <summary>Sampler state for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.ts2">
+            <summary>Sampler state for 'Sampler2D UserSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.ts3">
+            <summary>Sampler state for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tx0">
+            <summary>Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tx2">
+            <summary>Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tx3">
+            <summary>Bound texture for 'Texture2D UserTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tx4">
+            <summary>Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.sid0">
+            <summary>Name uid for sampler for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.sid1">
+            <summary>Name uid for sampler for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.sid2">
+            <summary>Name uid for sampler for 'Sampler2D UserSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.sid3">
+            <summary>Name uid for sampler for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tid0">
+            <summary>Name uid for texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tid2">
+            <summary>Name uid for texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tid3">
+            <summary>Name uid for texture for 'Texture2D UserTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.tid4">
+            <summary>Name uid for texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.vin">
+            <summary>array storing vertex usages, and element indices</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.vsb">
+            <summary>Static vertex shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.psb">
+            <summary>Static pixel shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.vreg">
+            <summary>Vertex shader register storage</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set a shader attribute of type 'Vector2' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set a shader attribute of type 'Vector3' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.SetSamplerState(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Xen.Graphics.State.TextureSamplerState)">
+            <summary>Set a shader sampler of type 'TextureSamplerState' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.SetTexture(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Graphics.Texture2D)">
+            <summary>Set a shader texture of type 'Texture2D' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.TextureSizeOffset">
+            <summary>Assign the shader value 'float3 textureSizeOffset'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.VelocityScale">
+            <summary>Assign the shader value 'float2 velocityScale'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.DisplaySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.PositionSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.UserSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D UserSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.VelocitySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.PositionTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.VelocityTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.UserTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D UserTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticles_GpuTex_UserOffset.DisplayTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="T:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset">
+            <summary><para>Technique 'DrawVelocityParticlesColour_GpuTex_UserOffset' generated from file 'VelocityBillboard.fx'</para><para>Vertex Shader: approximately 44 instruction slots used (8 texture, 36 arithmetic), 6 registers</para><para>Pixel Shader: approximately 3 instruction slots used (1 texture, 2 arithmetic), 0 registers</para></summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.#ctor">
+            <summary>Construct an instance of the 'DrawVelocityParticlesColour_GpuTex_UserOffset' shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.gdInit(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Setup shader static values</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.Bind(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Bind the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.WarmShader(Xen.Graphics.ShaderSystem.IShaderSystem)">
+            <summary>Warm (Preload) the shader</summary><param name="state"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.Changed">
+            <summary>True if a shader constant has changed since the last Bind()</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.GetVertexInputCount">
+            <summary>Returns the number of vertex inputs used by this shader</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.GetVertexInput(System.Int32,Microsoft.Xna.Framework.Graphics.VertexElementUsage@,System.Int32@)">
+            <summary>Returns a vertex input used by this shader</summary><param name="i"/><param name="usage"/><param name="index"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.GetShaderConstantHash(System.Boolean)">
+            <summary>Gets an array containing approximate hash codes for the constants used by this shader (Used for validation when merging two shaders)</summary><param name="ps"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.gd">
+            <summary>Static graphics ID</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.vs">
+            <summary>Static vertex shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ps">
+            <summary>Static pixel shader instance</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.cid0">
+            <summary>Name ID for 'textureSizeOffset'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.SetTextureSizeOffset(Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set the shader value 'float3 textureSizeOffset'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.cid1">
+            <summary>Name ID for 'velocityScale'</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.SetVelocityScale(Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set the shader value 'float2 velocityScale'</summary><param name="value"/>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.sc0">
+            <summary>Change ID for Semantic bound attribute 'worldViewProj'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.psm">
+            <summary>Pixel Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.vsm">
+            <summary>Vertex Sampler dirty state bitmask</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ts0">
+            <summary>Sampler state for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ts1">
+            <summary>Sampler state for 'Sampler2D ColourSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ts2">
+            <summary>Sampler state for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ts3">
+            <summary>Sampler state for 'Sampler2D UserSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ts4">
+            <summary>Sampler state for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tx0">
+            <summary>Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tx1">
+            <summary>Bound texture for 'Texture2D ColourTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tx2">
+            <summary>Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tx3">
+            <summary>Bound texture for 'Texture2D UserTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tx4">
+            <summary>Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.sid0">
+            <summary>Name uid for sampler for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.sid1">
+            <summary>Name uid for sampler for 'Sampler2D ColourSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.sid2">
+            <summary>Name uid for sampler for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.sid3">
+            <summary>Name uid for sampler for 'Sampler2D UserSampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.sid4">
+            <summary>Name uid for sampler for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tid0">
+            <summary>Name uid for texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tid1">
+            <summary>Name uid for texture for 'Texture2D ColourTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tid2">
+            <summary>Name uid for texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tid3">
+            <summary>Name uid for texture for 'Texture2D UserTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.tid4">
+            <summary>Name uid for texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.vin">
+            <summary>array storing vertex usages, and element indices</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.vsb">
+            <summary>Static vertex shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.psb">
+            <summary>Static pixel shader byte code (Xbox360)</summary>
+        </member>
+        <member name="F:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.vreg">
+            <summary>Vertex shader register storage</summary>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector2@)">
+            <summary>Set a shader attribute of type 'Vector2' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.SetAttribute(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Vector3@)">
+            <summary>Set a shader attribute of type 'Vector3' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.SetSamplerState(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Xen.Graphics.State.TextureSamplerState)">
+            <summary>Set a shader sampler of type 'TextureSamplerState' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="M:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.SetTexture(Xen.Graphics.ShaderSystem.IShaderSystem,System.Int32,Microsoft.Xna.Framework.Graphics.Texture2D)">
+            <summary>Set a shader texture of type 'Texture2D' by global unique ID, see <see cref="M:Xen.Graphics.ShaderSystem.IShaderSystem.GetNameUniqueID(System.String)"/> for details.</summary><param name="state"/><param name="id"/><param name="value"/>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.TextureSizeOffset">
+            <summary>Assign the shader value 'float3 textureSizeOffset'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.VelocityScale">
+            <summary>Assign the shader value 'float2 velocityScale'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.DisplaySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D DisplaySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ColourSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D ColourSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.PositionSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D PositionSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.UserSampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D UserSampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.VelocitySampler">
+            <summary>Get/Set the Texture Sampler State for 'Sampler2D VelocitySampler'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.PositionTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D PositionTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.ColourTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D ColourTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.VelocityTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D VelocityTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.UserTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D UserTexture'</summary>
+        </member>
+        <member name="P:Xen.Logo.DrawVelocityParticlesColour_GpuTex_UserOffset.DisplayTexture">
+            <summary>Get/Set the Bound texture for 'Texture2D DisplayTexture'</summary>
+        </member>
+    </members>
+</doc>

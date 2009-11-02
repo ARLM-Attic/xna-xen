@@ -36,13 +36,32 @@ namespace Xen
 	}
 
 	/// <summary>
+	/// Interface to a <see cref="ContentRegister"/>
+	/// </summary>
+	public interface IContentRegister : IDisposable
+	{
+		/// <summary>
+		/// Register an <see cref="IContentOwner"/> instance with this content manager
+		/// </summary>
+		/// <param name="owner"></param>
+		void Add(IContentOwner owner);
+		/// <summary>
+		/// Unregister an <see cref="IContentOwner"/> instance with this content manager. NOTE: Instances are stored by weak reference and do not need to be manually removed (see remarks)
+		/// </summary>
+		/// <remarks><para>Instances are stored by weak reference, so this method should only be called when removing the object early is desired.</para>
+		/// <para>Instances will not be kept alive when added, and do not need to be removed to make sure they are garbage collected</para></remarks>
+		/// <param name="owner"></param>
+		void Remove(IContentOwner owner);
+	}
+
+	/// <summary>
 	/// Wrapper on an XNA <see cref="ContentManager"/>. Keeps track of <see cref="IContentOwner"/> instatnces by <see cref="WeakReference">weak reference</see>, calling Load/Unload content.
 	/// </summary>
 	/// <remarks>The <see cref="Application"/> class has its own instance of <see cref="Application.Content"/></remarks>
 #if !DEBUG_API
 	[System.Diagnostics.DebuggerStepThrough]
 #endif
-	public sealed class ContentRegister : IDisposable
+	public sealed class ContentRegister : IContentRegister
 	{
 
 		/// <summary>
@@ -350,6 +369,15 @@ namespace Xen
 			}
 			buffer = null;
 			items = null;
+		}
+
+		/// <summary>
+		/// Gets or sets the ContentManager root directory.
+		/// </summary>
+		public string RootDirectory
+		{
+			get { return this.manager.RootDirectory; }
+			set { this.manager.RootDirectory = value; }
 		}
 	}
 }

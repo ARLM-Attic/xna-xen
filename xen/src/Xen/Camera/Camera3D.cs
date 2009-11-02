@@ -463,7 +463,7 @@ namespace Xen.Camera
 
 			coordinate = new Vector2(worldPositionW.X * worldPositionW.W, worldPositionW.Y * worldPositionW.W);
 
-			return worldPositionW.Z * worldPositionW.W > 0;
+			return worldPositionW.Z > 0;
 		}
 
 

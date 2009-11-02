@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <ProjectGuid>{35989594-AB32-4934-93CE-F80D5A7359A6}</ProjectGuid>
-    <ProjectTypeGuids>{2DF5C3F4-5A5F-47a9-8E94-23B4456F55E2};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectTypeGuids>{6D335F3A-9D43-41b4-9D22-F6F17C4BE596};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">Xbox 360</Platform>
     <OutputType>Exe</OutputType>
@@ -9,7 +9,7 @@
     <RootNamespace>Tutorials</RootNamespace>
     <AssemblyName>Tutorials</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <XnaFrameworkVersion>v3.0</XnaFrameworkVersion>
+    <XnaFrameworkVersion>v3.1</XnaFrameworkVersion>
     <XnaPlatform>Xbox 360</XnaPlatform>
     <XnaCrossPlatformGroupID>76ea7eb5-5aca-4da8-8b6b-f7e3139dc78e</XnaCrossPlatformGroupID>
     <Thumbnail>GameThumbnail.png</Thumbnail>
@@ -65,6 +65,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Xbox 360\Xen.Graphics.ShaderSystem.dll</HintPath>
     </Reference>
+    <Reference Include="XenLogo, Version=1.0.0.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\Xen.Ex.Effects\xbox360\XenLogo.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -116,6 +120,10 @@
       <DependentUpon>shader.fx</DependentUpon>
     </Compile>
     <Compile Include="Tutorial 25\Shadow Mapping.cs" />
+    <Compile Include="Tutorial 26\ThreadedContentLoader.cs" />
+    <Compile Include="Tutorial 26\Tutorial.cs" />
+    <Compile Include="Tutorial 27\Avatar Animation.cs" />
+    <Compile Include="Xen Logo\Xen Logo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="GameThumbnail.png" />

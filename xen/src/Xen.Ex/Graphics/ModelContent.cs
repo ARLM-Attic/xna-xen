@@ -232,10 +232,15 @@ namespace Xen.Ex.Graphics.Content
 		}
 	}
 
+	internal interface IModelData
+	{
+
+	}
+
 	/// <summary>
 	/// Content class for a model imported using the xen model importer
 	/// </summary>
-	public sealed class ModelData
+	public sealed class ModelData : IModelData
 	{
 		private const int version = 1;
 		readonly private string name;
@@ -342,7 +347,7 @@ namespace Xen.Ex.Graphics.Content
 				this.meshes[i] = new MeshData(reader);
 			bool hasSkel = reader.ReadBoolean();
 			if (hasSkel)
-				this.skeleton = new SkeletonData(reader);
+				this.skeleton = new SkeletonData(reader, false);
 			count = reader.ReadInt32();
 			this.animations = new AnimationData[count];
 			for (int i = 0; i < count; i++)
@@ -371,7 +376,7 @@ namespace Xen.Ex.Graphics.Content
 				mesh.Write(writer);
 			writer.Write(skeleton != null);
 			if (skeleton != null)
-				skeleton.Write(writer);
+				skeleton.Write(writer, false);
 			writer.Write(animations.Length);
 			foreach (AnimationData animation in animations)
 				animation.Write(writer);
@@ -1250,18 +1255,21 @@ namespace Xen.Ex.Graphics.Content
 			lock (boneIndices)//private member, so saves a sync object
 			{
 				if (streamCache == null || streamCache.Count == 0)
-					return new AnimationStreamControl(this);
+					return new ModelAnimationStreamControl(this);
 				return streamCache.Pop();
 			}
 		}
 		internal void CacheUnusedStream(AnimationStreamControl stream)
 		{
-			stream.Reset(true, false);
-			lock (boneIndices)
+			if (stream != null)
 			{
-				if (streamCache == null)
-					streamCache = new Stack<AnimationStreamControl>();
-				streamCache.Push(stream);
+				stream.Reset(true, false);
+				lock (boneIndices)
+				{
+					if (streamCache == null)
+						streamCache = new Stack<AnimationStreamControl>();
+					streamCache.Push(stream);
+				}
 			}
 		}
 		/// <summary>
@@ -1555,7 +1563,7 @@ namespace Xen.Ex.Graphics.Content
 				}
 			}
 		}
-#if DEBUG && !XBOX360
+
 		/// <summary>
 		/// Transforms a hierarchy of local bone transforms into world space bone transforms
 		/// </summary>
@@ -1571,7 +1579,7 @@ namespace Xen.Ex.Graphics.Content
 					Matrix.Multiply(ref transforms[index], ref transforms[parent], out transforms[index]);
 			}
 		}
-#endif
+
 		/// <summary>
 		/// Applies the inverse of the <see cref="TransformHierarchy(Transform[])"/> method. (This operation is considerably slower and should not be performed at runtime)
 		/// </summary>
@@ -1753,43 +1761,49 @@ namespace Xen.Ex.Graphics.Content
 		}
 
 #if DEBUG && !XBOX360
-		internal void Write(BinaryWriter writer)
+		internal void Write(BinaryWriter writer, bool writeAsAvatarData)
 		{
 			writer.Write(boneLocalTransforms.Length);
 			for (int i = 0; i < boneLocalTransforms.Length; i++)
 			{
-				boneLocalTransforms[i].Write(writer);
+				if (!writeAsAvatarData)
+					boneLocalTransforms[i].Write(writer);
 				boneData[i].Write(writer);
 			}
 		}
 #endif
 
-		internal SkeletonData(ContentReader reader)
+		internal SkeletonData(ContentReader reader, bool loadAsAvatarData)
 		{
 			int count = reader.ReadInt32();
 
 			this.boneData = new BoneData[count];
-			this.boneLocalTransforms = new Transform[count];
+			if (!loadAsAvatarData)
+				this.boneLocalTransforms = new Transform[count];
 
 			for (int i = 0; i < count; i++)
 			{
-				this.boneLocalTransforms[i] = new Transform(reader);
+				if (!loadAsAvatarData)
+					this.boneLocalTransforms[i] = new Transform(reader);
 				this.boneData[i] = new BoneData(reader);
 			}
 
 			hierarchy = new int[boneData.Length * 2];
 			CreateHierarchy();
 
-			boneWorldTransforms = BoneLocalTransform.ToArray();
-			TransformHierarchy(boneWorldTransforms);
-
-			boneWorldTransformsInverse = new Transform[boneWorldTransforms.Length];
-			for (int i = 0; i < boneWorldTransformsInverse.Length; i++)
+			if (!loadAsAvatarData)
 			{
-				Matrix matrix;
-				boneWorldTransforms[i].GetMatrix(out matrix);
-				Matrix.Invert(ref matrix, out matrix);
-				boneWorldTransformsInverse[i] = new Transform(ref matrix);
+				boneWorldTransforms = BoneLocalTransform.ToArray();
+				TransformHierarchy(boneWorldTransforms);
+
+				boneWorldTransformsInverse = new Transform[boneWorldTransforms.Length];
+				for (int i = 0; i < boneWorldTransformsInverse.Length; i++)
+				{
+					Matrix matrix;
+					boneWorldTransforms[i].GetMatrix(out matrix);
+					Matrix.Invert(ref matrix, out matrix);
+					boneWorldTransformsInverse[i] = new Transform(ref matrix);
+				}
 			}
 		}
 	}

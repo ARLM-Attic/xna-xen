@@ -1,7 +1,7 @@
 ﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <ProjectGuid>{4AAA18D9-81F5-4215-8259-4C2B0303245C}</ProjectGuid>
-    <ProjectTypeGuids>{2DF5C3F4-5A5F-47a9-8E94-23B4456F55E2};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectTypeGuids>{6D335F3A-9D43-41b4-9D22-F6F17C4BE596};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">Xbox 360</Platform>
     <OutputType>Library</OutputType>
@@ -9,7 +9,7 @@
     <RootNamespace>Xen.Ex</RootNamespace>
     <AssemblyName>Xen.Ex</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <XnaFrameworkVersion>v3.0</XnaFrameworkVersion>
+    <XnaFrameworkVersion>v3.1</XnaFrameworkVersion>
     <XnaPlatform>Xbox 360</XnaPlatform>
     <XnaCrossPlatformGroupID>a2c786a9-2736-4a1c-968e-53214d718e80</XnaCrossPlatformGroupID>
   </PropertyGroup>
@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\bin\Xbox 360\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;XBOX;XBOX360;XNA_3_0</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;XBOX;XBOX360;XNA_3_1</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\bin\Xbox 360\Release\</OutputPath>
-    <DefineConstants>TRACE;XBOX;XBOX360;XNA_3_0</DefineConstants>
+    <DefineConstants>TRACE;XBOX;XBOX360;XNA_3_1</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoStdLib>true</NoStdLib>
@@ -96,13 +96,16 @@
     </Compile>
     <Compile Include="Graphics2D\SimpleElement.cs" />
     <Compile Include="Graphics2D\SpriteElement.cs" />
-    <Compile Include="Graphics2D\Stats\Shader.fx.cs">
+    <Compile Include="Graphics2D\Statistics\Shader.fx.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Shader.fx</DependentUpon>
     </Compile>
-    <Compile Include="Graphics2D\Stats\Stats.cs" />
+    <Compile Include="Graphics2D\Statistics\Stats.cs" />
     <Compile Include="Graphics2D\TextElement.cs" />
+    <Compile Include="Graphics\AnimationCommon.cs" />
+    <Compile Include="Graphics\Avatar.cs" />
+    <Compile Include="Graphics\AvatarContent.cs" />
     <Compile Include="Graphics\BatchModel.cs" />
     <Compile Include="Graphics\Display\Billboard.cs" />
     <Compile Include="Graphics\Display\Billboard.fx.cs">
@@ -211,7 +214,7 @@
       <Generator>XenFX</Generator>
       <LastGenOutput>Shader.fx.cs</LastGenOutput>
     </None>
-    <None Include="Graphics2D\Stats\Shader.fx">
+    <None Include="Graphics2D\Statistics\Shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>Shader.fx.cs</LastGenOutput>
     </None>

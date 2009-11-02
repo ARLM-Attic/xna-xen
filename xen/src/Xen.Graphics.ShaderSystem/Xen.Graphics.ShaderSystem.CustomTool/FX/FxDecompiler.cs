@@ -13,6 +13,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 	public sealed class TechniqueExtraData
 	{
 		public Vector4[] PixelShaderConstants, VertexShaderConstants;
+		public bool[] PixelShaderBooleanConstants, VertexShaderBooleanConstants;
 		public TextureSamplerState[] PixelSamplerStates, VertexSamplerStates;
 		public Register[] TechniqueTextures;
 		public int[] PixelSamplerTextureIndex, VertexSamplerTextureIndex;
@@ -124,6 +125,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			int maxPsTextures = 16;
 			int maxVsTextures = 4;
 
+			bool setPsBooleanConstants = device.GraphicsDeviceCapabilities.PixelShaderVersion.Major == 3;
+			bool[] shaderBooleanConstants = new bool[16];
+
 			List<Texture> allTextures = new List<Texture>();
 
 			foreach (EffectTechnique technique in effect.Techniques)
@@ -152,12 +156,19 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				int[] psTexturesIndex = new int[maxPsTextures];
 				int[] vsTexturesIndex = new int[maxVsTextures];
 
+				bool[] psBooleanConstants = new bool[16];
+				bool[] vsBooleanConstants = new bool[16];
+
 				allTextures.Clear();
 
 				try
 				{
 					device.SetPixelShaderConstant(0, psConstants);
 					device.SetVertexShaderConstant(0, vsConstants);
+
+					device.SetVertexShaderConstant(0, shaderBooleanConstants);
+					if (setPsBooleanConstants)
+						device.SetPixelShaderConstant(0, shaderBooleanConstants);
 
 					for (int i = 0; i < maxPsTextures; i++)
 						ResetSampler(device,i,true);
@@ -203,6 +214,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					for (int i = 0; i < allTextures.Count; i++)
 						Graphics.EndGetTempTexture(allTextures[i]);
 					allTextures.Clear();
+
+					vsBooleanConstants = device.GetVertexShaderBooleanConstant(0, 16);
+					psBooleanConstants = device.GetPixelShaderBooleanConstant(0, 16);
 				}
 				catch
 				{
@@ -222,6 +236,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				defaults.VertexSamplerTextureIndex = vsTexturesIndex;
 				defaults.TechniqueTextures = textures.ToArray();
 				defaults.ClassBaseTypes = baseTypes;
+				defaults.PixelShaderBooleanConstants = psBooleanConstants;
+				defaults.VertexShaderBooleanConstants = vsBooleanConstants;
 
 				if (this.techniqueDefaults.ContainsKey(technique.Name) == false)
 					this.techniqueDefaults.Add(technique.Name, defaults);

@@ -346,10 +346,6 @@ namespace Xen.Graphics
 							block.Draw(state);
 					}
 
-#if XEN_EXTRA
-					state.RunDeferredDrawCalls();
-#endif
-
 					state.PopCamera();
 
 					//end in reverse order

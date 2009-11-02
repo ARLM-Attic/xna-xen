@@ -28,6 +28,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 		CodeFieldReferenceExpression VertexShaderRegistersRef { get; }
 		CodeFieldReferenceExpression PixelShaderRegistersRef { get; }
 
+		CodeFieldReferenceExpression VertexShaderBooleanRegistersRef { get; }
+		CodeFieldReferenceExpression PixelShaderBooleanRegistersRef { get; }
+		CodeFieldReferenceExpression VertexShaderBooleanRegistersChangedRef { get; }
+		CodeFieldReferenceExpression PixelShaderBooleanRegistersChangedRef { get; }
+
 		CodeFieldReferenceExpression VertexPreShaderRegistersRef { get; }
 		CodeFieldReferenceExpression PixelPreShaderRegistersRef { get; }
 

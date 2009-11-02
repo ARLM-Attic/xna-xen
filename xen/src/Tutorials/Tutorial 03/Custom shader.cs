@@ -67,7 +67,7 @@ namespace Tutorials.Tutorial_03
 				//Getting shader instances in this way is highly recommended for most shaders, as it reduces
 				//memory usage and live object count. This will boost performance in large projects.
 				shader = state.GetShader<Shader.Tutorial03Technique>();
-				
+
 				//Set the scale value (scale is declared in the shader source)
 				shader.Scale = scaleValue;
 				

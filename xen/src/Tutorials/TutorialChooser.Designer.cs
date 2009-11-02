@@ -30,12 +30,15 @@ namespace Tutorials
 		{
 			System.Windows.Forms.Button button1;
 			System.Windows.Forms.Button button2;
+			System.Windows.Forms.RadioButton radioButton1;
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TutorialChooser));
 			this.tutorialList = new System.Windows.Forms.ComboBox();
 			this.groupBox1 = new System.Windows.Forms.GroupBox();
-			this.winFormsHost = new System.Windows.Forms.CheckBox();
+			this.winformsHost = new System.Windows.Forms.RadioButton();
+			this.xnaGameHost = new System.Windows.Forms.RadioButton();
 			button1 = new System.Windows.Forms.Button();
 			button2 = new System.Windows.Forms.Button();
+			radioButton1 = new System.Windows.Forms.RadioButton();
 			this.groupBox1.SuspendLayout();
 			this.SuspendLayout();
 			// 
@@ -70,38 +73,65 @@ namespace Tutorials
 			// 
 			// groupBox1
 			// 
-			this.groupBox1.Controls.Add(this.winFormsHost);
+			this.groupBox1.Controls.Add(radioButton1);
+			this.groupBox1.Controls.Add(this.xnaGameHost);
+			this.groupBox1.Controls.Add(this.winformsHost);
 			this.groupBox1.Controls.Add(button2);
 			this.groupBox1.Controls.Add(button1);
 			this.groupBox1.Controls.Add(this.tutorialList);
-			this.groupBox1.Location = new System.Drawing.Point(12, 12);
+			this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.groupBox1.Location = new System.Drawing.Point(5, 5);
+			this.groupBox1.Margin = new System.Windows.Forms.Padding(9);
 			this.groupBox1.Name = "groupBox1";
-			this.groupBox1.Size = new System.Drawing.Size(340, 87);
+			this.groupBox1.Size = new System.Drawing.Size(337, 117);
 			this.groupBox1.TabIndex = 0;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Select a tutorial to run:";
 			// 
-			// winFormsHost
+			// winformsHost
 			// 
-			this.winFormsHost.AutoSize = true;
-			this.winFormsHost.Location = new System.Drawing.Point(22, 46);
-			this.winFormsHost.Name = "winFormsHost";
-			this.winFormsHost.Size = new System.Drawing.Size(176, 17);
-			this.winFormsHost.TabIndex = 2;
-			this.winFormsHost.Text = "Run in a WinForms host (BETA)";
-			this.winFormsHost.UseVisualStyleBackColor = true;
+			this.winformsHost.AutoSize = true;
+			this.winformsHost.Location = new System.Drawing.Point(22, 62);
+			this.winformsHost.Name = "winformsHost";
+			this.winformsHost.Size = new System.Drawing.Size(132, 17);
+			this.winformsHost.TabIndex = 4;
+			this.winformsHost.Text = "WinForms host (BETA)";
+			this.winformsHost.UseVisualStyleBackColor = true;
+			// 
+			// xnaGameHost
+			// 
+			this.xnaGameHost.AutoSize = true;
+			this.xnaGameHost.Location = new System.Drawing.Point(22, 80);
+			this.xnaGameHost.Name = "xnaGameHost";
+			this.xnaGameHost.Size = new System.Drawing.Size(192, 17);
+			this.xnaGameHost.TabIndex = 5;
+			this.xnaGameHost.Text = "XNA GameComponent host (BETA)";
+			this.xnaGameHost.UseVisualStyleBackColor = true;
+			// 
+			// radioButton1
+			// 
+			radioButton1.AutoSize = true;
+			radioButton1.Checked = true;
+			radioButton1.Location = new System.Drawing.Point(22, 46);
+			radioButton1.Name = "radioButton1";
+			radioButton1.Size = new System.Drawing.Size(99, 17);
+			radioButton1.TabIndex = 6;
+			radioButton1.TabStop = true;
+			radioButton1.Text = "Xen Application";
+			radioButton1.UseVisualStyleBackColor = true;
 			// 
 			// TutorialChooser
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(359, 107);
+			this.ClientSize = new System.Drawing.Size(347, 127);
 			this.Controls.Add(this.groupBox1);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
 			this.Name = "TutorialChooser";
+			this.Padding = new System.Windows.Forms.Padding(5);
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 			this.Text = "Tutorial Chooser";
 			this.groupBox1.ResumeLayout(false);
@@ -114,6 +144,7 @@ namespace Tutorials
 
 		private System.Windows.Forms.ComboBox tutorialList;
 		private System.Windows.Forms.GroupBox groupBox1;
-		private System.Windows.Forms.CheckBox winFormsHost;
+		private System.Windows.Forms.RadioButton xnaGameHost;
+		private System.Windows.Forms.RadioButton winformsHost;
 	}
 }

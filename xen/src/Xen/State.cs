@@ -134,13 +134,12 @@ namespace Xen
 		/// <summary>
 		/// <para>The the item passed in will be drawn at the start of the next frame, before the main application Draw method is called</para>
 		/// </summary>
-		/// <param name="draw"></param>
-		public void PreFrameDraw(IDraw draw)
+		public void PreFrameDraw(IDraw item)
 		{
-			if (draw == null)
+			if (item == null)
 				throw new ArgumentNullException();
 
-			application.preFrameDrawList.Add(draw);
+			application.PreFrameDraw(item);
 		}
 
 		/// <summary>
@@ -373,6 +372,17 @@ namespace Xen
 		internal bool Protected
 		{
 			set { protectedState = value; }
+		}
+
+		/// <summary>
+		/// <para>The the item passed in will have it's Draw method called at the start of the next frame, before the main application Draw method is next called</para>
+		/// </summary>
+		public void PreFrameDraw(IDraw item)
+		{
+			if (item == null)
+				throw new ArgumentNullException();
+
+			application.PreFrameDraw(item);
 		}
 
 #if DEBUG

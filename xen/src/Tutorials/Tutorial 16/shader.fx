@@ -12,18 +12,6 @@
 
 #include <asm_vfetch>
 
-//IMPORTANT NOTE!
-//Due to XNA's limited ability to decode Xbox shaders on the PC, using the asm_vfetch
-//feature may cause the compiled shader to behave in an unexpected way or fail to compile.
-//This can happen for two reasons.
-//The first reason is that the shader plugin has to pre-process the shader, working out
-//the method declarations and techniques. This is complex, and it is highly likely there
-//are bugs in this process. (as always, please report any bugs encountered!)
-//The second problem is that the xbox compiled shader may rearrange it's registers.
-//While this is somewhat rare, when it does happen it cannot be detected on the PC!
-//If this occurs, mark your shader constants with the : register(c#) semantic to enforce
-//their registers.
-
 
 float4x4 worldViewProj : WORLDVIEWPROJECTION;
 

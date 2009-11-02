@@ -38,6 +38,14 @@ namespace Xen.Graphics
 		/// <param name="name_uid">unique id of the attribute name</param>
 		/// <param name="value">value to set</param>
 		/// <returns>true if the value was set</returns>
+		bool SetAttribute(IShaderSystem state, int name_uid, bool value);
+		/// <summary>
+		/// Set a shader attribute
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="name_uid">unique id of the attribute name</param>
+		/// <param name="value">value to set</param>
+		/// <returns>true if the value was set</returns>
 		bool SetAttribute(IShaderSystem state, int name_uid, ref Matrix value);
 		/// <summary>
 		/// Set a shader attribute
@@ -204,6 +212,14 @@ namespace Xen.Graphics.ShaderSystem
 		/// <param name="name_uid">unique id of the attribute name</param>
 		/// <param name="value">value to set</param>
 		/// <returns>true if the value was set</returns>
+		protected virtual bool SetAttribute(IShaderSystem state, int name_uid, bool value) { return false; }
+		/// <summary>
+		/// Set a shader attribute
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="name_uid">unique id of the attribute name</param>
+		/// <param name="value">value to set</param>
+		/// <returns>true if the value was set</returns>
 		protected virtual bool SetAttribute(IShaderSystem state, int name_uid, ref Matrix value) { return false; }
 		/// <summary>
 		/// Set a shader attribute
@@ -318,6 +334,7 @@ namespace Xen.Graphics.ShaderSystem
 		/// <returns>true if the sampler state was set</returns>
 		protected virtual bool SetSamplerState(IShaderSystem state, int name_uid, TextureSamplerState sampler) { return false; }
 
+		bool IShader.SetAttribute(IShaderSystem state, int name_uid, bool value) { return SetAttribute(state,name_uid,value); }
 		bool IShader.SetAttribute(IShaderSystem state, int name_uid, ref Matrix value) { return SetAttribute(state,name_uid,ref value); }
 		bool IShader.SetAttribute(IShaderSystem state, int name_uid, ref Vector4 value) { return SetAttribute(state, name_uid, ref value); }
 		bool IShader.SetAttribute(IShaderSystem state, int name_uid, ref Vector3 value) { return SetAttribute(state, name_uid, ref value); }
@@ -549,6 +566,11 @@ namespace Xen.Graphics.ShaderSystem
 			get { return ((IShader)logicParent).HasChanged; }
 		}
 
+		public bool SetAttribute(IShaderSystem state, int name_uid, bool value)
+		{
+			return ((IShader)logicParent).SetAttribute(state, name_uid, value);
+		}
+
 		public bool SetAttribute(IShaderSystem state, int name_uid, ref Matrix value)
 		{
 			return ((IShader)logicParent).SetAttribute(state, name_uid, ref value);
@@ -680,6 +702,12 @@ namespace Xen.Graphics.ShaderSystem
 		/// <param name="vertexShaderConstants">may be null</param>
 		/// <param name="pixelShaderConstants">may be null</param>
 		void SetShaderConstants(Vector4[] vertexShaderConstants, Vector4[] pixelShaderConstants);
+		/// <summary>
+		/// Set shader boolean constants
+		/// </summary>
+		/// <param name="vertexShaderBooleanConstants">may be null</param>
+		/// <param name="pixelShaderBooleanConstants">may be null</param>
+		void SetShaderBooleanConstants(bool[] vertexShaderBooleanConstants, bool[] pixelShaderBooleanConstants);
 
 		//the following methods are auto-bound by the plugin,
 		//ie : WORLDVIEWPROJECTION on a matrix will translate to SET+WORLDVIEWPROJECTION+MATRIX
@@ -769,6 +797,8 @@ namespace Xen.Graphics.ShaderSystem
 		/// <param name="name"></param>
 		/// <returns></returns>
 		int GetNameUniqueID(string name);
+		/// <summary>Method used by a generated shader</summary><param name="array"></param><param name="index"></param><param name="gloabl_uid"></param><param name="changed"></param>
+		void SetGlobal(bool[] array, int index, int gloabl_uid, ref bool changed);
 		/// <summary>Method used by a generated shader</summary><param name="value"></param><param name="gloabl_uid"></param><param name="changeIndex"></param>
 		void SetGlobal(IValue<Vector4> value, int gloabl_uid, ref int changeIndex);
 		/// <summary>Method used by a generated shader</summary><param name="value"></param><param name="gloabl_uid"></param><param name="changeIndex"></param>

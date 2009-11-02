@@ -851,7 +851,7 @@ namespace Xen.Ex.Material
 				Color.White
 			};
 
-			texture = new Texture2D(device, 2, 2, 0, TextureUsage.None, SurfaceFormat.Color);
+			texture = new Texture2D(device, 2, 2, 1, TextureUsage.None, SurfaceFormat.Color);
 			texture.SetData(colours);
 
 			state.EndGetGraphicsDevice();
@@ -1176,7 +1176,9 @@ namespace Xen.Ex.Material
 			{
 				if (light.PerPixelLighting) pchangeIndex++; else vchangeIndex++;
 			};
-			return (light.PerPixelLighting ? plights : vlights).Remove((ShaderLight)light);
+			if ((light.PerPixelLighting ? plights : vlights).Remove((ShaderLight)light))
+				return true;
+			return false;
 		}
 		/// <summary>
 		/// Removes all lights from this shader
@@ -1837,6 +1839,11 @@ namespace Xen.Ex.Material
 		bool IShader.HasChanged
 		{
 			get { return false; }
+		}
+
+		bool IShader.SetAttribute(IShaderSystem state, int name_uid, bool value)
+		{
+			return false;
 		}
 
 		bool IShader.SetAttribute(IShaderSystem state, int name_uid, float[] value)

@@ -447,8 +447,6 @@ namespace Xen.Ex.Filters
 				throw new ArgumentNullException();
 			if (source.SurfaceFormat != target.SurfaceFormat)
 				throw new ArgumentException("source.SurfaceFormat != target.SurfaceFormat");
-			if (target.MultiSampleType != Microsoft.Xna.Framework.Graphics.MultiSampleType.None)
-				throw new ArgumentException("Target may not use multisample anitialiasing");
 #if XBOX360
 			if (source == target && source.Width * source.Height * DrawTarget.FormatSize(source.SurfaceFormat) >
 				1000*1000*10)//approx 10mb
@@ -743,15 +741,6 @@ namespace Xen.Ex.Filters
 
 			if (DrawTarget.FormatChannels(source.SurfaceFormat) != DrawTarget.FormatChannels(target.SurfaceFormat))
 			    throw new ArgumentException("source.SurfaceFormat has a different number of channels than target.SurfaceFormat");
-
-			if (target.MultiSampleType != Microsoft.Xna.Framework.Graphics.MultiSampleType.None)
-				throw new ArgumentException("Target may not use multisample anitialiasing");
-
-			if (intermediate != null && intermediate.MultiSampleType != Microsoft.Xna.Framework.Graphics.MultiSampleType.None)
-				throw new ArgumentException("Intermediate may not use multisample anitialiasing");
-
-			if (intermediate2 != null && intermediate2.MultiSampleType != Microsoft.Xna.Framework.Graphics.MultiSampleType.None)
-				throw new ArgumentException("Intermediate2 may not use multisample anitialiasing");
 
 			if (targetWidth > target.Width ||
 				targetHeight > target.Height)

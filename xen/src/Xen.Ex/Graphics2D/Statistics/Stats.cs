@@ -74,7 +74,7 @@ namespace Xen.Ex.Graphics2D.Statistics
 
 		protected override void BindShader(DrawState state, bool maskOnly)
 		{
-			Xen.Ex.Graphics2D.Stats.DrawGraphLine shader = state.GetShader<Xen.Ex.Graphics2D.Stats.DrawGraphLine>();
+			Xen.Ex.Graphics2D.Statistics.DrawGraphLine shader = state.GetShader<Xen.Ex.Graphics2D.Statistics.DrawGraphLine>();
 
 			if (dirty)
 			{

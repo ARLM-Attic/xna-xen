@@ -74,7 +74,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			for (int i = 0; i < registers.RegisterCount; i++)
 			{
 				Register reg = registers.GetRegister(i);
-				if (reg.Category == RegisterCategory.Float4)
+				if (reg.Category == RegisterCategory.Float4 ||
+					reg.Category == RegisterCategory.Boolean)
 				{
 					if (reg.Semantic == null)
 						this.attributeNames.Add(reg.Name);
@@ -199,6 +200,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				dataType = typeof(Single);
 				break;
 			}
+
+			if (reg.Category == RegisterCategory.Boolean)
+				dataType = typeof(bool);
 			
 
 			if (semantic.Length == 6 && semantic.Equals("global", StringComparison.InvariantCultureIgnoreCase))
@@ -225,15 +229,18 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 					if (registers.TryGetRegister(reg.Name, out sreg))
 					{
-						string refId = string.Format("gc{0}", globalRefCount);
-						globalRefs.Add(new CodeFieldReferenceExpression(shader.Instance, refId));
-
-						if (reg.ArraySize != -1)
+						if (sreg.Category != RegisterCategory.Boolean)
 						{
-							refId = string.Format("ga{0}", globalRefCount);
-							arrayRefs.Add(new CodeFieldReferenceExpression(shader.Instance, refId));
+							string refId = string.Format("gc{0}", globalRefCount);
+							globalRefs.Add(new CodeFieldReferenceExpression(shader.Instance, refId));
+
+							if (reg.ArraySize != -1)
+							{
+								refId = string.Format("ga{0}", globalRefCount);
+								arrayRefs.Add(new CodeFieldReferenceExpression(shader.Instance, refId));
+							}
+							globalRefCount++;
 						}
-						globalRefCount++;
 					}
 				}
 
@@ -392,14 +399,14 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				CodeMemberField field = new CodeMemberField(typeof(int), global.GlobalIdRef.FieldName);
 				field.Attributes = MemberAttributes.Private | MemberAttributes.Final | MemberAttributes.Static;
 
-				add(field, string.Format("TypeID for global attribute '{0}'", global.Register.Name));
+				add(field, string.Format("TypeID for global attribute '{0} {1}'", global.Register.Type, global.Register.Name));
 
 				for (int i = 0; i < global.ChangeRefs.Length; i++)
 				{
 					field = new CodeMemberField(typeof(int), global.ChangeRefs[i].FieldName);
 					field.Attributes = MemberAttributes.Private | MemberAttributes.Final;
 
-					add(field, i != 0 ? null : string.Format("Change ID for global attribute '{0} {1}'", global.Register.Name, global.Register.Name));
+					add(field, i != 0 ? null : string.Format("Change ID for global attribute '{0} {1}'", global.Register.Type, global.Register.Name));
 				}
 			}
 		}
@@ -529,12 +536,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 					RegisterSet registers = listing.Key.RegisterSet;
 					CodeExpression registersRef = listing.Value;
 
-					if (registers.TryGetRegister(global.Register.Name, out sreg))
+					if (registers.TryGetRegister(global.Register.Name, out sreg) && sreg.Category != RegisterCategory.Boolean)
 					{
 						CodeAssignStatement assign = new CodeAssignStatement(global.ChangeRefs[changeRefIndex], new CodePrimitiveExpression(-1));
 
 						add(assign);
-
 
 
 						//arrays require the array wrapper to be initalised
@@ -556,10 +562,6 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 							assign = new CodeAssignStatement(global.ArrayRefs[changeRefIndex], create);
 							add(assign);
 						}
-
-
-
-
 
 						changeRefIndex++;
 					}
@@ -673,34 +675,58 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 					if (registers.TryGetRegister(global.Register.Name, out sreg))
 					{
-						//eg:
-						//state.SetGlobal(this.vreg.Matrix4Transpose(8), ShadowShaderBlend.g_id0, ref this.g_0);
-
-						CodeExpression getRegister =	//this.vreg.Matrix4Transpose(8)
-							new CodeMethodInvokeExpression(registersRef, registerTypeName, new CodePrimitiveExpression(sreg.Index));
-
-						CodeExpression changeParam = new CodeDirectionExpression(FieldDirection.Ref, global.ChangeRefs[changeRefIndex]);
-
-						CodeExpression invokeSet;
-
-						//logic changes for arrays
-
-						if (global.Register.ArraySize != -1)
+						//special case the booleans, as they have different logic to set globally.
+						if (sreg.Category == RegisterCategory.Boolean)
 						{
-							invokeSet =
-								new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetGlobal", global.ArrayRefs[changeRefIndex], global.GlobalIdRef, changeParam);
-							//state.SetGlobal(this.ga0, ShadowShaderBlend.g_id0, ref this.g_0);
+							if (global.Register.ArraySize != -1)
+								throw new CompileException("'GLOBAL' Boolean Arrays are not supported");
+
+							//this is a bit of a hack :-/
+							//need to figure out if this is a vertex or pixel boolean constant.
+							if (listing.Key == asm.VertexShader)
+							{
+								add(shader.ETS(
+									new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetGlobal", shader.VertexShaderBooleanRegistersRef, new CodePrimitiveExpression(sreg.Index), global.GlobalIdRef, new CodeDirectionExpression( FieldDirection.Ref, shader.VertexShaderBooleanRegistersChangedRef))),
+									string.Format("Set the value for global 'bool {0}'", global.Register.Name));
+							}
+							if (listing.Key == asm.PixelShader)
+							{
+								add(shader.ETS(
+									new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetGlobal", shader.PixelShaderBooleanRegistersRef, new CodePrimitiveExpression(sreg.Index), global.GlobalIdRef, new CodeDirectionExpression(FieldDirection.Ref, shader.PixelShaderBooleanRegistersChangedRef))),
+									string.Format("Set the value for global 'bool {0}'", global.Register.Name));
+							}
 						}
 						else
 						{
+							//eg:
 							//state.SetGlobal(this.vreg.Matrix4Transpose(8), ShadowShaderBlend.g_id0, ref this.g_0);
-							invokeSet =
-								new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetGlobal", getRegister, global.GlobalIdRef, changeParam);
+
+							CodeExpression getRegister =	//this.vreg.Matrix4Transpose(8)
+								new CodeMethodInvokeExpression(registersRef, registerTypeName, new CodePrimitiveExpression(sreg.Index));
+
+							CodeExpression changeParam = new CodeDirectionExpression(FieldDirection.Ref, global.ChangeRefs[changeRefIndex]);
+
+							CodeExpression invokeSet;
+
+							//logic changes for arrays
+
+							if (global.Register.ArraySize != -1)
+							{
+								invokeSet =
+									new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetGlobal", global.ArrayRefs[changeRefIndex], global.GlobalIdRef, changeParam);
+								//state.SetGlobal(this.ga0, ShadowShaderBlend.g_id0, ref this.g_0);
+							}
+							else
+							{
+								//state.SetGlobal(this.vreg.Matrix4Transpose(8), ShadowShaderBlend.g_id0, ref this.g_0);
+								invokeSet =
+									new CodeMethodInvokeExpression(shader.ShaderSystemRef, "SetGlobal", getRegister, global.GlobalIdRef, changeParam);
+							}
+
+							add(shader.ETS(invokeSet), changeRefIndex != 0 ? null : string.Format("Set the value for global '{0}'", global.Register.Name));
+
+							changeRefIndex++;
 						}
-
-						add(shader.ETS(invokeSet), changeRefIndex != 0 ? null : string.Format("Set the value for global '{0}'", global.Register.Name));
-
-						changeRefIndex++;
 					}
 				}
 			}
@@ -757,6 +783,13 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 			if (!this.asm.CommonRegisters.TryGetRegister(name, out reg))
 				return false;
+			
+			if (reg.Category == RegisterCategory.Boolean)
+			{
+				dataType = typeof(bool);
+				hasSetMethod = false;
+				return true;
+			}
 
 			if (reg.Category != RegisterCategory.Float4)
 				return false;
@@ -850,20 +883,19 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 			//eg:
 			//this.vreg.SetVector2(130, ref value);
-		
-			string targetName = "Set" + dataType.Name;
-
-			if (dataType == typeof(Matrix))
-			{
-				targetName += stride;
-				targetName += "Transpose";
-			}
 
 			Register sreg;
 
-			if (reg.ArraySize == -1)
+			if (dataType == typeof(bool))
 			{
-				//not an array..
+				//special case for booleans, assign the array directly.
+				//looks like:
+				// 
+				// if (preg_bool[index] != value)
+				// {
+				//  preg_bool[index] = value;
+				//  preg_bool_changed = true;
+				// }
 
 				foreach (KeyValuePair<AsmListing, CodeExpression> listing in listingRegisters)
 				{
@@ -872,27 +904,77 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 					if (registers.TryGetRegister(name, out sreg))
 					{
-						//set the regiser (eg, may be vertex shader register)
-						CodeExpression methodInvoke =
-							new CodeMethodInvokeExpression(registersRef, targetName,
-								new CodePrimitiveExpression(sreg.Index),
-								new CodeDirectionExpression(FieldDirection.Ref, valueRef));
+						if (listing.Key == asm.PixelShader)
+						{
+							CodeExpression arrayIndex = new CodeArrayIndexerExpression(shader.PixelShaderBooleanRegistersRef, new CodePrimitiveExpression(sreg.Index));
 
-						methodStatements.Add(shader.ETS(methodInvoke));
+							CodeStatement assign = new CodeAssignStatement(arrayIndex, new CodePropertySetValueReferenceExpression());
+							CodeStatement change = new CodeAssignStatement(shader.PixelShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(true));
+
+							CodeStatement condition = new CodeConditionStatement(
+								new CodeBinaryOperatorExpression(arrayIndex, CodeBinaryOperatorType.IdentityInequality, new CodePropertySetValueReferenceExpression()),
+								new CodeStatement[]{assign, change});
+
+							methodStatements.Add(condition);
+						}
+						if (listing.Key == asm.VertexShader)
+						{
+							CodeExpression arrayIndex = new CodeArrayIndexerExpression(shader.VertexShaderBooleanRegistersRef, new CodePrimitiveExpression(sreg.Index));
+
+							CodeStatement assign = new CodeAssignStatement(arrayIndex, new CodePropertySetValueReferenceExpression());
+							CodeStatement change = new CodeAssignStatement(shader.VertexShaderBooleanRegistersChangedRef, new CodePrimitiveExpression(true));
+
+							CodeStatement condition = new CodeConditionStatement(
+								new CodeBinaryOperatorExpression(arrayIndex, CodeBinaryOperatorType.IdentityInequality, new CodePropertySetValueReferenceExpression()),
+								new CodeStatement[] { assign, change });
+
+							methodStatements.Add(condition);
+						}
 					}
 				}
 			}
 			else
 			{
-				//is an array...
-				//simply call SetArray on the array object.
-				CodeExpression methodInvoke =
-					new CodeMethodInvokeExpression(assignmentArrayField, "SetArray",
-						valueRef);
+				string targetName = "Set" + dataType.Name;
 
-				methodStatements.Add(shader.ETS(methodInvoke));
+				if (dataType == typeof(Matrix))
+				{
+					targetName += stride;
+					targetName += "Transpose";
+				}
+
+				if (reg.ArraySize == -1)
+				{
+					//not an array..
+
+					foreach (KeyValuePair<AsmListing, CodeExpression> listing in listingRegisters)
+					{
+						RegisterSet registers = listing.Key.RegisterSet;
+						CodeExpression registersRef = listing.Value;
+
+						if (registers.TryGetRegister(name, out sreg))
+						{
+							//set the regiser (eg, may be vertex shader register)
+							CodeExpression methodInvoke =
+								new CodeMethodInvokeExpression(registersRef, targetName,
+									new CodePrimitiveExpression(sreg.Index),
+									new CodeDirectionExpression(FieldDirection.Ref, valueRef));
+
+							methodStatements.Add(shader.ETS(methodInvoke));
+						}
+					}
+				}
+				else
+				{
+					//is an array...
+					//simply call SetArray on the array object.
+					CodeExpression methodInvoke =
+						new CodeMethodInvokeExpression(assignmentArrayField, "SetArray",
+							valueRef);
+
+					methodStatements.Add(shader.ETS(methodInvoke));
+				}
 			}
-			
 
 			string upperName = Common.ToUpper(name);
 

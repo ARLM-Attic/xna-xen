@@ -320,7 +320,7 @@ namespace Xen
 
 			host.BeginInvoke((EventHandler)delegate
 			{
-				logic.Initialize();
+				logic.Initialise();
 				logic.LoadContent();
 			});
 		}
@@ -423,7 +423,7 @@ namespace Xen
 			if (initalTick == 0)
 				initalTick = tick;
 			logic.Update(tick - initalTick, tick - initalTick);
-			logic.Draw();
+			logic.Draw(false);
 		}
 
 		internal void AdjustWindowSize(int width, int height)

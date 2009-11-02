@@ -229,6 +229,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			CreateSetAttributeMethod(typeof(Vector3), "SetAttribute", "attribute");
 			CreateSetAttributeMethod(typeof(Vector4), "SetAttribute", "attribute");
 			CreateSetAttributeMethod(typeof(Matrix), "SetAttribute", "attribute");
+			CreateSetAttributeMethod(typeof(bool), "SetAttribute", "attribute");
 
 			CreateSetAttributeMethod(typeof(float[]), "SetAttribute", "attribute");
 			CreateSetAttributeMethod(typeof(Vector2[]), "SetAttribute", "attribute");
@@ -569,12 +570,12 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			attrib.Parameters.Add(parm);
 
 			parm = new CodeParameterDeclarationExpression(type, setAttribValueRef.ParameterName);
-			if (type.IsClass == false && type != typeof(float) && type != typeof(Xen.Graphics.State.TextureSamplerState))
+			if (type.IsClass == false && System.Runtime.InteropServices.Marshal.SizeOf(type) > 4)
 				parm.Direction = FieldDirection.Ref;
 			attrib.Parameters.Add(parm);
 
 			//first, add a check to make sure the device is warmed
-			attrib.Statements.Add(this.validateDeviceId);
+			attrib.Statements.Add(this.validateDeviceIdAndWarmShader);
 
 			//add the assignment checkers
 			attrib.Statements.AddRange(statements);
@@ -603,10 +604,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 		private CodeParameterDeclarationExpression shaderSystemDecl;
 		private CodeArgumentReferenceExpression shaderSystemRef;
 		private CodeStatement validateDeviceId;
+		private CodeStatement validateDeviceIdAndWarmShader;
 		private CodeMethodReferenceExpression graphicsIDInit;
 		private CodeVariableReferenceExpression bindShaderChange, bindInstanceChange;
 		private CompileDirectives directives;
-		private CodeFieldReferenceExpression vsRef, psRef, vsBytesRef, psBytesRef, vsRegRef, psRegRef, vsRegPreRef, psRegPreRef; // actual instances are created by the ShaderBytes class
+		private CodeFieldReferenceExpression vsRef, psRef, vsBytesRef, psBytesRef, vsRegRef, psRegRef, vsBooleanRegRef, psBooleanRegRef, vsBooleanRegChangeRef, psBooleanRegChangeRef, vsRegPreRef, psRegPreRef; // actual instances are created by the ShaderBytes class
 		private CodeMemberField vsInputField;
 		private CodeArgumentReferenceExpression setAttribIdRef, setAttribValueRef;
 
@@ -632,6 +634,12 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 		public CodeFieldReferenceExpression VertexShaderRegistersRef { get { return vsRegRef; } }
 		public CodeFieldReferenceExpression PixelShaderRegistersRef { get { return psRegRef; } }
+
+		public CodeFieldReferenceExpression VertexShaderBooleanRegistersRef { get { return vsBooleanRegRef; } }
+		public CodeFieldReferenceExpression PixelShaderBooleanRegistersRef { get { return psBooleanRegRef; } }
+
+		public CodeFieldReferenceExpression VertexShaderBooleanRegistersChangedRef { get { return vsBooleanRegChangeRef; } }
+		public CodeFieldReferenceExpression PixelShaderBooleanRegistersChangedRef { get { return psBooleanRegChangeRef; } }
 
 		public CodeFieldReferenceExpression VertexPreShaderRegistersRef { get { return vsRegPreRef; } }
 		public CodeFieldReferenceExpression PixelPreShaderRegistersRef { get { return psRegPreRef; } }
@@ -659,6 +667,9 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			validateDeviceId = new CodeConditionStatement(new CodeBinaryOperatorExpression(GraphicsDeviceUID, CodeBinaryOperatorType.IdentityInequality, new CodePropertyReferenceExpression(ShaderSystemRef, "DeviceUniqueIndex")),
 				new CodeExpressionStatement(new CodeMethodInvokeExpression(graphicsIDInit, shaderSystemRef)));
 
+			validateDeviceIdAndWarmShader = new CodeConditionStatement(new CodeBinaryOperatorExpression(GraphicsDeviceUID, CodeBinaryOperatorType.IdentityInequality, new CodePropertyReferenceExpression(ShaderSystemRef, "DeviceUniqueIndex")),
+				new CodeExpressionStatement(new CodeMethodInvokeExpression(new CodeThisReferenceExpression(), "WarmShader", shaderSystemRef)));
+
 			bindShaderChange = new CodeVariableReferenceExpression("tc");
 			bindInstanceChange = new CodeVariableReferenceExpression("ic");
 
@@ -672,6 +683,12 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 			vsRegPreRef = new CodeFieldReferenceExpression(Instance, "vreg_pre");
 			psRegPreRef = new CodeFieldReferenceExpression(Instance, "preg_pre");
+
+			vsBooleanRegRef = new CodeFieldReferenceExpression(Instance, "vreg_bool");
+			psBooleanRegRef = new CodeFieldReferenceExpression(Instance, "preg_bool");
+
+			vsBooleanRegChangeRef = new CodeFieldReferenceExpression(Instance, "vreg_bool_change");
+			psBooleanRegChangeRef = new CodeFieldReferenceExpression(Instance, "preg_bool_change");
 
 			setAttribIdRef = new CodeArgumentReferenceExpression("id");
 			setAttribValueRef = new CodeArgumentReferenceExpression("value");

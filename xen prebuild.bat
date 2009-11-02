@@ -3,7 +3,7 @@
 @echo -----------------------------------------------------
 @echo -----------------------------------------------------
 @echo - 
-@echo - This process will prebuild xen (DEBUG) for XNA 3.0.
+@echo - This process will prebuild xen (DEBUG) for XNA 3.1.
 @echo - 
 @echo - A VisualStudio CustomTool plugin will be installed,
 @echo - which may prompt for admin rights in Windows Vista.
@@ -18,7 +18,7 @@
 @echo.
 pause
 @echo.
-@echo Prebuilding xen for XNA GS 3.0 (This may take a minute or so...)
+@echo Prebuilding xen for XNA GS 3.1 (This may take a minute or so...)
 @echo.
 
 @echo Building xen Shader System
@@ -35,7 +35,7 @@ xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Filter
 @echo Building Xen.Ex Graphics2D FX
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Graphics2D\FillTex.fx" "Xen.Ex.Graphics2D" "xen\src\Xen.Ex\Graphics2D\FillTex.fx.cs"
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Graphics2D\Shader.fx" "Xen.Ex.Graphics2D" "xen\src\Xen.Ex\Graphics2D\Shader.fx.cs"
-xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Graphics2D\stats\Shader.fx" "Xen.Ex.Graphics2D.Stats" "xen\src\Xen.Ex\Graphics2D\stats\Shader.fx.cs"
+xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Graphics2D\statistics\Shader.fx" "Xen.Ex.Graphics2D.Statistics" "xen\src\Xen.Ex\Graphics2D\Statistics\Shader.fx.cs"
 @echo Building Xen.Ex Shaders FX
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Shaders\Simple.fx" "Xen.Ex.Shaders" "xen\src\Xen.Ex\Shaders\Simple.fx.cs"
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Xen.Ex\Shaders\Depth.fx" "Xen.Ex.Shaders" "xen\src\Xen.Ex\Shaders\Depth.fx.cs"
@@ -75,7 +75,7 @@ xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tut
 @echo - Check the following are installed:
 @echo -
 @echo - .NET Framework 3.5
-@echo - XNA Game Studio 3.0
+@echo - XNA Game Studio 3.1
 @echo - DirectX SDK
 @echo -----------------------------------
 @echo -----------------------------------

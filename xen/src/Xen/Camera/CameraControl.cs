@@ -118,15 +118,6 @@ namespace Xen.Camera
 		private int highpoint = 1;
 		internal uint top;
 
-#if XEN_EXTRA
-		private readonly float[] stackApproxSize;
-		internal float approxScale = 1;
-		internal bool isApproxNorm = true;
-		internal bool detectScale = false;
-#else
-		internal readonly float approxScale = 1;
-		internal readonly bool detectScale = false;
-#endif
 		internal bool isIdentity = true;
 #if DEBUG
 		private DrawState state;
@@ -140,12 +131,6 @@ namespace Xen.Camera
 			stack = new Matrix[stackSize];
 			stackIndex = new int[stackSize];
 			stackIdentity = new bool[stackSize];
-
-#if XEN_EXTRA
-			stackApproxSize = new float[stackSize];
-			for (int i = 0; i < stackApproxSize.Length; i++)
-				stackApproxSize[i] = 1;
-#endif
 		}
 
 		public void SetConstant(IValue<Matrix> constant, int frame)
@@ -170,13 +155,6 @@ namespace Xen.Camera
 #endif
 			{
 				this.value = matrix;
-#if XEN_EXTRA
-				if (detectScale)
-				{
-					AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
-					this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
-				}
-#endif
 				index = ++highpoint;
 				isIdentity = false;
 			}
@@ -194,13 +172,6 @@ namespace Xen.Camera
 #endif
 				{
 					this.value = matrix;
-#if XEN_EXTRA
-					if (detectScale)
-					{
-						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
-						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
-					}
-#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -212,9 +183,6 @@ namespace Xen.Camera
 					stack[top] = matrix;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
-#if XEN_EXTRA
-					stackApproxSize[top] = approxScale;
-#endif
 				}
 				
 #if TestMatrixEquality
@@ -222,13 +190,6 @@ namespace Xen.Camera
 #endif
 				{
 					this.value = matrix;
-#if XEN_EXTRA
-					if (detectScale)
-					{
-						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
-						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
-					}
-#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -249,10 +210,6 @@ namespace Xen.Camera
 					this.value.M41 = translate.X;
 					this.value.M42 = translate.Y;
 					this.value.M43 = translate.Z;
-#if XEN_EXTRA
-					approxScale = 1;
-					isApproxNorm = true;
-#endif
 					isIdentity = false;
 
 					index = ++highpoint;
@@ -265,9 +222,6 @@ namespace Xen.Camera
 					stack[top] = value;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
-#if XEN_EXTRA
-					stackApproxSize[top] = approxScale;
-#endif
 				}
 				
 #if TestMatrixEquality
@@ -314,10 +268,7 @@ namespace Xen.Camera
 					this.value.M42 = translate.Y;
 					this.value.M43 = translate.Z;
 					this.value.M44 = 1;
-#if XEN_EXTRA
-					approxScale = 1;
-					isApproxNorm = true;
-#endif
+
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -341,10 +292,6 @@ namespace Xen.Camera
 					this.value.M42 = translate.Y;
 					this.value.M43 = translate.Z;
 
-#if XEN_EXTRA
-					approxScale = 1;
-					isApproxNorm = true;
-#endif
 					isIdentity = false;
 					index = ++highpoint;
 				}
@@ -356,9 +303,6 @@ namespace Xen.Camera
 					stack[top] = this.value;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
-#if XEN_EXTRA
-					stackApproxSize[top] = approxScale;
-#endif
 				}
 
 				if (translate.X != 0 || translate.Y != 0 || translate.Z != 0)
@@ -402,13 +346,6 @@ namespace Xen.Camera
 #endif
 				{
 					this.value = matrix;
-#if XEN_EXTRA
-					if (detectScale)
-					{
-						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
-						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
-					}
-#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -420,9 +357,6 @@ namespace Xen.Camera
 					stack[top] = this.value;
 					stackIndex[top] = index;
 					stackIdentity[top] = isIdentity;
-#if XEN_EXTRA
-					stackApproxSize[top] = approxScale;
-#endif
 				}
 
 #if TestMatrixEquality
@@ -473,13 +407,6 @@ namespace Xen.Camera
 						this.value.M44 = num;
 #endif
 					}
-#if XEN_EXTRA
-					if (detectScale)
-					{
-						AppState.ApproxMatrixScale(ref this.value, out this.approxScale);
-						this.isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
-					}
-#endif
 					index = ++highpoint;
 					isIdentity = false;
 				}
@@ -496,20 +423,12 @@ namespace Xen.Camera
 					value = stack[top];
 					index = stackIndex[top];
 					isIdentity = stackIdentity[top];
-#if XEN_EXTRA
-					approxScale = stackApproxSize[top];
-					isApproxNorm = approxScale > 0.99995f && approxScale < 1.00005f;
-#endif
 				}
 			}
 			else
 			{
 				index = 1;
 				isIdentity = true;
-#if XEN_EXTRA
-				approxScale = 1;
-				isApproxNorm = true;
-#endif
 
 				this.value.M11 = 1;
 				this.value.M12 = 0;
@@ -735,30 +654,11 @@ namespace Xen
 		}
 
 
-		//DrawState.WorldMatrixDetectScale has been removed in xen 1.5, as it really wasn't that well designed
-		//If you'd like it back, define the 'XEN_EXTRA' conditional compilation symbol in the Xen project
-#if XEN_EXTRA
-		/// <summary>
-		/// Auto detect scaled matrices in the world matrix stack. Default to FALSE. Corrects frustum culling logic when scaling, but causes a slight performance loss.
-		/// </summary>
-		public bool WorldMatrixDetectScale
-		{
-			get 
-			{ 	
-#if DEBUG
-				ValidateProtected(); 
-#endif
-				return ms_World.detectScale; 
-			}
-			set 
-			{
-#if DEBUG
-				ValidateProtected(); 
-#endif
-				ms_World.detectScale = value; 
-			}
-		}
-#endif
+		//DrawState.WorldMatrixDetectScale has been made obsolete in xen 1.5, and now totally removed in 1.6.4
+		//The matrix scale was used to optimise cull tests, however the overhead of detecting scale was more
+		//than the cull test optimisation. So the net benefit was less.
+		//Now, scaled matrices are fine to use with cull testing cubes - however spheres still do not support this.
+
 
 		private void InvalidCamera()
 		{
@@ -834,7 +734,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -877,7 +777,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -947,7 +847,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, this.ms_World.detectScale ? 0 : 1))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1015,7 +915,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, ms_World.detectScale ? 0 : 1))
+			if (!FrustumCull.BoxInFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestBoxCulledCount);
@@ -1066,11 +966,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius
-#if XEN_EXTRA
-				* ms_World.approxScale
-#endif
-				, ref pos))
+			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius, ref pos))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
@@ -1121,11 +1017,7 @@ namespace Xen
 				}
 			}
 
-			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius
-#if XEN_EXTRA
-				* ms_World.approxScale
-#endif
-				, ref pos))
+			if (!FrustumCull.SphereInFrustum(camera.GetCullingPlanes(), radius, ref pos))
 			{
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref application.currentFrame.DefaultCullerTestSphereCulledCount);
@@ -1176,7 +1068,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1230,7 +1122,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value, ms_World.approxScale);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref ms_World.value);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1311,7 +1203,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, ms_World.detectScale ? 0 : 1);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1390,7 +1282,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix, ms_World.detectScale ? 0 : 1);
+			type = FrustumCull.BoxIntersectsFrustum(camera.GetCullingPlanes(), ref min, ref max, ref matrix);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1450,11 +1342,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius
-#if XEN_EXTRA
-				* ms_World.approxScale
-#endif
-				, ref pos);
+			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius, ref pos);
 			if (type == ContainmentType.Disjoint)
 			{
 #if DEBUG
@@ -1512,11 +1400,7 @@ namespace Xen
 					intersect = true;
 			}
 
-			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius
-#if XEN_EXTRA
-				* ms_World.approxScale
-#endif
-				, ref pos);
+			type = FrustumCull.SphereIntersectsFrustum(camera.GetCullingPlanes(), radius, ref pos);
 
 			if (type == ContainmentType.Disjoint)
 			{
@@ -1548,42 +1432,10 @@ namespace Xen
 
 		#endregion
 
-		//DrawState.WorldMatrixApproximateScale and WorldMatrixApproximateIsNormalised have been removed 
-		//in xen 1.5, as they really wern't that well designed
-		//If you'd like them back, define the 'XEN_EXTRA' conditional compilation symbol in the Xen project
-#if XEN_EXTRA
+		//DrawState.WorldMatrixApproximateScale and WorldMatrixApproximateIsNormalised were made obsolete
+		//in xen 1.5. They have now been removed entirely in xen 1.6.4
 
-		/// <summary>
-		/// Gets the approximate scale factor of the current set world matrix. Requires that <see cref="WorldMatrixDetectScale"/> is set to true
-		/// </summary>
-		public float WorldMatrixApproximateScale
-		{
-			get 
-			{	
-#if DEBUG
-				ValidateProtected(); 
-#endif
-				if (!ms_World.detectScale) 
-					throw new InvalidOperationException("WorldMatrixDetectScale must be true"); 
-				return ms_World.approxScale; 
-			}
-		}
-		/// <summary>
-		/// Returns true if the current world matrix scale is approximately 1. Requires that <see cref="WorldMatrixDetectScale"/> is set to true
-		/// </summary>
-		public bool WorldMatrixApproximateIsNormalised
-		{
-			get 
-			{ 
-#if DEBUG
-				ValidateProtected(); 
-#endif
-				if (!ms_World.detectScale) 
-					throw new InvalidOperationException("WorldMatrixDetectScale must be true"); 
-				return ms_World.isApproxNorm; 
-			}
-		}
-#endif
+
 		/// <summary>
 		/// Gets an interface to the current Culler (Note the DrawState class implicitly casts to <see cref="ICuller"/>, making this property redundant)
 		/// </summary>
@@ -2554,6 +2406,9 @@ namespace Xen
 			if (type == typeof(float))
 				return GetIndex(ref singleGlobals, name, singleGlobalLookup);
 
+			if (type == typeof(bool))
+				return GetIndex(ref booleanGlobals, name, booleanGlobalLookup);
+
 
 			if (type == typeof(Microsoft.Xna.Framework.Graphics.Texture))
 				return GetIndexTexture(ref textureGlobals, ref textureGlobalsFrame, name, textureGlobalLookup);
@@ -2681,6 +2536,21 @@ namespace Xen
 #endif
 				value.Set(ref global.value);
 				changeId = global.id;
+			}
+		}
+
+		void IShaderSystem.SetGlobal(bool[] array, int index, int uid, ref bool changed)
+		{
+			ShaderGlobal<bool> global = booleanGlobals[uid];
+
+			if (global.value != array[index])
+			{
+#if DEBUG
+				if (global.id == 0)
+					ValidateGlobalAccess<bool>((IValue<bool>)null,uid,booleanGlobalLookup);
+#endif
+				array[index] = global.value;
+				changed = true;
 			}
 		}
 
@@ -3324,6 +3194,23 @@ namespace Xen
 		}
 
 		/// <summary>
+		/// Set the global boolean value used by shaders
+		/// </summary>
+		/// <param name="name">name of the value (case sensitive)</param>
+		/// <param name="value">value to assign the shader global</param>
+		public void SetShaderGlobal(string name, bool value)
+		{
+			ShaderGlobal<bool> global = booleanGlobals[GetIndex(ref booleanGlobals, name, booleanGlobalLookup)];
+			if (global.id == 0 ||
+				value != global.value)
+			{
+				global.value = value;
+				if (global.frame == frame)
+					boundShaderStateDirty = true;
+			}
+		}
+
+		/// <summary>
 		/// Get the shader global float by name. Returns true if the value exists
 		/// </summary>
 		/// <param name="name">name of the value (case sensitive)</param>
@@ -3498,6 +3385,7 @@ namespace Xen
 		private ShaderGlobal<Vector3>[] v3Globals = new ShaderGlobal<Vector3>[8];
 		private ShaderGlobal<Vector2>[] v2Globals = new ShaderGlobal<Vector2>[8];
 		private ShaderGlobal<float>[] singleGlobals = new ShaderGlobal<float>[8];
+		private ShaderGlobal<bool>[] booleanGlobals = new ShaderGlobal<bool>[8];
 
 		private ShaderGlobal<Matrix[]>[] matrixArrayGlobals = new ShaderGlobal<Matrix[]>[8];
 		private ShaderGlobal<Vector4[]>[] v4ArrayGlobals = new ShaderGlobal<Vector4[]>[8];
@@ -3525,6 +3413,9 @@ namespace Xen
 		private Vector4[] vertexShaderConstantsToBind;
 		private Vector4[] pixelShaderConstantsToBind;
 
+		private bool[] vertexShaderBooleanConstantsToBind;
+		private bool[] pixelShaderBooleanConstantsToBind;
+
 
 		private readonly Dictionary<string, int>
 			matrixGlobalLookup = new Dictionary<string, int>(),
@@ -3532,6 +3423,7 @@ namespace Xen
 			v3GlobalLookup = new Dictionary<string, int>(),
 			v2GlobalLookup = new Dictionary<string, int>(),
 			singleGlobalLookup = new Dictionary<string, int>(),
+			booleanGlobalLookup = new Dictionary<string, int>(),
 
 			matrixArrayGlobalLookup = new Dictionary<string, int>(),
 			v4ArrayGlobalLookup = new Dictionary<string, int>(),
@@ -3840,179 +3732,21 @@ namespace Xen
 				pixelShaderConstantsToBind = pixelShaderConstants;
 		}
 
-
-		//DrawState.DeferDrawCall() has been removed in xen 1.5, as it really wasn't that well designed
-		//If you'd like it back, define the 'XEN_EXTRA' conditional compilation symbol in the Xen project
-#if XEN_EXTRA
-		#region deferred rendering logic
-
-		private DeferredDrawCall[] deferredDrawList = new DeferredDrawCall[0];
-		private int[] deferredDrawListSortOrder;
-		private int deferredDrawListCount;
-		private bool currentDrawingDeferredCalls;
-		private DeferredDrawCallComparer deferredDrawCallComparerInstance = new DeferredDrawCallComparer();
-
-		private struct DeferredDrawCall
+		void IShaderSystem.SetShaderBooleanConstants(
+			bool[] vertexShaderBooleanConstants,
+			bool[] pixelShaderBooleanConstants)
 		{
-			public Matrix stack;
-			public IDraw call;
-			public DeviceRenderState state;
-		}
+			if (vertexShaderBooleanConstants != null)
+				vertexShaderBooleanConstantsToBind = vertexShaderBooleanConstants;
 
-		private sealed class DeferredDrawCallComparer : IComparer<int>
-		{
-			public DeferredDrawCall[] calls;
-			public IComparer<IDraw> deferredDrawListSorter;
-			public int Compare(int x, int y)
-			{
-				return deferredDrawListSorter.Compare(calls[x].call, calls[y].call);
-			}
-		}
 
-		/// <summary>
-		/// Defer a draw call, to be called at a later time. Render state and world matrix is also stored.
-		/// </summary>
-		/// <param name="call">Draw call to make at a later time</param>
-		/// <remarks>
-		/// <para>Deferred draw calls can be run by calling <see cref="RunDeferredDrawCalls()"/>, or will be run before the current <see cref="DrawTarget"/> completes drawing</para>
-		/// <para>The call will be ignored if the <see cref="ICullable.CullTest"/> fails</para>
-		/// </remarks>
-		public void DeferDrawCall(IDraw call)
-		{
-#if DEBUG
-			System.Threading.Interlocked.Increment(ref application.currentFrame.DeferredDrawCallsMade);
-#endif
-#if DEBUG
-			ValidateProtected();
-#endif
-
-			if (call.CullTest(this))
-			{
-				if (currentDrawingDeferredCalls)
-					throw new InvalidOperationException("Recursive deferred rendering is not supported");
-
-				if (deferredDrawListCount == deferredDrawList.Length)
-				{
-					Array.Resize(ref deferredDrawList, Math.Max(32, deferredDrawList.Length * 2));
-				}
-
-				DeferCall(call, ref deferredDrawList[deferredDrawListCount++]);
-			}
-#if DEBUG
-			else
-				System.Threading.Interlocked.Increment(ref application.currentFrame.DeferredDrawCallsCulled);
-#endif
-		}
-
-		void DeferCall(IDraw call, ref DeferredDrawCall store)
-		{
-			store.call = call;
-			store.state = this.visibleState.state;
-			GetWorldMatrix(out store.stack);
-		}
-
-		/// <summary>
-		/// Run all deferred draw calls (made with <see cref="DeferDrawCall"/>).
-		/// </summary>
-		/// <seealso cref="DeferDrawCall"/>
-		public void RunDeferredDrawCalls()
-		{
-#if DEBUG
-			ValidateProtected();
-#endif
-
-			DeviceRenderState state = visibleState.state;
-			int count = deferredDrawListCount;
-			deferredDrawListCount = 0;
-			currentDrawingDeferredCalls = true;
-
-			if (count > 0)
-			{
-				Matrix mat = Matrix.Identity;
-				PushWorldMatrix(ref mat);
-			}
-
-			for (int i = 0; i < count; i++)
-			{
-				SetWorldMatrix(ref deferredDrawList[i].stack);
-				visibleState.state = deferredDrawList[i].state;
-				deferredDrawList[i].call.Draw(this);
-
-				deferredDrawList[i].call = null;
-			}
-
-			if (count > 0)
-				PopWorldMatrix();
-
-			currentDrawingDeferredCalls = false;
-			visibleState.state = state;
-		}
-
-		/// <summary>
-		/// Run all deferred draw calls (made with <see cref="DeferDrawCall"/>).
-		/// </summary>
-		/// <param name="sorter"></param>
-		/// <seealso cref="DeferDrawCall"/>
-		public void RunDeferredDrawCalls(IComparer<IDraw> sorter)
-		{
-#if DEBUG
-			ValidateProtected();
-#endif
-
-			if (deferredDrawListCount == 0)
-				return;
-
-			deferredDrawCallComparerInstance.deferredDrawListSorter = sorter;
-			deferredDrawCallComparerInstance.calls = this.deferredDrawList;
-
-			if (deferredDrawListSortOrder == null || deferredDrawListCount > deferredDrawListSortOrder.Length)
-			{
-				int size = 2;
-				while (deferredDrawListCount > size)
-					size *= 2;
-				deferredDrawListSortOrder = new int[size];
-			}
-
-			for (int i = 0; i < deferredDrawListCount; i++)
-				deferredDrawListSortOrder[i] = i;
-
-			Array.Sort<int>(deferredDrawListSortOrder, 0, deferredDrawListCount, deferredDrawCallComparerInstance);
-
-			deferredDrawCallComparerInstance.calls = null;
-			deferredDrawCallComparerInstance.deferredDrawListSorter = null;
-
-			currentDrawingDeferredCalls = true;
-			DeviceRenderState state = visibleState.state;
-			int count = deferredDrawListCount;
-			deferredDrawListCount = 0;
-			if (count > 0)
-			{
-				Matrix mat = Matrix.Identity;
-				PushWorldMatrix(ref mat);
-			}
-
-			for (int i = 0; i < count; i++)
-			{
-				int index = deferredDrawListSortOrder[i];
-
-				SetWorldMatrix(ref deferredDrawList[index].stack);
-				visibleState.state = deferredDrawList[index].state;
-				deferredDrawList[index].call.Draw(this);
-
-				deferredDrawList[index].call = null;
-			}
-
-			if (count > 0)
-				PopWorldMatrix();
-
-			visibleState.state = state;
-			currentDrawingDeferredCalls = false;
+			if (pixelShaderBooleanConstants != null)
+				pixelShaderBooleanConstantsToBind = pixelShaderBooleanConstants;
 		}
 
 
-		#endregion
-#endif
-
+		//DrawState.DeferDrawCall() was been made obsolete in xen 1.5, as it really wasn't that well designed
+		//it has now been removed entirely in xen 1.6.4
 
 		#region IShaderSystem Members
 
@@ -4287,7 +4021,7 @@ namespace Xen
 			screenCoordinate.X = drawTargetSize.X * (screenCoordinate.X * 0.5f + 0.5f);
 			screenCoordinate.Y = drawTargetSize.Y * (screenCoordinate.Y * 0.5f + 0.5f);
 
-			return worldPositionW.Z * worldPositionW.W > 0;
+			return worldPositionW.Z > 0;
 		}
 
 		/// <summary>
@@ -4319,7 +4053,7 @@ namespace Xen
 			screenCoordinate.X = drawTargetSize.X * (screenCoordinate.X * 0.5f + 0.5f);
 			screenCoordinate.Y = drawTargetSize.Y * (screenCoordinate.Y * 0.5f + 0.5f);
 
-			return worldPositionW.Z * worldPositionW.W > 0;
+			return worldPositionW.Z > 0;
 		}
 
 		//this method should really be named ProjectFromTarget

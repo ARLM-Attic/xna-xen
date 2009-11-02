@@ -104,6 +104,8 @@ namespace Tutorials.Tutorial_25
 	sealed class ShadowOutputShaderProvider : Xen.Ex.Graphics.ModelInstanceShaderProvider
 	{
 		private Vector4[] animationBoneData;
+		//set this value to true when bone data has changed
+		private bool animationBoneDataDirty;
 
 		//the BeginDraw() methods are the first to be called. (One of these two will be called)
 
@@ -116,6 +118,8 @@ namespace Tutorials.Tutorial_25
 		public override void BeginDraw(DrawState state, Xen.Ex.Transform[] animationBoneHierarchy, Vector4[] animationBoneHierarchyMatrix4x3)
 		{
 			animationBoneData = animationBoneHierarchyMatrix4x3;
+			//set to true, so bone data is only copied once.
+			animationBoneDataDirty = true;
 		}
 
 		//this is called just before geometry is drawn,
@@ -144,7 +148,13 @@ namespace Tutorials.Tutorial_25
 						Shader.ShadowShaderBlend shader = state.GetShader<Shader.ShadowShaderBlend>();
 
 						//set the blend matrix data
-						shader.SetBlendMatrices(animationBoneData);
+						if (animationBoneDataDirty)
+						{
+							//use the 'animationBoneDataDirty' bool so animation data is only copied once.
+							//this could happen if a single model has many pieces of geometry.
+							shader.SetBlendMatrices(animationBoneData);
+							animationBoneDataDirty = false;
+						}
 
 						shader.TextureMap = geometry.MaterialShader.TextureMap;
 						shader.TextureSampler = geometry.MaterialShader.TextureMapSampler;
@@ -178,7 +188,11 @@ namespace Tutorials.Tutorial_25
 							Xen.Ex.Shaders.DepthOutRgTextureAlphaBlend shader = state.GetShader<Xen.Ex.Shaders.DepthOutRgTextureAlphaBlend>();
 
 							//set animation data (it's possible this is called redundantly, so logic here could be improved)
-							shader.SetBlendMatrices(this.animationBoneData);
+							if (animationBoneDataDirty)
+							{
+								shader.SetBlendMatrices(this.animationBoneData);
+								animationBoneDataDirty = false;
+							}
 
 							//set the texture
 							shader.AlphaTexture = geometry.MaterialShader.TextureMap;
@@ -209,7 +223,11 @@ namespace Tutorials.Tutorial_25
 							Xen.Ex.Shaders.DepthOutRgBlend shader = state.GetShader<Xen.Ex.Shaders.DepthOutRgBlend>();
 
 							//set animation data (it's possible this is called redundantly, so logic here could be improved)
-							shader.SetBlendMatrices(this.animationBoneData);
+							if (animationBoneDataDirty)
+							{
+								shader.SetBlendMatrices(this.animationBoneData);
+								animationBoneDataDirty = false;
+							}
 
 							//bind
 							shader.Bind(state);
@@ -525,7 +543,7 @@ namespace Tutorials.Tutorial_25
 			drawShadowDepth.ClearBuffer.ClearColour = Color.White;
 
 			//for the shadow technique used, the shadow buffer is blurred.
-			//this requires a intermediate render target on the PC
+			//this requires an intermediate render target on the PC
 			DrawTargetTexture2D blurIntermediate = null;
 
 #if !XBOX360

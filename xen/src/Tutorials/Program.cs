@@ -4,7 +4,7 @@
 //On XBOX, set this using statement to the tutorial you would like to run:
 
 //Modify the next lines to set the example that will run
-//Tutorial_01 to Tutorial_25
+//Tutorial_01 to Tutorial_27, or 'XenLogo'
 
 //this next line can be commented out:
 #warning Please select a default tutorial for the xbox project (set on the next line):
@@ -32,8 +32,9 @@ namespace Tutorials
 			while (true)
 			{
 				bool runInWinForms;
+				bool runInXnaGame;
 
-				Type type = TutorialChooser.ChooseTutorial(out runInWinForms);
+				Type type = TutorialChooser.ChooseTutorial(out runInWinForms, out runInXnaGame);
 				if (type == null)
 					break;
 
@@ -45,6 +46,11 @@ namespace Tutorials
 						tutorial.Run(form.XenWinFormsHostControl);
 						
 						System.Windows.Forms.Application.Run(form);
+					}
+					else if (runInXnaGame)
+					{
+						XnaGame game = new XnaGame(tutorial);
+						game.Run();
 					}
 					else
 						tutorial.Run();

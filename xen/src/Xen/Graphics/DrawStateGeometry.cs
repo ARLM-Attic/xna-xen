@@ -509,7 +509,6 @@ namespace Xen
 			if (vertices == null)
 				throw new ArgumentException();
 
-			Graphics.IDeviceIndexBuffer devib = (Graphics.IDeviceIndexBuffer)indices;
 			VertexDeclaration vd = application.declarationBuilder.GetDeclaration<VertexType>(graphics);
 
 #if DEBUG
@@ -653,7 +652,6 @@ namespace Xen
 			if (vertices == null)
 				throw new ArgumentException();
 
-			Graphics.IDeviceIndexBuffer devib = (Graphics.IDeviceIndexBuffer)indices;
 			VertexDeclaration vd = application.declarationBuilder.GetDeclaration<VertexType>(graphics);
 
 #if DEBUG

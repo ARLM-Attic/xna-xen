@@ -124,6 +124,7 @@ namespace Xen.Ex
 				mat.M33 *= Scale;
 			}
 		}
+
 		/// <summary>
 		/// Interpolate between two transforms
 		/// </summary>

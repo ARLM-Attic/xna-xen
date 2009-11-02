@@ -43,30 +43,39 @@ namespace Xen
 		private readonly Application parent;
 		private IXNAAppWrapper xnaGame;
 
-		internal XNALogic(Application parent, object host)
+		internal XNALogic(Application parent, object host, out Microsoft.Xna.Framework.GamerServices.GamerServicesComponent gamerServicesComponent)
 		{
 			this.state = new AppState(parent);
-
 			this.parent = parent;
+
 			parent.UpdateManager.Add(state);
 			parent.UpdateManager.Add(parent);
 
-#if !XBOX360
-			if (host == null)
+			gamerServicesComponent = null;
+
+			if (host is GameComponentHost)
 			{
-				this.xnaGame = new XNAGameAppWrapper(this,parent);
+				this.xnaGame = new XNAGameComponentHostAppWrapper(this, parent, host as GameComponentHost);
 			}
 			else
 			{
-				WinFormsHostControl _host = host as WinFormsHostControl;
-				if (_host != null)
-					this.xnaGame = new XNAWinFormsHostAppWrapper(this, parent, _host);
+#if !XBOX360
+				if (host == null)
+				{
+					this.xnaGame = new XNAGameAppWrapper(this, parent, out gamerServicesComponent);
+				}
 				else
-					this.xnaGame = new XNAGameAppWrapper(this, parent);
-			}
+				{
+					WinFormsHostControl _host = host as WinFormsHostControl;
+					if (_host != null)
+						this.xnaGame = new XNAWinFormsHostAppWrapper(this, parent, _host);
+					else
+						this.xnaGame = new XNAGameAppWrapper(this, parent, out gamerServicesComponent);
+				}
 #else
-			this.xnaGame = new XNAGameAppWrapper(this, parent);
+				this.xnaGame = new XNAGameAppWrapper(this, parent, out gamerServicesComponent);
 #endif
+			}
 
 			this.Exiting += delegate
 			{
@@ -190,10 +199,8 @@ namespace Xen
 
 		#endregion
 
-		public void Initialize()
+		public void Initialise()
 		{
-			parent.SetGraphicsDevice(GraphicsDevice);
-
 			parent.Initialise();
 			parent.InitialisePlayerInput(this.state.GetUpdateState().PlayerInput);
 
@@ -210,7 +217,7 @@ namespace Xen
 #endif
 		}
 
-		public void Draw()
+		public void Draw(bool resetState)
 		{
 			DrawState state = this.state.GetRenderState(GraphicsDevice);
 			state.IncrementFrameIndex();
@@ -218,6 +225,9 @@ namespace Xen
 #if XBOX360
 			state.nonScreenRenderComplete = false;
 #endif
+
+			if (resetState)
+				state.DirtyInternalRenderState(Xen.Graphics.State.StateFlag.All);
 
 			parent.OnDraw(state);
 		}
@@ -319,12 +329,12 @@ namespace Xen
 #endif
 	sealed class XNAGameAppWrapper : Game, IXNAAppWrapper
 	{
-		GraphicsDeviceManager graphics;
-		RenderTargetUsage presentation;
-		Application parent;
-		XNALogic logic;
+		private readonly GraphicsDeviceManager graphics;
+		private readonly RenderTargetUsage presentation;
+		private readonly Application parent;
+		private readonly XNALogic logic;
 
-		internal XNAGameAppWrapper(XNALogic logic, Application parent)
+		internal XNAGameAppWrapper(XNALogic logic, Application parent, out Microsoft.Xna.Framework.GamerServices.GamerServicesComponent gamerServicesComponent)
 		{
 			this.parent = parent;
 			this.logic = logic;
@@ -335,6 +345,13 @@ namespace Xen
 			graphics.MinimumVertexShaderProfile = ShaderProfile.VS_2_0;
 			graphics.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
 			graphics.SynchronizeWithVerticalRetrace = true;
+
+			gamerServicesComponent = null;
+			if (parent.ApplicationRequiresGamerServices)
+			{
+				gamerServicesComponent = new Microsoft.Xna.Framework.GamerServices.GamerServicesComponent((Game)this);
+				this.Components.Add(gamerServicesComponent);
+			}
 
 #if DEBUG
 #if !XBOX360
@@ -391,8 +408,11 @@ namespace Xen
 
 		protected override void Initialize()
 		{
-			logic.Initialize();
+			parent.SetGraphicsDevice(GraphicsDevice);
+
 			base.Initialize();
+
+			logic.Initialise();
 		}
 
 		protected override void LoadContent()
@@ -403,7 +423,7 @@ namespace Xen
 
 		protected override void Draw(GameTime gameTime)
 		{
-			logic.Draw();
+			logic.Draw(false);
 			base.Draw(gameTime);
 		}
 
@@ -672,7 +692,7 @@ namespace Xen
 	public abstract class Application : IDisposable, IContentOwner, IUpdate
 	{
 		private DepthStencilBuffer defaultDepthStencil;
-		private LinkedList<double> approxFps = new LinkedList<double>();
+		private readonly LinkedList<double> approxFps;
 		internal float approximateFrameRate;
 		private GraphicsDevice graphics;
 		private SurfaceFormat screenFormat;
@@ -681,9 +701,8 @@ namespace Xen
 		private int graphicsIndex;
 		internal int graphicsId;
 		private UpdateManager updateManager;
-		internal readonly Xen.Graphics.VertexDeclarationBuilder declarationBuilder
-			= new Xen.Graphics.VertexDeclarationBuilder();
-		private ThreadPool threadPool = new ThreadPool();
+		internal readonly Xen.Graphics.VertexDeclarationBuilder declarationBuilder;
+		private readonly ThreadPool threadPool;
 		private bool supportsInstancing;
 		private bool supportsInstancingSet;
 		private bool initalised;
@@ -691,8 +710,13 @@ namespace Xen
 		private ContentRegister content;
 		private int windowWidth, windowHeight;
 		private bool readToLoadContent;
-		private int minimumFrameRate = 5;
-		internal List<IDraw> preFrameDrawList = new List<IDraw>();
+		private int minimumFrameRate;
+		private Microsoft.Xna.Framework.GamerServices.GamerServicesComponent gamerServicesComponent;
+
+		private readonly List<IDraw> preFrameDrawList;
+		private readonly List<IDraw> preFrameDrawListBuffer;
+
+
 #if !XBOX360
 		private bool winFormsDispose;
 #endif
@@ -726,11 +750,24 @@ namespace Xen
 			set { if (value < 0 || value > 60) throw new ArgumentException(); minimumFrameRate = value; }
 		}
 
+		//called from Update or Draw, requires something to be drawn in the next frame
+		internal void PreFrameDraw(IDraw draw)
+		{
+			lock (this.preFrameDrawList)
+			{
+				this.preFrameDrawList.Add(draw);
+			}
+		}
+
 
 #if DEBUG
 		internal DrawStatistics currentFrame, previousFrame;
 #endif
 
+		/// <summary>
+		/// Override this property and return true if your Application requires gamer services
+		/// </summary>
+		protected internal virtual bool ApplicationRequiresGamerServices { get { return false; } }
 
 		internal bool VSyncEnabled
 		{
@@ -788,6 +825,14 @@ namespace Xen
 		/// <remarks>This method sets up the input manager</remarks>
 		public Application()
 		{
+			//initalise default values
+			this.approxFps = new LinkedList<double>();
+			this.declarationBuilder = new Xen.Graphics.VertexDeclarationBuilder();
+			this.threadPool = new ThreadPool();
+			this.minimumFrameRate = 5;
+			this.preFrameDrawList = new List<IDraw>();
+			this.preFrameDrawListBuffer = new List<IDraw>();
+
 			this.updateManager = new UpdateManager();
 		}
 
@@ -843,11 +888,42 @@ namespace Xen
 		}
 
 		/// <summary>
+		/// Get the XNA GamerServices object for this application
+		/// </summary>
+		public Microsoft.Xna.Framework.GamerServices.GamerServicesComponent GamerServices
+		{
+			get { return gamerServicesComponent; }
+		}
+
+		/// <summary>
 		/// Start the main application loop. This method should be called from the entry point of the application
 		/// </summary>
 		public void Run()
 		{
-			xnaLogic = new XNALogic(this, IntPtr.Zero);
+			if (xnaLogic != null)
+				throw new InvalidOperationException("Application is already initalised");
+
+			xnaLogic = new XNALogic(this, IntPtr.Zero, out gamerServicesComponent);
+
+			xnaLogic.Services.AddService(typeof(ApplicationProviderService), new ApplicationProviderService(this));
+			xnaLogic.Exiting += new EventHandler(ShutdownThreadPool);
+			xnaLogic.Content.RootDirectory += @"\Content";
+
+			content = new ContentRegister(this, xnaLogic.Content);
+			content.Add(this);
+
+			xnaLogic.Run();
+		}
+
+
+		internal void Run(GameComponentHost host)
+		{
+			if (host == null)
+				throw new ArgumentNullException();
+			if (xnaLogic != null)
+				throw new InvalidOperationException("Application is already initalised");
+
+			xnaLogic = new XNALogic(this, host, out this.gamerServicesComponent);
 			xnaLogic.Services.AddService(typeof(ApplicationProviderService), new ApplicationProviderService(this));
 			xnaLogic.Exiting += new EventHandler(ShutdownThreadPool);
 			xnaLogic.Content.RootDirectory += @"\Content";
@@ -869,8 +945,10 @@ namespace Xen
 		{
 			if (host == null)
 				throw new ArgumentNullException();
+			if (xnaLogic != null)
+				throw new InvalidOperationException("Application is already initalised");
 
-			xnaLogic = new XNALogic(this, host);
+			xnaLogic = new XNALogic(this, host, out this.gamerServicesComponent);
 			xnaLogic.Services.AddService(typeof(ApplicationProviderService), new ApplicationProviderService(this));
 			xnaLogic.Exiting += new EventHandler(ShutdownThreadPool);
 			xnaLogic.Content.RootDirectory += @"\Content";
@@ -938,16 +1016,30 @@ namespace Xen
 
 			state.PrepareForNewFrame();
 
-			foreach (IDraw item in preFrameDrawList)
-				item.Draw(state);
+			//the predraw list is a list of items that need to be drawn before the frame starts
+			//eg, an object in Update may require something is drawn this frame.
+			//call PreFrameDraw in either Update() or Draw() to add to this list
+			while (true)
+			{
+				lock (preFrameDrawList)
+				{
+					if (preFrameDrawList.Count == 0)
+						break;
 
-			preFrameDrawList.Clear();
+					preFrameDrawListBuffer.AddRange(preFrameDrawList);
+					preFrameDrawList.Clear();
+				}
+
+				foreach (IDraw item in preFrameDrawListBuffer)
+				{
+					if (item.CullTest(state))
+						item.Draw(state);
+				}
+
+				preFrameDrawListBuffer.Clear();
+			}
 
 			Draw(state);
-
-#if XEN_EXTRA
-			state.RunDeferredDrawCalls();
-#endif
 
 			state.ValidateStackHeight(stackHeight, stateHeight, cameraHeight, preCull, postCull);
 

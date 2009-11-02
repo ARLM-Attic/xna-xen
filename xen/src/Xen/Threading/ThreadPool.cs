@@ -389,7 +389,7 @@ namespace Xen.Threading
 			public WorkUnit(ThreadPriority priority, bool background, int index, ThreadPool parent)
 			{
 				this.parent = parent;
-				complete = new ManualResetEvent(true);
+				complete = new ManualResetEvent(false);
 				start = new AutoResetEvent(false);
 				running = new AutoResetEvent(false);
 
@@ -403,6 +403,7 @@ namespace Xen.Threading
 				culture = Thread.CurrentThread.CurrentCulture;
 #endif
 				thread.Start();
+				complete.WaitOne();
 			}
 
 			public ThreadPool ThreadPool
@@ -413,6 +414,7 @@ namespace Xen.Threading
 			public void SetTemporary()
 			{
 				temporary = true;
+				thread.IsBackground = true;
 			}
 
 			public bool IsCurrentThread
@@ -464,12 +466,13 @@ namespace Xen.Threading
 
 				while (!temporary)
 				{
+					complete.Set();
 					start.WaitOne();
 
 					TaskSource task = this.task;
 
 					if (task == null)
-						return;
+						break;
 
 					this.task = null;
 
@@ -489,9 +492,8 @@ namespace Xen.Threading
 						while (parent.RunQueueTask())
 							continue;
 					}
-
-					complete.Set();
 				}
+				complete.Set();
 			}
 		}
 

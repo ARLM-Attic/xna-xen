@@ -1,7 +1,7 @@
 Xen: Graphics API for XNA
 www.codeplex.com/xen
 
-version 1.6 (XNA 3.0)
+version 1.7 (XNA 3.1)
 
 
 
@@ -12,7 +12,7 @@ version 1.6 (XNA 3.0)
 2.) Open ./xen/Tutorials.sln
 
 
-Tutorials.sln contains 25 small tutorial applications.
+Tutorials.sln contains 27 small tutorial applications.
 Reading these will make learning xen a lot easier!
 
 Full Xen projects for PC and Xbox are located in ./xen/src/
@@ -37,6 +37,20 @@ XboxLive: StatusUnknown
 
 -----------------------------------------------------------------------------------------------------
 -- Change Log
+
+----------------
+-- 01/NOV/09
+-- Version 1.7
+
+This update is a long time coming. Thanks everyone for your patience during my move!
+
+[Updated] Xen is now updated to XNA 3.1 by default. (Xen is backwards compatible right back to 2.0 with compiler flags)
+[Added] Avatar support, using the same animation system as ModelInstance.
+[Added] Two tutorials, Avatars and Threading techniques
+[Added] Shader System support for SM3 boolean constants (preshaders included)
+[Added] XnaGameComponentHost - host a Xen application within an XNA Game Component
+[Added] XenLogo - An external class that displays an animated Xen Startup Logo
+[Fixed] A large number of bugs, large and small have been fixed in this realease. Especially in the shader system.
 
 ----------------
 -- 11/JUN/09
@@ -243,8 +257,8 @@ The 'prebuild' batch file registers the plugin and builds the debug xen librarie
 -----------------------------------------------------------------------------------------------------
 -- Xna Notes:
 
-Xen supports XNA Game Studio 3.0, Windows and the Xbox360.
-Zune support is not planned.
+Xen supports XNA Game Studio 3.1, Windows and the Xbox360.
+Zune support is not planned, unless full 3D support is added.
 
 
 

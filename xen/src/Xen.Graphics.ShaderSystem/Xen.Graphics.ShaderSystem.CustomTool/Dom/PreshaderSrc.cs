@@ -19,6 +19,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 		private static Dictionary<string, MethodInfo> methodList;
 		private int maxTempRegisters;
 		private int maxConstantRegisterAccess; // a preshader may write to constants on the end of the main constant array
+		private int maxBooleanRegistersWrite;
 
 		public PreshaderSrc(AsmListing listing, CodeStatementCollection statementCollection)
 		{
@@ -87,6 +88,10 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 		{
 			get { return maxConstantRegisterAccess; }
 		}
+		public int MaxBooleanConstantRegisterWrite
+		{
+			get { return maxBooleanRegistersWrite; }
+		}
 
 
 		/*
@@ -114,14 +119,17 @@ mul c5.xyz, c7.xyz,
 		private static CodeExpression One = new CodePrimitiveExpression(1.0f);
 		private static CodeExpression Zero = new CodePrimitiveExpression(0.0f);
 
-		CodeStatement Assign(CodeExpression dst, CodeExpression value)
+		CodeStatement Assign(CodeExpression dst, bool destIsBoolean, CodeExpression value)
 		{
-			return new CodeAssignStatement(dst, value);
+			if (destIsBoolean)
+				return new CodeAssignStatement(dst, new CodeBinaryOperatorExpression(value, CodeBinaryOperatorType.IdentityInequality, new CodePrimitiveExpression(0F)));
+			else
+				return new CodeAssignStatement(dst, value);
 		}
 		CodeStatement[] AssignSingle(Reg dst, CodeExpression value)
 		{
 			CodeStatement[] output = new CodeStatement[dst.Length];
-			output[0] = new CodeAssignStatement(dst[0], value);
+			output[0] = Assign(dst[0], dst.IsBoolean, value);// new CodeAssignStatement(dst[0], value);
 			for (int i = 1; i < output.Length; i++)
 				output[i] = new CodeAssignStatement(dst[i], dst[0]);
 			return output;
@@ -131,7 +139,7 @@ mul c5.xyz, c7.xyz,
 			if (value.Length == 1)
 			{
 				CodeStatement[] output = new CodeStatement[dst.Length];
-				output[0] = new CodeAssignStatement(dst[0], value[0]);
+				output[0] = Assign(dst[0], dst.IsBoolean, value[0]);//new CodeAssignStatement(dst[0], value[0]);
 				for (int i = 1; i < output.Length; i++)
 					output[i] = new CodeAssignStatement(dst[i], dst[0]);
 				return output;
@@ -140,7 +148,7 @@ mul c5.xyz, c7.xyz,
 			{
 				CodeStatement[] output = new CodeStatement[dst.Length];
 				for (int i = 0; i < output.Length; i++)
-					output[i] = new CodeAssignStatement(dst[i], value[i]);
+					output[i] = Assign(dst[i], dst.IsBoolean, value[i]);//new CodeAssignStatement(dst[i], value[i]);
 				return output;
 			}
 		}
@@ -149,18 +157,19 @@ mul c5.xyz, c7.xyz,
 		{
 			private CodeExpression[] reference;
 			private string swizzle;
+			public readonly bool IsBoolean;
 
-			public Reg(string reg, bool isDest, ref int maxTempRegisters, ref int maxConstantRegisterAccess)
+			public Reg(string reg, bool isDest, ref int maxTempRegisters, ref int maxConstantRegisterAccess, ref int maxBooleanRegistersWrite)
 			{
 				//parse the register
 
 				//if the first character is a '(', then this is a constant value.
 				//otherwise, it's a register.
 
-				if (reg[0] == '(')
+				if (reg.Length > 0 && reg[0] == '(')
 					ParseConstant(reg);
 				else
-					ParseValue(reg, isDest, ref maxTempRegisters, ref maxConstantRegisterAccess);
+					ParseValue(reg, isDest, ref maxTempRegisters, ref maxConstantRegisterAccess, ref maxBooleanRegistersWrite, out IsBoolean);
 			}
 
 			public CodeExpression this[int index]
@@ -187,7 +196,7 @@ mul c5.xyz, c7.xyz,
 					reference[i] = new CodePrimitiveExpression(float.Parse(values[i]));
 			}
 
-			void ParseValue(string reg, bool isDest, ref int maxTempRegisters, ref int maxConstantRegisterAccess)
+			void ParseValue(string reg, bool isDest, ref int maxTempRegisters, ref int maxConstantRegisterAccess, ref int maxBooleanRegistersWrite, out bool isBoolean)
 			{
 				//first character is the regster set. Eg 'r' for temp, 'c' for constant, etc.
 				//destination cosntants write directly to the main registers, not pre-registers.
@@ -198,6 +207,16 @@ mul c5.xyz, c7.xyz,
 				bool negative = reg[0] == '-';
 				if (negative)
 					start = 1;
+
+				isBoolean = false;
+				if (reg.Length >= start + 1 &&
+					reg[start] == 'o' &&
+					reg[start + 1] == 'b')
+				{
+					//special case, writing to a boolean variable.
+					start++;
+					isBoolean = true;
+				}
 
 				string group = reg[start].ToString();
 
@@ -210,17 +229,25 @@ mul c5.xyz, c7.xyz,
 						indexSize++;
 				}
 
-				if (reg.StartsWith("ob", StringComparison.InvariantCultureIgnoreCase))
-				{
-					throw new CompileException("Error: Preshader is attempting to write to a boolean register. This is currently not supported by the preshader CodeDom generator.");
-				}
-
 				int index = int.Parse(reg.Substring(start + 1, indexSize));
 
-				if (reg[start] == 'r') // temp reg
-					maxTempRegisters = Math.Max(maxTempRegisters, index + 1);
-				if (reg[start] == 'c' && isDest) // constant reg
-					maxConstantRegisterAccess = Math.Max(maxConstantRegisterAccess, index + 1);
+				if (isBoolean)
+				{
+					if (!isDest)
+						throw new ArgumentException("Unexpected error in preshader: Boolean value used as read type");
+
+					maxBooleanRegistersWrite = Math.Max(maxBooleanRegistersWrite, index + 1);
+
+					reference = new CodeExpression[] { BoolIndex(group, index) };
+					return;
+				}
+				else
+				{
+					if (reg[start] == 'r') // temp reg
+						maxTempRegisters = Math.Max(maxTempRegisters, index + 1);
+					if (reg[start] == 'c' && isDest) // constant reg
+						maxConstantRegisterAccess = Math.Max(maxConstantRegisterAccess, index + 1);
+				}
 
 
 				//finally, there may be a swizzle.
@@ -249,17 +276,22 @@ mul c5.xyz, c7.xyz,
 				variable = new CodeFieldReferenceExpression(variable, char.ToUpper(swizzle).ToString());
 				return variable;
 			}
+			CodeExpression BoolIndex(string group, int index)
+			{
+				return new CodeArrayIndexerExpression(new CodeVariableReferenceExpression(group), new CodePrimitiveExpression(index));
+			}
+
 
 		}
 
 
 		private Reg DstOp(string op)
 		{
-			return new Reg(op, true, ref maxTempRegisters, ref maxConstantRegisterAccess);
+			return new Reg(op, true, ref maxTempRegisters, ref maxConstantRegisterAccess, ref maxBooleanRegistersWrite);
 		}
 		private Reg SrcOp(string op)
 		{
-			return new Reg(op, false, ref maxTempRegisters, ref maxConstantRegisterAccess);
+			return new Reg(op, false, ref maxTempRegisters, ref maxConstantRegisterAccess, ref maxBooleanRegistersWrite);
 		}
 			
 		void cmp(string[] ops)
@@ -275,8 +307,8 @@ mul c5.xyz, c7.xyz,
 			{
 				Next = new CodeConditionStatement(
 						new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.GreaterThanOrEqual, Zero),
-							Assign(dst[i], src1[i]),
-							Assign(dst[i], src2[i]));
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, src1[i]) },
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, src2[i]) });
 			}
 		}
 
@@ -290,8 +322,8 @@ mul c5.xyz, c7.xyz,
 			{
 				Next = new CodeConditionStatement(
 						new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.GreaterThanOrEqual, src1[i]),
-							Assign(dst[i], src0[i]),
-							Assign(dst[i], src1[i]));
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, src0[i]) },
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, src1[i]) });
 			}
 		}
 
@@ -305,8 +337,8 @@ mul c5.xyz, c7.xyz,
 			{
 				Next = new CodeConditionStatement(
 						new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.LessThan, src1[i]),
-							Assign(dst[i], src0[i]),
-							Assign(dst[i], src1[i]));
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, src0[i]) },
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, src1[i]) });
 			}
 		}
 
@@ -321,8 +353,8 @@ mul c5.xyz, c7.xyz,
 			{
 				Next = new CodeConditionStatement(
 						new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.LessThan, src1[i]),
-							Assign(dst[i], Zero),
-							Assign(dst[i], One));
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, Zero) },
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, One) });
 			}
 		}
 		//greater than
@@ -336,8 +368,8 @@ mul c5.xyz, c7.xyz,
 			{
 				Next = new CodeConditionStatement(
 						new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.GreaterThan, src1[i]),
-							Assign(dst[i], Zero),
-							Assign(dst[i], One));
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, Zero) },
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, One) });
 			}
 		}
 
@@ -353,8 +385,8 @@ mul c5.xyz, c7.xyz,
 			{
 				Next = new CodeConditionStatement(
 						new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.LessThanOrEqual, src1[i]),
-							Assign(dst[i], Zero),
-							Assign(dst[i], One));
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, Zero) },
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, One) });
 			}
 		}
 		//greater than or equal
@@ -368,8 +400,8 @@ mul c5.xyz, c7.xyz,
 			{
 				Next = new CodeConditionStatement(
 						new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.GreaterThanOrEqual, src1[i]),
-							Assign(dst[i], Zero),
-							Assign(dst[i], One));
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, Zero) },
+							new CodeStatement[] { Assign(dst[i], dst.IsBoolean, One) });
 			}
 		}
 
@@ -379,7 +411,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Abs"), src0[i]));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Abs"), src0[i]));
 		}
 
 		void neg(string[] ops)
@@ -388,7 +420,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeBinaryOperatorExpression(new CodePrimitiveExpression(0), CodeBinaryOperatorType.Subtract, src0[i]));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeBinaryOperatorExpression(new CodePrimitiveExpression(0), CodeBinaryOperatorType.Subtract, src0[i]));
 		}
 
 		void add(string[] ops)
@@ -398,7 +430,7 @@ mul c5.xyz, c7.xyz,
 				src1 = SrcOp(ops[2]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.Add, src1[i]));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.Add, src1[i]));
 		}
 
 		void mul(string[] ops)
@@ -409,7 +441,7 @@ mul c5.xyz, c7.xyz,
 
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.Multiply, src1[i]));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.Multiply, src1[i]));
 		}
 
 
@@ -419,7 +451,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeBinaryOperatorExpression(new CodePrimitiveExpression(1.0f), CodeBinaryOperatorType.Divide, new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Sqrt"), src0[i]))));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeBinaryOperatorExpression(new CodePrimitiveExpression(1.0f), CodeBinaryOperatorType.Divide, new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Sqrt"), src0[i]))));
 		}
 
 
@@ -429,7 +461,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Cos"), src0[i])));
 		}
@@ -440,7 +472,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Sin"), src0[i])));
 		}
@@ -451,7 +483,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Tan"), src0[i])));
 		}
@@ -462,7 +494,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Atan"), src0[i])));
 		}
@@ -473,7 +505,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Acos"), src0[i])));
 		}
@@ -483,7 +515,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Asin"), src0[i])));
 		}
@@ -494,7 +526,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Cosh"), src0[i])));
 		}
@@ -504,7 +536,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), 
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), 
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Sinh"), src0[i])));
 		}
@@ -514,7 +546,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float),
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float),
 					new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 						new CodeTypeReferenceExpression(typeof(System.Math)), "Tanh"), src0[i])));
 		}
@@ -532,9 +564,9 @@ mul c5.xyz, c7.xyz,
 				throw new NotSupportedException("Cross product on non-vector3");
 
 
-			Next = Assign(dst[0], new CodeBinaryOperatorExpression(new CodeBinaryOperatorExpression(src0[1], CodeBinaryOperatorType.Multiply, src1[2]), CodeBinaryOperatorType.Subtract, new CodeBinaryOperatorExpression(src0[2], CodeBinaryOperatorType.Multiply, src1[1])));
-			Next = Assign(dst[1], new CodeBinaryOperatorExpression(new CodeBinaryOperatorExpression(src0[2], CodeBinaryOperatorType.Multiply, src1[0]), CodeBinaryOperatorType.Subtract, new CodeBinaryOperatorExpression(src0[0], CodeBinaryOperatorType.Multiply, src1[2])));
-			Next = Assign(dst[2], new CodeBinaryOperatorExpression(new CodeBinaryOperatorExpression(src0[0], CodeBinaryOperatorType.Multiply, src1[1]), CodeBinaryOperatorType.Subtract, new CodeBinaryOperatorExpression(src0[1], CodeBinaryOperatorType.Multiply, src1[0])));
+			Next = Assign(dst[0], dst.IsBoolean, new CodeBinaryOperatorExpression(new CodeBinaryOperatorExpression(src0[1], CodeBinaryOperatorType.Multiply, src1[2]), CodeBinaryOperatorType.Subtract, new CodeBinaryOperatorExpression(src0[2], CodeBinaryOperatorType.Multiply, src1[1])));
+			Next = Assign(dst[1], dst.IsBoolean, new CodeBinaryOperatorExpression(new CodeBinaryOperatorExpression(src0[2], CodeBinaryOperatorType.Multiply, src1[0]), CodeBinaryOperatorType.Subtract, new CodeBinaryOperatorExpression(src0[0], CodeBinaryOperatorType.Multiply, src1[2])));
+			Next = Assign(dst[2], dst.IsBoolean, new CodeBinaryOperatorExpression(new CodeBinaryOperatorExpression(src0[0], CodeBinaryOperatorType.Multiply, src1[1]), CodeBinaryOperatorType.Subtract, new CodeBinaryOperatorExpression(src0[1], CodeBinaryOperatorType.Multiply, src1[0])));
 		}
 
 		void mov(string[] ops)
@@ -598,9 +630,9 @@ mul c5.xyz, c7.xyz,
 			{
 				if (dst.Length > 1)
 				{
-					Next = Assign(dst[0], exp);
+					Next = Assign(dst[0], dst.IsBoolean, exp);
 					for (int i = 1; i < dst.Length; i++)
-						Next = Assign(dst[i], dst[0]);
+						Next = Assign(dst[i], dst.IsBoolean, dst[0]);
 				}
 				else
 				{
@@ -617,14 +649,14 @@ mul c5.xyz, c7.xyz,
 			switch (dst.Swizzle)
 			{
 				case "x":
-					Next = Assign(dst[0], new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Cos"), src0[0])));
+					Next = Assign(dst[0], dst.IsBoolean, new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Cos"), src0[0])));
 					break;
 				case "y":
-					Next = Assign(dst[1], new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Sin"), src0[0])));
+					Next = Assign(dst[1], dst.IsBoolean, new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Sin"), src0[0])));
 					break;
 				case "xy":
-					Next = Assign(dst[0], new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Cos"), src0[0])));
-					Next = Assign(dst[1], new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Sin"), src0[0])));
+					Next = Assign(dst[0], dst.IsBoolean, new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Cos"), src0[0])));
+					Next = Assign(dst[1], dst.IsBoolean, new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Sin"), src0[0])));
 					break;
 			}
 		}
@@ -636,7 +668,7 @@ mul c5.xyz, c7.xyz,
 				src1 = SrcOp(ops[2]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.Subtract, src1[i]));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.Subtract, src1[i]));
 		}
 
 		void rcp(string[] ops)
@@ -645,7 +677,7 @@ mul c5.xyz, c7.xyz,
 				src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeBinaryOperatorExpression(new CodePrimitiveExpression(1.0f), CodeBinaryOperatorType.Divide, src0[i]));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeBinaryOperatorExpression(new CodePrimitiveExpression(1.0f), CodeBinaryOperatorType.Divide, src0[i]));
 
 		}
 
@@ -655,7 +687,7 @@ mul c5.xyz, c7.xyz,
 				   src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Exp"), src0[i])));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Exp"), src0[i])));
 	
 		}
 
@@ -666,7 +698,7 @@ mul c5.xyz, c7.xyz,
 				   src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], 
+				Next = Assign(dst[i], dst.IsBoolean, 
 					new CodeBinaryOperatorExpression(src0[i], CodeBinaryOperatorType.Subtract,
 					new CodeCastExpression(typeof(float), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Floor"), src0[i]))));
 	
@@ -678,7 +710,7 @@ mul c5.xyz, c7.xyz,
 				   src0 = SrcOp(ops[1]);
 
 			for (int i = 0; i < dst.Length; i++)
-				Next = Assign(dst[i], new CodeCastExpression(typeof(float), new CodeBinaryOperatorExpression(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Log"), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)),"Abs"),src0[i])), CodeBinaryOperatorType.Divide, new CodePrimitiveExpression(0.69314718055994529))));
+				Next = Assign(dst[i], dst.IsBoolean, new CodeCastExpression(typeof(float), new CodeBinaryOperatorExpression(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Log"), new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(System.Math)), "Abs"), src0[i])), CodeBinaryOperatorType.Divide, new CodePrimitiveExpression(0.69314718055994529))));
 	
 		}
 	}

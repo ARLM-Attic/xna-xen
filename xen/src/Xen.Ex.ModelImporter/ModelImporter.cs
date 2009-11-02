@@ -536,7 +536,7 @@ namespace Xen.Ex.ModelImporter
 				foreach (NodeContent child in bone.Children)
 				{
 					if (child is BoneContent)
-						BuildBoneHirachy((BoneContent)child, boneIndex, children, indices, allBones, transforms);
+						BuildBoneHirachy((BoneContent)child, indices[bone.Name], children, indices, allBones, transforms);
 				}
 
 				int[] childIndices = new int[children.Count];
@@ -692,6 +692,7 @@ namespace Xen.Ex.ModelImporter
 		{
 			Dictionary<string, int> dictionary = new Dictionary<string, int>();
 			IList<BoneContent> list = MeshHelper.FlattenSkeleton(skeleton);
+			int index = 0;
 			for (int i = 0; i < list.Count; i++)
 			{
 				BoneContent content = list[i];
@@ -699,7 +700,7 @@ namespace Xen.Ex.ModelImporter
 				{
 					if (dictionary.ContainsKey(content.Name))
 						throw new InvalidContentException("Duplicate bone found: " + content.Name);
-					dictionary.Add(content.Name, i);
+					dictionary.Add(content.Name, index++);
 				}
 			}
 			return dictionary;
