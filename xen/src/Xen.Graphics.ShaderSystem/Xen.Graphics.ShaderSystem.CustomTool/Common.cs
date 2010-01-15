@@ -25,11 +25,11 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 
 		public static void ThrowError(string header, string errors, string source)
 		{
+			//pull out the errors...
+			List<CompileException> exceptions = new List<CompileException>();
+
 			try
 			{
-				//pull out the errors...
-				List<CompileException> exceptions = new List<CompileException>();
-
 				if (header != null)
 					exceptions.Add(new CompileException(header));
 
@@ -87,8 +87,6 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 
 					exceptions.Add(new CompileException(line, col, error));
 				}
-
-				throw new CompileExceptionCollection(exceptions.ToArray());
 			}
 			catch
 			{
@@ -103,6 +101,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 				else
 					throw new CompileException(errors);
 			}
+
+			throw new CompileExceptionCollection(exceptions.ToArray());
 		}
 
 		public static Type GetTextureType(string textureTypeName)

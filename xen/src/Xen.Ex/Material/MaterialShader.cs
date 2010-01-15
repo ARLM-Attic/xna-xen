@@ -1289,7 +1289,7 @@ namespace Xen.Ex.Material
 		private AppMaterialID appId;
 		private Texture2D texture, normalmap;
 		private TextureSamplerState textureSampler = TextureSamplerState.BilinearFiltering, normalSampler = TextureSamplerState.BilinearFiltering;
-		private bool perPixelSpecular, useHardwareInstancing, useVertexColour, dirty = true;
+		private bool perPixelSpecular, useHardwareInstancing, useVertexColour, dirty = true, constantChanged;
 		private float specularPower = 16;
 		private Vector3 specularColour;
 		private Vector3 diffuseColour = Vector3.One;
@@ -1416,7 +1416,16 @@ namespace Xen.Ex.Material
 		public Vector3 DiffuseColour
 		{
 			get { return diffuseColour; }
-			set { diffuseColour = value; }
+			set 
+			{
+				if (diffuseColour.X != value.X ||
+					diffuseColour.Y != value.Y ||
+					diffuseColour.Z != value.Z)
+				{
+					diffuseColour = value;
+					constantChanged = true;
+				}
+			}
 		}
 
 
@@ -1426,7 +1435,16 @@ namespace Xen.Ex.Material
 		public Vector3 SpecularColour
 		{	
 			get { return specularColour; }
-			set { specularColour = value; }
+			set 
+			{
+				if (specularColour.X != value.X ||
+					specularColour.Y != value.Y ||
+					specularColour.Z != value.Z)
+				{
+					specularColour = value;
+					constantChanged = true;
+				}
+			}
 		}
 
 
@@ -1437,7 +1455,14 @@ namespace Xen.Ex.Material
 		public float SpecularPower
 		{
 			get { return specularPower; }
-			set { specularPower = value; }
+			set 
+			{
+				if (specularPower != value)
+				{
+					specularPower = value;
+					constantChanged = true;
+				}
+			}
 		}
 
 
@@ -1569,7 +1594,14 @@ namespace Xen.Ex.Material
 		public float Alpha
 		{
 			get { return emissive.W; }
-			set { emissive.W = value; }
+			set 
+			{
+				if (emissive.W != value)
+				{
+					emissive.W = value;
+					constantChanged = true;
+				}
+			}
 		}
 
 		/// <summary>
@@ -1580,9 +1612,15 @@ namespace Xen.Ex.Material
 			get { return new Vector3(emissive.X, emissive.Y, emissive.Z); }
 			set
 			{
-				emissive.X = value.X;
-				emissive.Y = value.Y;
-				emissive.Z = value.Z;
+				if (emissive.X != value.X ||
+					emissive.Y != value.Y ||
+					emissive.Z != value.Z)
+				{
+					emissive.X = value.X;
+					emissive.Y = value.Y;
+					emissive.Z = value.Z;
+					constantChanged = true;
+				}
 			}
 		}
 
@@ -1631,7 +1669,7 @@ namespace Xen.Ex.Material
 			int vsLightCount = 0;
 			int psLightCount = 0;
 			Vector3 ambient = diffuseColour;
-			bool plightsChanged = false, vlightsChanged = false;
+			bool plightsChanged = constantChanged, vlightsChanged = constantChanged;
 
 
 			if (lightCollection != null &&
@@ -1782,6 +1820,7 @@ namespace Xen.Ex.Material
 					out shaderBoundBones);
 
 				dirty = false;
+				constantChanged = false;
 				vlightsChanged = true;
 				plightsChanged = true;
 				this.plightsIndex--;

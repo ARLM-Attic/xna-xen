@@ -320,6 +320,7 @@ namespace Xen
 
 			host.BeginInvoke((EventHandler)delegate
 			{
+				parent.SetGraphicsDevice(GraphicsDevice);
 				logic.Initialise();
 				logic.LoadContent();
 			});

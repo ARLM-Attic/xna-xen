@@ -878,6 +878,12 @@ namespace Xen.Ex.Graphics
 		public void Initalise(bool looping, float fadeIn, float fadeOut)
 		{
 			this.looping = looping;
+			this.loopTransition = true;
+			this.enabled = true;
+			this.speed = 1;
+			this.frameTimer = 0;
+			this.weighting = 1;
+			this.weightedScaleCalcTick = -1;
 			this.fadeOutStopTime = 0;
 			this.fadeOutStart = 0;
 			this.fadeInTime = fadeIn;
