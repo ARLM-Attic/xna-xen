@@ -18,6 +18,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 		public Register[] TechniqueTextures;
 		public int[] PixelSamplerTextureIndex, VertexSamplerTextureIndex;
 		public string[] ClassBaseTypes;
+		public Dictionary<string, Vector4[]> DefaultSingleValues;
 	}
 
 	//this class takes an FX file, and decompiled it into raw shader assmebly
@@ -97,7 +98,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				this.effectRegisters = new RegisterSet(registers);
 				this.decompiledAsm = Effect.Disassemble(effect, false);
 
-				ExtractEffectDefaults(effect, textures);
+				ExtractEffectDefaults(effect, textures, source, platform);
 			}
 		}
 
@@ -114,7 +115,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 
 
-		private void ExtractEffectDefaults(Effect effect, List<Register> textures)
+		private void ExtractEffectDefaults(Effect effect, List<Register> textures, SourceShader source, Platform platform)
 		{
 			//nasty-ness ensues!
 			GraphicsDevice device = Graphics.GraphicsDevice;
@@ -161,6 +162,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 				allTextures.Clear();
 
+				Dictionary<string, Vector4[]> techniqueSingleValues = new Dictionary<string, Vector4[]>();
+
 				try
 				{
 					device.SetPixelShaderConstant(0, psConstants);
@@ -200,6 +203,25 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 					effect.End();
 
+
+
+					foreach (var param in effect.Parameters)
+					{
+						try
+						{
+							if (param.ParameterType == EffectParameterType.Single ||
+								param.ParameterType == EffectParameterType.Int32)
+							{
+									Vector4[] values = param.GetValueVector4Array(param.RowCount);
+									techniqueSingleValues.Add(param.Name, values);
+							}
+						}
+						catch
+						{
+						}
+					}
+
+
 					//all done. Now read back what has changed. :D
 
 					psConstants = device.GetPixelShaderVector4ArrayConstant(0, maxPsConst);
@@ -238,6 +260,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				defaults.ClassBaseTypes = baseTypes;
 				defaults.PixelShaderBooleanConstants = psBooleanConstants;
 				defaults.VertexShaderBooleanConstants = vsBooleanConstants;
+				defaults.DefaultSingleValues = techniqueSingleValues;
 
 				if (this.techniqueDefaults.ContainsKey(technique.Name) == false)
 					this.techniqueDefaults.Add(technique.Name, defaults);
@@ -272,6 +295,14 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 				tss.AddressU = ss.AddressU;
 				tss.AddressV = ss.AddressV;
 				tss.AddressW = ss.AddressW;
+
+				//special case, force texture cubes to always be clamped. (xbox helper)
+				if (texture is TextureCube)
+				{
+					tss.AddressU = TextureAddressMode.Clamp;
+					tss.AddressV = TextureAddressMode.Clamp;
+					tss.AddressW = TextureAddressMode.Clamp;
+				}
 
 				tss.MagFilter = ss.MagFilter;
 				tss.MinFilter = ss.MinFilter;

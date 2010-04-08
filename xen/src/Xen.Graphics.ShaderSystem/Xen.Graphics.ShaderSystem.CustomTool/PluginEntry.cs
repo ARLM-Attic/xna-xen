@@ -41,6 +41,16 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 
 					return Encoding.ASCII.GetBytes(source.GenerateCodeString());
 				}
+				catch (CompileExceptionCollection ex)
+				{
+					for (int i = 0; i < ex.Count; i++)
+					{
+						CompileException cx = ex.GetException(i);
+						this.GeneratorErrorCallback(false, 1, cx.Text, cx.Line, cx.Coloumn);
+						Console.WriteLine(string.Format("Error generating shader: {0} (line: {1} col: {2}, error {3} of {4})", cx.Text, cx.Line, cx.Coloumn, i + 1, ex.Count));
+					}
+					return Encoding.ASCII.GetBytes(SourceDom.GenerateErrorString(ex, codeProvider));
+				}
 				catch (CompileException ex)
 				{
 					this.GeneratorErrorCallback(false, 1, ex.Text, ex.Line, ex.Coloumn);

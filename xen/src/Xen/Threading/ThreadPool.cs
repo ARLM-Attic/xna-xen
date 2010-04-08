@@ -17,6 +17,7 @@ namespace Xen.Threading
 		void PerformAction(object data);
 	}
 
+	[System.Diagnostics.DebuggerStepThrough]
 	class TaskSource
 	{
 		public TaskSource(ThreadPool pool)
@@ -32,6 +33,9 @@ namespace Xen.Threading
 	/// <summary>
 	/// Provides a callback to wait for a task to complete
 	/// </summary>
+#if !DEBUG_API
+	[System.Diagnostics.DebuggerStepThrough]
+#endif
 	public struct WaitCallback
 	{
 		readonly TaskSource task;
@@ -232,29 +236,34 @@ namespace Xen.Threading
 
 			Monitor.Enter(sync);
 
+			//find a free thread
 			int completeIndex = WaitAny(this.waitHandles);
 			TaskSource source;
 			int id;
 
 			if (completeIndex == -1)
 			{
-				//no free threads, do the work right now instead
+				//no free threads, queue the task for later execution
+
+				//get a free task source
 				source = GetSource(task, taskData);
 				id = source.id;
 				taskQueue.Enqueue(source);
 				Monitor.Exit(sync);
-				return new WaitCallback(source,id);//null implementation of IWaitCallback
+				return new WaitCallback(source,id);//return a WaitCallback wrapping the task
 			}
 
+			//give the task to the free thread
 			WorkUnit unit = threads[completeIndex];
 			source = GetSource(task, taskData);
 			id = source.id;
-			unit.Run(source);
+			unit.Run(source); // run it now
 
 			Monitor.Exit(sync);
 			return new WaitCallback(source,id);
 		}
 
+		//find a waiting task and run it
 		internal bool RunQueueTask()
 		{
 			TaskSource source = null;
@@ -264,16 +273,8 @@ namespace Xen.Threading
 			Monitor.Exit(sync);
 
 			if (source != null)
-			{
-				IAction acton = Interlocked.Exchange(ref source.action, null);
+				return RunQueueTask(source);
 
-				if (acton != null)
-				{
-					acton.PerformAction(source.data);
-					ClearTask(source);
-				}
-				return true;
-			}
 			return false;
 		}
 
@@ -518,6 +519,7 @@ namespace Xen.Threading
 				if (unit != null)
 					unit.Dispose();
 			}
+
 			temporaryTasks.Clear();
 			GC.SuppressFinalize(this);
 		}

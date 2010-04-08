@@ -37,6 +37,9 @@ namespace Xen.Ex.Compression
 		}
 	}
 
+	//The following classes are used by the animation system to lossy compress animation data.
+	//This was most useful in early versions of XNA, where ouput files were not compressed. This is less useful today.
+
 	[Flags]
 	enum TransformStorage : byte
 	{
@@ -148,7 +151,11 @@ namespace Xen.Ex.Compression
 					Microsoft.Xna.Framework.Graphics.PackedVector.HalfVector4 delta
 						= new Microsoft.Xna.Framework.Graphics.PackedVector.HalfVector4();
 
+#if !XBOX360
 					delta.PackedValue = (ulong)reader.ReadUInt32() | ((ulong)reader.ReadUInt16() << 32);
+#else
+					delta.PackedValue = (ulong)reader.ReadUInt16() | ((ulong)reader.ReadUInt32() << 16);
+#endif
 					delta4 = delta.ToVector4();
 				}
 				else
@@ -157,7 +164,11 @@ namespace Xen.Ex.Compression
 					Microsoft.Xna.Framework.Graphics.PackedVector.NormalizedByte4 delta
 						= new Microsoft.Xna.Framework.Graphics.PackedVector.NormalizedByte4();
 
+#if !XBOX360
 					delta.PackedValue = reader.ReadUInt16() | ((uint)reader.ReadByte() << 16);
+#else
+					delta.PackedValue = (uint)reader.ReadByte() | ((uint)reader.ReadUInt16() << 8);
+#endif
 					delta4 = delta.ToVector4();
 				}
 
@@ -631,7 +642,11 @@ namespace Xen.Ex.Compression
 					Microsoft.Xna.Framework.Graphics.PackedVector.HalfVector4 delta
 						= new Microsoft.Xna.Framework.Graphics.PackedVector.HalfVector4();
 
+#if !XBOX360
 					delta.PackedValue = (ulong)reader.ReadUInt32() | ((ulong)reader.ReadUInt16() << 32);
+#else
+					delta.PackedValue = (ulong)reader.ReadUInt16() | ((ulong)reader.ReadUInt32() << 16);
+#endif
 					delta4 = delta.ToVector4();
 				}
 				else
@@ -640,7 +655,11 @@ namespace Xen.Ex.Compression
 					Microsoft.Xna.Framework.Graphics.PackedVector.NormalizedByte4 delta
 						= new Microsoft.Xna.Framework.Graphics.PackedVector.NormalizedByte4();
 
+#if !XBOX360
 					delta.PackedValue = reader.ReadUInt16() | ((uint)reader.ReadByte() << 16);
+#else
+					delta.PackedValue = (uint)reader.ReadByte() | ((uint)reader.ReadUInt16() << 8);
+#endif
 					delta4 = delta.ToVector4();
 				}
 

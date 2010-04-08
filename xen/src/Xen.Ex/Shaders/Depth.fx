@@ -30,6 +30,15 @@ void DepthOutVS(
 	depth = (depth - cameraNearFar.x) / (cameraNearFar.y - cameraNearFar.x);
 }
 
+void NonLinearDepthOutVS(
+			float4	positionIn	: POSITION,
+		out	float4	positionOut	: POSITION,
+		out	float2	depth		: TEXCOORD0)
+{
+	positionOut = mul(positionIn,worldViewProj);
+	depth		= positionOut.zw;
+}
+
 void DepthOutVS_blend(
 			float4	positionIn	: POSITION,
 		out	float4	positionOut	: POSITION,
@@ -55,6 +64,27 @@ void DepthOutVS_blend(
 	depth = (depth - cameraNearFar.x) / (cameraNearFar.y - cameraNearFar.x);
 }
 
+void NonLinearDepthOutVS_blend(
+			float4	positionIn	: POSITION,
+		out	float4	positionOut	: POSITION,
+		out	float2	depth		: TEXCOORD0,
+					
+			float4	weights		: BLENDWEIGHT,
+			int4	indices		: BLENDINDICES)
+{
+	float4x3 blendMatrix
+				 = transpose(float3x4(
+					blendMatrices[indices.x*3+0] * weights.x + blendMatrices[indices.y*3+0] * weights.y + blendMatrices[indices.z*3+0] * weights.z + blendMatrices[indices.w*3+0] * weights.w,
+					blendMatrices[indices.x*3+1] * weights.x + blendMatrices[indices.y*3+1] * weights.y + blendMatrices[indices.z*3+1] * weights.z + blendMatrices[indices.w*3+1] * weights.w,
+					blendMatrices[indices.x*3+2] * weights.x + blendMatrices[indices.y*3+2] * weights.y + blendMatrices[indices.z*3+2] * weights.z + blendMatrices[indices.w*3+2] * weights.w
+				   ));
+				   
+	float4 blendPosition =	float4(mul(positionIn,blendMatrix).xyz,1); 
+	
+	positionOut = mul(blendPosition,worldViewProj);
+	depth = positionOut.zw;
+}
+
 
 void DepthOutVS_texCoord(
 			float4	positionIn	: POSITION,
@@ -73,6 +103,22 @@ void DepthOutVS_texCoord(
 	
 	depth = dot(viewDirection.xyz, worldPoint);
 	depth = (depth - cameraNearFar.x) / (cameraNearFar.y - cameraNearFar.x);
+}
+
+void NonLinearDepthOutVS_texCoord(
+			float4	positionIn	: POSITION,
+		out	float4	positionOut	: POSITION,
+		
+			float2	texCoordIn	: TEXCOORD0,
+		out	float2	texCoordOut	: TEXCOORD1,
+		
+		out	float2	depth		: TEXCOORD0)
+{
+	texCoordOut = texCoordIn;
+	
+	positionOut = mul(positionIn,worldViewProj);
+
+	depth = positionOut.zw;
 }
 
 void DepthOutVS_blend_texCoord(
@@ -107,6 +153,34 @@ void DepthOutVS_blend_texCoord(
 
 
 
+void NonLinearDepthOutVS_blend_texCoord(
+			float4	positionIn	: POSITION,
+		out	float4	positionOut	: POSITION,
+		out	float2	depth		: TEXCOORD0,
+		
+			float2	texCoordIn	: TEXCOORD0,
+		out	float2	texCoordOut	: TEXCOORD1,
+					
+			float4	weights		: BLENDWEIGHT,
+			int4	indices		: BLENDINDICES)
+{
+	texCoordOut = texCoordIn;
+	
+	float4x3 blendMatrix
+				 = transpose(float3x4(
+					blendMatrices[indices.x*3+0] * weights.x + blendMatrices[indices.y*3+0] * weights.y + blendMatrices[indices.z*3+0] * weights.z + blendMatrices[indices.w*3+0] * weights.w,
+					blendMatrices[indices.x*3+1] * weights.x + blendMatrices[indices.y*3+1] * weights.y + blendMatrices[indices.z*3+1] * weights.z + blendMatrices[indices.w*3+1] * weights.w,
+					blendMatrices[indices.x*3+2] * weights.x + blendMatrices[indices.y*3+2] * weights.y + blendMatrices[indices.z*3+2] * weights.z + blendMatrices[indices.w*3+2] * weights.w
+				   ));
+				   
+	float4 blendPosition =	float4(mul(positionIn,blendMatrix).xyz,1); 
+	
+	positionOut = mul(blendPosition,worldViewProj);
+	depth = positionOut.zw;
+}
+
+
+
 
 
 float4 DepthOutPS(float depth : TEXCOORD0) : COLOR0
@@ -117,6 +191,19 @@ float4 DepthOutPS(float depth : TEXCOORD0) : COLOR0
 float4 DepthOutPSAlpha(float depth : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR0
 {
 	return float4(depth,depth*depth,0,tex2D(AlphaTextureSampler,texCoord).a);
+}
+
+
+float4 NonLinearDepthOutPS(float2 depth : TEXCOORD0) : COLOR0
+{
+	float value = depth.x / depth.y;
+	return float4(value.xxx,1);
+}
+
+float4 NonLinearDepthOutPSAlpha(float2 depth : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR0
+{
+	float value = depth.x / depth.y;
+	return float4(value.xxx,tex2D(AlphaTextureSampler,texCoord).a);
 }
 
 
@@ -155,5 +242,48 @@ technique DepthOutRgTextureAlphaBlend
 	{
 		VertexShader = compile vs_2_0 DepthOutVS_blend_texCoord();
 		PixelShader = compile ps_2_0 DepthOutPSAlpha();
+	}
+}
+
+
+
+
+
+
+technique NonLinearDepthOutRg
+{
+	pass
+	{
+		VertexShader = compile vs_2_0 NonLinearDepthOutVS();
+		PixelShader = compile ps_2_0 NonLinearDepthOutPS();
+	}
+}
+
+technique NonLinearDepthOutRgBlend
+{
+	pass
+	{
+		VertexShader = compile vs_2_0 NonLinearDepthOutVS_blend();
+		PixelShader = compile ps_2_0 NonLinearDepthOutPS();
+	}
+}
+
+
+
+technique NonLinearDepthOutRgTextureAlpha
+{
+	pass
+	{
+		VertexShader = compile vs_2_0 NonLinearDepthOutVS_texCoord();
+		PixelShader = compile ps_2_0 NonLinearDepthOutPSAlpha();
+	}
+}
+
+technique NonLinearDepthOutRgTextureAlphaBlend
+{
+	pass
+	{
+		VertexShader = compile vs_2_0 NonLinearDepthOutVS_blend_texCoord();
+		PixelShader = compile ps_2_0 NonLinearDepthOutPSAlpha();
 	}
 }

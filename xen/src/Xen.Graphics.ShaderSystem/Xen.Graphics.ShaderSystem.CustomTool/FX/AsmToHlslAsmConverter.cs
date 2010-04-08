@@ -24,7 +24,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 	 * }
 	 * 
 	 * A few PC ASM commands are not supported on the xbox, such as norm(),
-	 * so these are written as their HLSL equivalent.
+	 * so these are written as their HLSL equivalent embedded in with the ASM.
 	 * 
 	 * Flow control currently is only partially supported by this system.
 	 * 
@@ -801,6 +801,27 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 			//They may have equivalents, however for the most part, their HLSL version is used.
 			switch (cmd.name)
 			{
+				//It seems that the xbox doesn't accept swizzles in parts of some operators. Yet XNA doesn't report an error. Great.
+				case "mad":
+					//mad dst, src0, src1, src2
+					cmd = new Command("{0} = ((float4)({1} * {2} + {3})){4};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Arg(3), cmd.Swizzle(0));
+					break;
+				case "dp4":
+					cmd = new Command("{0} = ((float4)dot({1},{2})){3};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Swizzle(0));
+					break;
+				case "dp3":
+					cmd = new Command("{0} = ((float4)dot((float3){1},(float3){2})){3};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Swizzle(0));
+					break;
+				case "mul":
+					cmd = new Command("{0} = ((float4)({1} * {2})){3};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Swizzle(0));
+					break;
+				case "add":
+					cmd = new Command("{0} = ((float4)({1} + {2})){3};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Swizzle(0));
+					break;
+				case "sub":
+					cmd = new Command("{0} = ((float4)({1} - {2})){3};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Swizzle(0));
+					break;
+
 				case "rep":
 					//a loop, on an integer constant.
 					cmd = new Command("for (int rep_i{0}=0; rep_i{0}<{1}.x; rep_i{0}++) {2}", (loopIndex++).ToString(), cmd.Arg(0), "{");
@@ -810,14 +831,14 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					cmd = new Command("for (int {0}=0; {0}<{1}.x; {0}++) {2}", cmd.Arg(0), cmd.Arg(1), "{");
 					break;
 
-					//if blocks...
-					//if_gt if_lt if_ge if_le if_eq if_ne
+				//if blocks...
+				//if_gt if_lt if_ge if_le if_eq if_ne
 
 				case "if"://if boolean
 					cmd = new Command("if ({0}) {1}", cmd.Arg(0), "{");
 					break;
 				case "if_eq"://equal
-					cmd = new Command("if ({0} == {1}) {2}", cmd.Arg(0),cmd.Arg(1), "{");
+					cmd = new Command("if ({0} == {1}) {2}", cmd.Arg(0), cmd.Arg(1), "{");
 					break;
 				case "if_ne"://not equal
 					cmd = new Command("if ({0} != {1}) {2}", cmd.Arg(0), cmd.Arg(1), "{");
@@ -836,7 +857,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					break;
 
 				case "else":
-					cmd = new Command("{0}else{1}", "}","{");
+					cmd = new Command("{0}else{1}", "}", "{");
 					break;
 
 				case "endif":
@@ -861,7 +882,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 					break;
 
 				case "mova":
-					//assign an integer to a float
+					//assign the integer register to a float register
 					cmd = new Command("_a0 = {0};", cmd.Arg(1));
 					break;
 
@@ -883,7 +904,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 					cmd = new Command("{0} = (((float4)({3}))+((float4)({1})) * (((float4)({2}))-((float4)({3})))){4};", cmd.Arg(0), cmd.Arg(1), cmd.Arg(2), cmd.Arg(3), cmd.Swizzle(0));
 					break;
-					
+
 				case "sincos":
 					string swizzle = cmd.Swizzle(0);
 					if (swizzle.Contains('x'))
@@ -920,9 +941,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.FX
 
 				case "mov":
 					//special case, cannot directly 'mov' to DEPTH value
-
 					if (cmd.Arg(0) == "_oDepth")
-						cmd = new Command("{0} = {1};", cmd.Arg(0), cmd.Arg(1));
+						cmd = new Command("{0} = ({1}){2};", cmd.Arg(0), cmd.Arg(1), cmd.Swizzle(0));
 
 					break;
 			}

@@ -889,6 +889,9 @@ namespace Xen.Ex.Graphics
 			this.fadeInTime = fadeIn;
 			this.fadeOutTime = fadeOut;
 			this.scale = 1;
+			this.frameTimeBuffer = 0;
+			this.frameTimerBuffer = 0;
+			this.durationBuffer = 0;
 		}
 
 		public float AnimationSpeed

@@ -86,6 +86,29 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Tutorial 28\Config.cs" />
+    <Compile Include="Tutorial 28\RGBM Cubemap.cs" />
+    <Compile Include="Tutorial 28\HDR Lighting.cs" />
+    <Compile Include="Tutorial 28\Shaders\AlphaOutput.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AlphaOutput.fx</DependentUpon>
+    </Compile>
+    <Compile Include="Tutorial 28\Shaders\Composite.fx.cs">
+      <DependentUpon>Composite.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Tutorial 28\Shaders\Background.fx.cs">
+      <DependentUpon>Background.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Tutorial 28\Shaders\Character.fx.cs">
+      <DependentUpon>Character.fx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="Xen Logo\Xen Logo.cs" />
     <Compile Include="Tutorial 26\ThreadedContentLoader.cs" />
     <Compile Include="Tutorial 26\Tutorial.cs" />
@@ -180,6 +203,25 @@
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
     </None>
+    <None Include="Tutorial 28\Shaders\AlphaOutput.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>AlphaOutput.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 28\Shaders\Composite.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Composite.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 28\Shaders\Background.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Background.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 28\Shaders\Character.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Character.fx.cs</LastGenOutput>
+    </None>
+    <Content Include="Tutorial 28\Shaders\Environment.fx.h" />
+    <Content Include="Tutorial 28\Shaders\ShadowMap.fx.h" />
+    <Content Include="Tutorial 28\Shaders\RGBM.fx.h" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="TutorialChooser.resx">

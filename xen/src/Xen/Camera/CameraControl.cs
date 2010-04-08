@@ -2409,7 +2409,25 @@ namespace Xen
 			if (type == typeof(bool))
 				return GetIndex(ref booleanGlobals, name, booleanGlobalLookup);
 
+			//array types
 
+			if (type == typeof(Matrix[]))
+				return GetIndex(ref matrixArrayGlobals, name, matrixArrayGlobalLookup);
+
+			if (type == typeof(Vector4[]))
+				return GetIndex(ref v4ArrayGlobals, name, v4ArrayGlobalLookup);
+
+			if (type == typeof(Vector3[]))
+				return GetIndex(ref v3ArrayGlobals, name, v3ArrayGlobalLookup);
+
+			if (type == typeof(Vector2[]))
+				return GetIndex(ref v2ArrayGlobals, name, v2ArrayGlobalLookup);
+
+			if (type == typeof(float[]))
+				return GetIndex(ref singleArrayGlobals, name, singleArrayGlobalLookup);
+
+			//texture and sampler types
+			
 			if (type == typeof(Microsoft.Xna.Framework.Graphics.Texture))
 				return GetIndexTexture(ref textureGlobals, ref textureGlobalsFrame, name, textureGlobalLookup);
 
@@ -3205,6 +3223,7 @@ namespace Xen
 				value != global.value)
 			{
 				global.value = value;
+				global.id++;
 				if (global.frame == frame)
 					boundShaderStateDirty = true;
 			}

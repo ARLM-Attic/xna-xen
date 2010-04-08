@@ -291,13 +291,13 @@ namespace Xen.Graphics
 
 			if (GetEnabled())
 			{
+				state.DrawTarget = this;
+
 				int repeats = GetRepeatCount();
 				state.PushRenderState(ref nullState);
 
 				rendering = true;
 				ushort stackHeight, stateHeight, cameraHeight,preCull,postCull;
-
-				state.DrawTarget = this;
 
 #if DEBUG
 				System.Threading.Interlocked.Increment(ref state.Application.currentFrame.DrawTargetsDrawCount);
@@ -366,10 +366,10 @@ namespace Xen.Graphics
 					
 				End(state);
 
+				state.PopRenderState();
+
 				state.DrawTarget = null;
 				rendering = false;
-
-				state.PopRenderState();
 
 				state.EndFrameCleanup();
 			}
@@ -1269,7 +1269,7 @@ namespace Xen.Graphics
 		/// <returns></returns>
 		public static bool SupportsFormatFiltering(SurfaceFormat format)
 		{
-			return GraphicsAdapter.DefaultAdapter.CheckDeviceFormat(DeviceType.Hardware, SurfaceFormat.Bgr32, TextureUsage.None, QueryUsages.Filter, ResourceType.RenderTarget, format);
+			return GraphicsAdapter.DefaultAdapter.CheckDeviceFormat(DeviceType.Hardware, SurfaceFormat.Bgr32, TextureUsage.None, QueryUsages.Filter, ResourceType.Texture2D, format);
 		}
 
 		/// <summary>

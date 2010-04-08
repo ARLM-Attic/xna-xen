@@ -239,7 +239,8 @@ namespace Xen.Ex.Graphics2D
 		/// <param name="state"></param>
 		public void Draw(DrawState state)
 		{
-			Draw(state, state.DrawTarget.Size, 255);
+			if (this.enabled)
+				Draw(state, state.DrawTarget.Size, 255);
 		}
 
 		private void Draw(DrawState state, Vector2 scale, byte clipDepth)

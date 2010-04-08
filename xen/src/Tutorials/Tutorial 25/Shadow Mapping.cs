@@ -98,8 +98,11 @@ namespace Tutorials.Tutorial_25
 	//This class is a ShaderProvider, it overrides the shaders used by a ModelInstance.
 	//This class will query the TutorialRenderMode, and bind the required shader.
 	//
-	//DepthOutput mode will draw the models using the Xen.Ex.Shaders.DepthOutRg shaders,
-	//these shaders ouput linear depth to Red, and depth squared to Green.
+	//DepthOutput mode will draw the models using the Xen.Ex.Shaders.NonLinearDepthOutRg shaders,
+	//these shaders ouput non-linear depth to RGB.
+	//Non linear is easier to manage, as it's the natural output of the shadow map projection matrix.
+	//
+	//The linear versions of these shaders output linear depth to Red, and depth squared to Green.
 	//
 	sealed class ShadowOutputShaderProvider : Xen.Ex.Graphics.ModelInstanceShaderProvider
 	{
@@ -185,7 +188,7 @@ namespace Tutorials.Tutorial_25
 							//the model is animated
 
 							//get the shader
-							Xen.Ex.Shaders.DepthOutRgTextureAlphaBlend shader = state.GetShader<Xen.Ex.Shaders.DepthOutRgTextureAlphaBlend>();
+							Xen.Ex.Shaders.NonLinearDepthOutRgTextureAlphaBlend shader = state.GetShader<Xen.Ex.Shaders.NonLinearDepthOutRgTextureAlphaBlend>();
 
 							//set animation data (it's possible this is called redundantly, so logic here could be improved)
 							if (animationBoneDataDirty)
@@ -204,7 +207,7 @@ namespace Tutorials.Tutorial_25
 						else
 						{
 							//get the shader
-							Xen.Ex.Shaders.DepthOutRgTextureAlpha shader = state.GetShader<Xen.Ex.Shaders.DepthOutRgTextureAlpha>();
+							Xen.Ex.Shaders.NonLinearDepthOutRgTextureAlpha shader = state.GetShader<Xen.Ex.Shaders.NonLinearDepthOutRgTextureAlpha>();
 
 							//set the texture
 							shader.AlphaTexture = geometry.MaterialShader.TextureMap;
@@ -220,7 +223,7 @@ namespace Tutorials.Tutorial_25
 						if (this.animationBoneData != null)
 						{
 							//the model is animated
-							Xen.Ex.Shaders.DepthOutRgBlend shader = state.GetShader<Xen.Ex.Shaders.DepthOutRgBlend>();
+							Xen.Ex.Shaders.NonLinearDepthOutRgBlend shader = state.GetShader<Xen.Ex.Shaders.NonLinearDepthOutRgBlend>();
 
 							//set animation data (it's possible this is called redundantly, so logic here could be improved)
 							if (animationBoneDataDirty)
@@ -233,7 +236,7 @@ namespace Tutorials.Tutorial_25
 							shader.Bind(state);
 						}
 						else
-							state.GetShader<Xen.Ex.Shaders.DepthOutRg>().Bind(state); // bind the basic depth out shader
+							state.GetShader<Xen.Ex.Shaders.NonLinearDepthOutRg>().Bind(state); // bind the basic depth out shader
 					}
 					return true;//shader was assigned
 				}
@@ -286,7 +289,7 @@ namespace Tutorials.Tutorial_25
 			{
 				case TutorialRenderMode.DepthOutput:
 					//bind the depth output shader
-					state.GetShader<Xen.Ex.Shaders.DepthOutRg>().Bind(state);
+					state.GetShader<Xen.Ex.Shaders.NonLinearDepthOutRg>().Bind(state);
 					break;
 				case TutorialRenderMode.DrawShadow:
 					//bind the shadow rendering shader
@@ -370,7 +373,7 @@ namespace Tutorials.Tutorial_25
 	}
 
 
-	// This is the object that is draws to the shadow map texture.
+	// This is the object that draws to the shadow map texture.
 	// This class controls the rendering of the scene,
 	// it sets up the draw flags that make the scene render Depth values
 	class ShadowMapDrawer : IDraw
@@ -382,6 +385,13 @@ namespace Tutorials.Tutorial_25
 		{
 			this.scene = scene;
 			this.shaderProvider = shaderProvider;
+		}
+
+		//get/set the scene
+		public IDraw Scene
+		{
+			get { return scene; }
+			set { if (value == null) throw new ArgumentNullException(); scene = value; }
 		}
 
 		public void Draw(DrawState state)
@@ -401,7 +411,7 @@ namespace Tutorials.Tutorial_25
 
 		public bool CullTest(ICuller culler)
 		{
-			return true;
+			return scene.CullTest(culler);
 		}
 	}
 
@@ -462,12 +472,9 @@ namespace Tutorials.Tutorial_25
 
 			Matrix.Multiply(ref view, ref projection, out viewProjection);
 
-			//and the near clip, direction, etc
-			Vector2 nearFarClip;
-			Vector3 viewDirection, viewPoint;
-			shadowCamera.GetCameraNearFarClip(out nearFarClip);
+			//and the view direction
+			Vector3 viewDirection;
 			shadowCamera.GetCameraViewDirection(out viewDirection);
-			shadowCamera.GetCameraPosition(out viewPoint);
 
 
 			//set the matrix and other constants in the shadow mapping shader instances
@@ -477,18 +484,12 @@ namespace Tutorials.Tutorial_25
 			//non-blending shader
 			shader.ShadowMap = this.shadowMapTarget.GetTexture();
 			shader.SetShadowMapProjection(ref viewProjection);
-
-			shader.SetShadowCameraNearFar(ref nearFarClip);
 			shader.SetShadowViewDirection(ref viewDirection);
-			shader.SetShadowViewPoint(ref viewPoint);
 
 			//setup the same constants for the blending shader
 			shaderBlend.ShadowMap = this.shadowMapTarget.GetTexture();
 			shaderBlend.SetShadowMapProjection(ref viewProjection);
-
-			shaderBlend.SetShadowCameraNearFar(ref nearFarClip);
 			shaderBlend.SetShadowViewDirection(ref viewDirection);
-			shaderBlend.SetShadowViewPoint(ref viewPoint);
 		}
 
 		public bool CullTest(ICuller culler)
@@ -551,7 +552,7 @@ namespace Tutorials.Tutorial_25
 			blurIntermediate = new DrawTargetTexture2D(shadowCamera,resolution,resolution,textureFormat);
 #endif
 			//create a blur filter
-			shadowDepthBlurFilter = new Xen.Ex.Filters.BlurFilter(Xen.Ex.Filters.BlurFilterFormat.SevenSampleBlur, drawShadowDepth, blurIntermediate);
+			shadowDepthBlurFilter = new Xen.Ex.Filters.BlurFilter(Xen.Ex.Filters.BlurFilterFormat.SevenSampleBlur,1.0f, drawShadowDepth, blurIntermediate);
 
 			//create the scene camera
 			Camera3D camera = new Camera3D();

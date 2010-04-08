@@ -8,8 +8,6 @@ float4x4 shadowMapProjection;
 float4x4 worldMatrix			: WORLD;
 
 float3 shadowViewDirection;
-float3 shadowViewPoint;
-float2 shadowCameraNearFar;
 
 float4 blendMatrices[72*3];
 
@@ -60,13 +58,8 @@ void ShadowVS(
 	float4 worldPosition = mul(positionIn, worldMatrix);
 	
 	//shadow map projection
-	shadowMap.xyz		= mul(worldPosition, shadowMapProjection).xyw;
+	shadowMap			= mul(worldPosition, shadowMapProjection);
 
-	//linear depth from the camera is stored in shadowMap.w
-	shadowMap.w			= dot(shadowViewDirection, worldPosition.xyz - shadowViewPoint);
-	shadowMap.w			= (shadowMap.w - shadowCameraNearFar.x) / (shadowCameraNearFar.y - shadowCameraNearFar.x);
-	shadowMap.w			-= 0.001f; // apply a small bias
-	
 	//basic lighting
 	float3 normal		= mul(normalIn, worldMatrix);
 	colour				= dot(normalize(normal), -shadowViewDirection);
@@ -101,12 +94,7 @@ void ShadowVS_blend(
 	
 	positionOut			= mul(worldPosition, viewProjection);
 	
-	shadowMap.xyz		= mul(worldPosition, shadowMapProjection).xyw;
-	
-
-	shadowMap.w			= dot(shadowViewDirection, worldPosition.xyz - shadowViewPoint);
-	shadowMap.w			= (shadowMap.w - shadowCameraNearFar.x) / (shadowCameraNearFar.y - shadowCameraNearFar.x);
-	shadowMap.w			-= 0.001f; // apply a small bias
+	shadowMap			= mul(worldPosition, shadowMapProjection);
 	
 	//basic lighting
 	float3 normal		= mul(mul(normalIn,blendMatrix), worldMatrix);
@@ -119,12 +107,16 @@ void ShadowVS_blend(
 float4 ShadowPS(float2 texCoord : TEXCOORD0, float4 shadowMapCoord : TEXCOORD1, float3 colour : COLOR0) : COLOR0
 {
 	//projected texture coordinate
-	float2 lookupCoord = shadowMapCoord.xy / shadowMapCoord.z;
+	float3 lookupCoord = shadowMapCoord.xyz / shadowMapCoord.w;
+	
+	//convert the shadow map projection XY into texture range (so convert from [-1,1] to [0,1])
 	float2 shadowCoord = lookupCoord * float2(0.5,-0.5) + 0.5;
 	
 	//sample the shadow map
 	float occlusion = tex2D(ShadowSampler, shadowCoord).r;
-	float depth = shadowMapCoord.w;
+	
+	//apply a very small bias, to account for sampling errors
+	float depth = lookupCoord.z - 0.001;
 	
 	//difference with real depth
 	float difference = occlusion - depth;

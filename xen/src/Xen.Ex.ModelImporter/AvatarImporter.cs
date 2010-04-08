@@ -90,7 +90,8 @@ namespace Xen.Ex.ModelImporter
 
 			ProcessAnimations(input, context, animations, boneIndices, skeleton);
 
-			ProcessMeshNodes(input, context, meshes, rootPath, processedContent, skeleton, animations.ToArray());
+			int geometryCount = 0;
+			ProcessMeshNodes(input, context, meshes, rootPath, processedContent, skeleton, animations.ToArray(), ref geometryCount);
 
 			return new AvatarAnimationData(input.Name, meshes.ToArray(), skeleton, animations.ToArray());
 		}
@@ -111,23 +112,23 @@ namespace Xen.Ex.ModelImporter
 			}
 		}
 
-		void ProcessMeshNodes(NodeContent node, ContentProcessorContext context, List<MeshData> meshes, string rootPath, Dictionary<string, object> processedContent, SkeletonData skeleton, AnimationData[] animations)
+		void ProcessMeshNodes(NodeContent node, ContentProcessorContext context, List<MeshData> meshes, string rootPath, Dictionary<string, object> processedContent, SkeletonData skeleton, AnimationData[] animations, ref int geometryCount)
 		{
 			if (node is BoneContent)
 				return;
 			if (node is MeshContent)
 			{
-				meshes.Add(ProcessMesh(node as MeshContent, context, rootPath, processedContent, skeleton, animations));
+				meshes.Add(ProcessMesh(node as MeshContent, context, rootPath, processedContent, skeleton, animations, ref geometryCount));
 				return;
 			}
 
 			foreach (NodeContent child in node.Children)
 			{
-				ProcessMeshNodes(child, context, meshes, rootPath, processedContent, skeleton, animations);
+				ProcessMeshNodes(child, context, meshes, rootPath, processedContent, skeleton, animations, ref geometryCount);
 			}
 		}
 
-		MeshData ProcessMesh(MeshContent mesh, ContentProcessorContext context, string rootPath, Dictionary<string, object> processedContent, SkeletonData skeletonData, AnimationData[] animations)
+		MeshData ProcessMesh(MeshContent mesh, ContentProcessorContext context, string rootPath, Dictionary<string, object> processedContent, SkeletonData skeletonData, AnimationData[] animations, ref int geometryCount)
 		{
 			MeshHelper.TransformScene(mesh, mesh.AbsoluteTransform);
 
@@ -143,7 +144,7 @@ namespace Xen.Ex.ModelImporter
 
 			foreach (GeometryContent geom in mesh.Geometry)
 			{
-				this.ProcessVertexChannels(geom, context, boneIndices, null);
+				this.ProcessVertexChannels(geom, context, rootPath, boneIndices, null);
 				MeshHelper.MergeDuplicateVertices(geom);
 
 				VertexBufferContent vb;
@@ -153,7 +154,7 @@ namespace Xen.Ex.ModelImporter
 				int[] indices = new int[geom.Indices.Count];
 				geom.Indices.CopyTo(indices, 0);
 
-				geometry.Add(new GeometryData(geom.Name, ve, vb.VertexData, indices, new MaterialData(), skeletonData, animations, context.TargetPlatform == TargetPlatform.Xbox360));
+				geometry.Add(new GeometryData(geometryCount++, geom.Name, ve, vb.VertexData, indices, new MaterialData(), skeletonData, animations, context.TargetPlatform == TargetPlatform.Xbox360));
 			}
 
 			return new MeshData(mesh.Name, geometry.ToArray(), animations);
@@ -511,7 +512,7 @@ namespace Xen.Ex.ModelImporter
 		//funnily enough, Weights and colours screw up VertexContent.CreateVertexBuffer()
 		//so the normal XNA model importer hacks around this... which is wonderful.
 		//this is an exact copy of the hack
-		private void ProcessVertexChannels(GeometryContent geometry, ContentProcessorContext context, Dictionary<string, int> boneIndices, Dictionary<int, int> boneRemap)
+		private void ProcessVertexChannels(GeometryContent geometry, ContentProcessorContext context, string asset, Dictionary<string, int> boneIndices, Dictionary<int, int> boneRemap)
 		{
 			VertexChannelCollection collection = geometry.Vertices.Channels;
 			List<VertexChannel> list = new List<VertexChannel>(collection);
@@ -526,7 +527,7 @@ namespace Xen.Ex.ModelImporter
 						continue;
 					}
 				}
-				this.ProcessVertexChannel(geometry, vertexChannelIndex, context, boneIndices, boneRemap);
+				this.ProcessVertexChannel(geometry, vertexChannelIndex, context, asset, boneIndices, boneRemap);
 				vertexChannelIndex++;
 			}
 		}
@@ -537,7 +538,7 @@ namespace Xen.Ex.ModelImporter
 					return true;
 			return false;
 		}
-		private void ProcessVertexChannel(GeometryContent geometry, int vertexChannelIndex, ContentProcessorContext context, Dictionary<string, int> boneIndices, Dictionary<int, int> boneRemap)
+		private void ProcessVertexChannel(GeometryContent geometry, int vertexChannelIndex, ContentProcessorContext context, string asset, Dictionary<string, int> boneIndices, Dictionary<int, int> boneRemap)
 		{
 			string str = VertexChannelNames.DecodeBaseName(geometry.Vertices.Channels[vertexChannelIndex].Name);
 			if (str != null)
@@ -545,7 +546,7 @@ namespace Xen.Ex.ModelImporter
 				if (str == "Color")
 					ProcessColorChannel(geometry, vertexChannelIndex);
 				if (str == "Weights")
-					ProcessWeightsChannel(geometry, vertexChannelIndex, boneIndices, boneRemap);
+					ProcessWeightsChannel(context, asset, geometry, vertexChannelIndex, boneIndices, boneRemap);
 			}
 		}
 		private static void ProcessColorChannel(GeometryContent geometry, int vertexChannelIndex)
@@ -560,7 +561,7 @@ namespace Xen.Ex.ModelImporter
 				throw new InvalidCastException("Unable to convert mesh embedded colour channel to Vector4");
 			}
 		}
-		private int[] ComputeBoneSet(GeometryContent geometry, ContentProcessorContext context, Dictionary<string, int> boneIndices)
+		private int[] ComputeBoneSet(GeometryContent geometry, ContentProcessorContext context, string asset, Dictionary<string, int> boneIndices)
 		{
 			SortedDictionary<int, bool> indicesInUse = new SortedDictionary<int, bool>();
 			foreach (VertexChannel vc in geometry.Vertices.Channels)
@@ -572,7 +573,7 @@ namespace Xen.Ex.ModelImporter
 					if (vc == null)
 						continue;
 					for (int n = 0; n < channel.Count; n++)
-						VertexWeightsInUse(channel[n], boneIndices, indicesInUse);
+						VertexWeightsInUse(context, asset, channel[n], boneIndices, indicesInUse);
 				}
 			}
 			int[] values = new int[indicesInUse.Count];
@@ -581,7 +582,7 @@ namespace Xen.Ex.ModelImporter
 				values[i++] = index;
 			return values;
 		}
-		private static void ProcessWeightsChannel(GeometryContent geometry, int vertexChannelIndex, Dictionary<string, int> boneIndices, Dictionary<int, int> boneRemap)
+		private static void ProcessWeightsChannel(ContentProcessorContext context, string asset, GeometryContent geometry, int vertexChannelIndex, Dictionary<string, int> boneIndices, Dictionary<int, int> boneRemap)
 		{
 			if (boneIndices == null)
 				throw new InvalidContentException("Mesh has bone weights with no skeleton");
@@ -594,7 +595,7 @@ namespace Xen.Ex.ModelImporter
 			for (int i = 0; i < channel.Count; i++)
 			{
 				BoneWeightCollection inputWeights = channel[i];
-				ConvertVertexWeights(inputWeights, boneIndices, outputIndices, outputWeights, i, geometry, boneRemap);
+				ConvertVertexWeights(context, asset, inputWeights, boneIndices, outputIndices, outputWeights, i, geometry, boneRemap);
 			}
 			int usageIndex = VertexChannelNames.DecodeUsageIndex(channel.Name);
 			string name = VertexChannelNames.EncodeName(VertexElementUsage.BlendIndices, usageIndex);
@@ -605,7 +606,7 @@ namespace Xen.Ex.ModelImporter
 		}
 		static int[] tempIndices = new int[4];
 		static float[] tempWeights = new float[4];
-		private static void ConvertVertexWeights(BoneWeightCollection inputWeights, Dictionary<string, int> boneIndices, Byte4[] outputIndices, Vector4[] outputWeights, int vertexIndex, GeometryContent geometry, Dictionary<int, int> boneRemap)
+		private static void ConvertVertexWeights(ContentProcessorContext context, string asset, BoneWeightCollection inputWeights, Dictionary<string, int> boneIndices, Byte4[] outputIndices, Vector4[] outputWeights, int vertexIndex, GeometryContent geometry, Dictionary<int, int> boneRemap)
 		{
 			inputWeights.NormalizeWeights(4);
 			for (int i = 0; i < inputWeights.Count; i++)
@@ -616,7 +617,11 @@ namespace Xen.Ex.ModelImporter
 					string boneName = weight.BoneName.Replace("__Skeleton", "");
 
 					if (!boneIndices.TryGetValue(boneName, out tempIndices[i]))
-						throw new InvalidContentException("Unknown bone name: " + weight.BoneName);
+					{
+						context.Logger.LogWarning(null, new ContentIdentity(asset), "Unknown bone name: " + weight.BoneName);
+						//throw new InvalidContentException("Unknown bone name: " + weight.BoneName);
+						continue;
+					}
 				}
 				tempWeights[i] = weight.Weight;
 				if (boneRemap != null)
@@ -631,7 +636,7 @@ namespace Xen.Ex.ModelImporter
 			outputWeights[vertexIndex] = new Vector4(tempWeights[0], tempWeights[1], tempWeights[2], tempWeights[3]);
 		}
 
-		private static void VertexWeightsInUse(BoneWeightCollection inputWeights, Dictionary<string, int> boneIndices, SortedDictionary<int, bool> indicesInUse)
+		private static void VertexWeightsInUse(ContentProcessorContext context, string asset, BoneWeightCollection inputWeights, Dictionary<string, int> boneIndices, SortedDictionary<int, bool> indicesInUse)
 		{
 			if (boneIndices == null)
 				throw new InvalidContentException("Mesh has bone weights with no skeleton");
@@ -641,7 +646,11 @@ namespace Xen.Ex.ModelImporter
 			{
 				BoneWeight weight = inputWeights[i];
 				if (!boneIndices.TryGetValue(weight.BoneName, out index))
-					throw new InvalidContentException("Unknown bone name: " + weight.BoneName);
+				{
+					context.Logger.LogWarning(null, new ContentIdentity(asset), "Unknown bone name: " + weight.BoneName);
+					//throw new InvalidContentException("Unknown bone name: " + weight.BoneName);
+					continue;
+				}
 				if (indicesInUse.ContainsKey(index) == false)
 					indicesInUse.Add(index, true);
 			}
@@ -776,10 +785,10 @@ namespace Xen.Ex.ModelImporter
 
 
 		#region Processor params
-		float animationCompressionTolerancePercent = 0.5f;
+		float animationCompressionTolerancePercent = 0.25f;
 		Vector3 bindPoseTranslation = new Vector3(0.000f, 75.5199f, -0.8664f);
 
-		[DefaultValue(0.5f), DisplayName("Animation Compression Tolerance (Percent)"), Category("Animation")]
+		[DefaultValue(0.25f), DisplayName("Animation Compression Tolerance (Percent)"), Category("Animation")]
 		public virtual float AnimationCompressionTolerancePercent
 		{
 			get

@@ -102,7 +102,10 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 					throw new CompileException(errors);
 			}
 
-			throw new CompileExceptionCollection(exceptions.ToArray());
+			if (exceptions.Count == 1)
+				throw exceptions[0];
+			else
+				throw new CompileExceptionCollection(exceptions.ToArray());
 		}
 
 		public static Type GetTextureType(string textureTypeName)
@@ -167,7 +170,6 @@ namespace Xen.Graphics.ShaderSystem.CustomTool
 		{
 			get { return text; }
 		}
-
 	}
 
 	public sealed class CompileExceptionCollection : Exception

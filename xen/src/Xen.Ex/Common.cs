@@ -390,6 +390,8 @@ namespace Xen.Ex
 		{
 			this.value.Length = 0; this.value.Append(value); changeIndex++;
 		}
+		/// <summary>Set a text character by index</summary>
+		public void SetCharacter(char value, int index) { if (this.value[index] != value) { this.value[index] = value; changeIndex++; } }
 		/// <summary></summary>
 		public void SetText(int value) { this.value.Length = 0; this.value.Append(value); changeIndex++; }
 		/// <summary></summary>

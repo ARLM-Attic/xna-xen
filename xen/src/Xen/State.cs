@@ -403,10 +403,17 @@ namespace Xen
 
 #endif
 
+		void ValidateRenderState()
+		{
+			ValidateProtected();
+			if (this.target == null)
+				throw new InvalidOperationException("Render state can only be modified within a Draw Target internal Draw call");
+		}
+
 		void ValidateProtected()
 		{
 			if (protectedState)
-				throw new InvalidOperationException("This operation is not valid in the current context.");
+				throw new InvalidOperationException("This DrawState operation is not valid in the current context (The application may be in a ContentLoad state).");
 		}
 
 

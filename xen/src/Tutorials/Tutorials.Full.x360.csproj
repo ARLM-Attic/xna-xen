@@ -123,10 +123,36 @@
     <Compile Include="Tutorial 26\ThreadedContentLoader.cs" />
     <Compile Include="Tutorial 26\Tutorial.cs" />
     <Compile Include="Tutorial 27\Avatar Animation.cs" />
+    <Compile Include="Tutorial 28\Config.cs" />
+    <Compile Include="Tutorial 28\HDR Lighting.cs" />
+    <Compile Include="Tutorial 28\RGBM Cubemap.cs" />
+    <Compile Include="Tutorial 28\Shaders\AlphaOutput.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AlphaOutput.fx</DependentUpon>
+    </Compile>
+    <Compile Include="Tutorial 28\Shaders\Background.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Background.fx</DependentUpon>
+    </Compile>
+    <Compile Include="Tutorial 28\Shaders\Character.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Character.fx</DependentUpon>
+    </Compile>
+    <Compile Include="Tutorial 28\Shaders\Composite.fx.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Composite.fx</DependentUpon>
+    </Compile>
     <Compile Include="Xen Logo\Xen Logo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="GameThumbnail.png" />
+    <Content Include="Tutorial 28\Shaders\Environment.fx.h" />
+    <Content Include="Tutorial 28\Shaders\RGBM.fx.h" />
+    <Content Include="Tutorial 28\Shaders\ShadowMap.fx.h" />
   </ItemGroup>
   <ItemGroup>
     <NestedContentProject Include="Content\Content.contentproj">
@@ -150,6 +176,22 @@
     <None Include="Tutorial 25\shader.fx">
       <Generator>XenFX</Generator>
       <LastGenOutput>shader.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 28\Shaders\AlphaOutput.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>AlphaOutput.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 28\Shaders\Background.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Background.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 28\Shaders\Character.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Character.fx.cs</LastGenOutput>
+    </None>
+    <None Include="Tutorial 28\Shaders\Composite.fx">
+      <Generator>XenFX</Generator>
+      <LastGenOutput>Composite.fx.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <ItemGroup>

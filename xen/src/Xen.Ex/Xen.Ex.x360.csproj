@@ -187,6 +187,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Simple.fx</DependentUpon>
     </Compile>
+    <Compile Include="SphericalHarmonic.cs" />
     <Compile Include="Transform.cs" />
   </ItemGroup>
   <ItemGroup>

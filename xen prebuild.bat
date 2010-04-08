@@ -9,7 +9,7 @@
 @echo - which may prompt for admin rights in Windows Vista.
 @echo - 
 @echo - Please report any bugs you find - and of course
-@echo - I greatly appreciate all feedback, good or bad!
+@echo - I greatly appreciate all feedback!
 @echo - 
 @echo - Thank you :-)
 @echo -
@@ -66,6 +66,11 @@ xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tut
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 16\shader.fx" "Tutorials.Tutorial_16" "xen\src\Tutorials\Tutorial 16\shader.fx.cs"
 @echo Building Tutorials.Tutorial_25 FX
 xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 25\shader.fx" "Tutorials.Tutorial_25" "xen\src\Tutorials\Tutorial 25\shader.fx.cs"
+@echo Building Tutorials.Tutorial_28 FX
+xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 28\Shaders\AlphaOutput.fx" "Tutorials.Tutorial_28.Shaders" "xen\src\Tutorials\Tutorial 28\Shaders\AlphaOutput.fx.cs"
+xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 28\Shaders\Background.fx" "Tutorials.Tutorial_28.Shaders" "xen\src\Tutorials\Tutorial 28\Shaders\Background.fx.cs"
+xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 28\Shaders\Character.fx" "Tutorials.Tutorial_28.Shaders" "xen\src\Tutorials\Tutorial 28\Shaders\Character.fx.cs"
+xen\bin\Xen.Graphics.ShaderSystem.CustomTool\cmdxenfx.exe "xen\src\Tutorials\Tutorial 28\Shaders\Composite.fx" "Tutorials.Tutorial_28.Shaders" "xen\src\Tutorials\Tutorial 28\Shaders\Composite.fx.cs"
 @echo Building Xen and Xen.Ex DEBUG
 %SYSTEMROOT%\Microsoft.NET\Framework\v3.5\MSBuild.exe /t:Rebuild .\xen\prebuild\sln\prebuild.sln
 @echo.

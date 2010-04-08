@@ -16,6 +16,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 		private readonly Vector4[] vsDefault, psDefault;
 		private readonly bool[] vsBooleanDefault, psBooleanDefault;
 		private readonly Dictionary<string, CodeExpression> staticArrays;
+		private readonly TechniqueExtraData techniqueData;
 
 		public ShaderRegisters(SourceShader source, string techniqueName, Platform platform)
 		{
@@ -35,6 +36,8 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 
 			if (technique.TechniqueExtraData != null)
 			{
+				this.techniqueData = technique.TechniqueExtraData;
+
 				psDefault = technique.TechniqueExtraData.PixelShaderConstants;
 				vsDefault = technique.TechniqueExtraData.VertexShaderConstants;
 
@@ -199,6 +202,20 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				CodeExpression create = new CodeObjectCreateExpression(typeof(ConstantArray),
 					new CodePrimitiveExpression(vsPreReg.FloatRegisterCount)); //create with the number of registers
 				add(new CodeAssignStatement(shader.VertexPreShaderRegistersRef, create));
+
+				//call the set method?
+				int offset;
+				CodeExpression initArray = GeneratePreShaderFloatDefaults(this.techniqueData, vsPreReg, vsPreReg.FloatRegisterCount, shader.CompileDirectives, out offset);
+
+				if (initArray != null)
+				{
+					string name = "vpreg_def";
+					staticArrays.Add(name, initArray);
+
+					CodeMethodInvokeExpression setCall = new CodeMethodInvokeExpression(shader.VertexPreShaderRegistersRef, "Set",
+						new CodePrimitiveExpression(offset), new CodeFieldReferenceExpression(shader.ShaderClassEx, name)); // start from zero
+					add(shader.ETS(setCall));
+				}
 			}
 			//pixel preshader
 			if (psPreReg != null && psPreReg.FloatRegisterCount > 0)
@@ -207,6 +224,20 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				CodeExpression create = new CodeObjectCreateExpression(typeof(ConstantArray),
 					new CodePrimitiveExpression(psPreReg.FloatRegisterCount)); //create with the number of registers
 				add(new CodeAssignStatement(shader.PixelPreShaderRegistersRef, create));
+
+				//call the set method?
+				int offset;
+				CodeExpression initArray = GeneratePreShaderFloatDefaults(this.techniqueData, psPreReg, psPreReg.FloatRegisterCount, shader.CompileDirectives, out offset);
+
+				if (initArray != null)
+				{
+					string name = "ppreg_def";
+					staticArrays.Add(name, initArray);
+
+					CodeMethodInvokeExpression setCall = new CodeMethodInvokeExpression(shader.PixelPreShaderRegistersRef, "Set",
+						new CodePrimitiveExpression(offset), new CodeFieldReferenceExpression(shader.ShaderClassEx, name)); // start from zero
+					add(shader.ETS(setCall));
+				}
 			}
 
 			//boolean registers
@@ -301,7 +332,7 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 				CodeVariableDeclarationStatement pregd = new CodeVariableDeclarationStatement(typeof(Vector4[]), "pc");
 				pregd.InitExpression = preg;
 				preg = new CodeVariableReferenceExpression(pregd.Name);
-				add(pregd, "Vertex shader registers");
+				add(pregd, "Pixel shader registers");
 
 				//assign if changed
 				CodeBinaryOperatorExpression assignCondition = new CodeBinaryOperatorExpression(
@@ -378,9 +409,41 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			}
 		}
 
+		private CodeExpression GeneratePreShaderFloatDefaults(TechniqueExtraData defaults, RegisterSet registers, int count, CompileDirectives directives, out int offset)
+		{
+			offset = 0;
+			if (count == 0 || defaults == null) return null;
+
+			Vector4[] constants = new Vector4[count];
+			bool set = false;
+
+			foreach (KeyValuePair<string,Vector4[]> entry in defaults.DefaultSingleValues)
+			{
+				Register reg;
+				if (registers.TryGetRegister(entry.Key, out reg))
+				{
+					if (reg.Category == RegisterCategory.Float4)
+					{
+						for (int i = 0; i < Math.Max(1,reg.ArraySize) && i < entry.Value.Length && i < count - reg.Index; i++)
+						{
+							constants[i + reg.Index] = entry.Value[i];
+							set = true;
+						}
+					}
+				}
+			}
+
+			if (!set) return null;
+			return InitaliseConstants(count, constants, directives, out offset);
+		}
+
+		//compresses a vector4 array down by removing the zero elements on the start/end (which is often A LOT)
 		private CodeExpression InitaliseConstants(int count, Vector4[] values, CompileDirectives directives, out int offset)
 		{
 			offset = 0;
+
+			if (count > values.Length)
+				count = values.Length;
 
 			if (values == null)
 				return null;

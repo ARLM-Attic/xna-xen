@@ -88,21 +88,34 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			gen.VerbatimOrder = true;
 			gen.BlankLinesBetweenMembers = false;
 
-			CodeCommentStatement comment;
+			CodeCommentStatement[] comments = new CodeCommentStatement[1];
 			if (ex is CompileException)
 			{
 				CompileException cx = (CompileException)ex;
-				comment = new CodeCommentStatement(string.Format("Error generating shader:{0}{1} (line: {2} col: {3})",Environment.NewLine,cx.Text,cx.Line,cx.Coloumn));
+				comments[0] = new CodeCommentStatement(string.Format("Error generating shader:{0}{1} (line: {2} col: {3})", Environment.NewLine, cx.Text, cx.Line, cx.Coloumn));
+			}
+			else if (ex is CompileExceptionCollection)
+			{
+				CompileExceptionCollection cxc = (CompileExceptionCollection)ex;
+				comments = new CodeCommentStatement[cxc.Count];
+				for (int i = 0; i < cxc.Count; i++)
+				{
+					CompileException cx = cxc.GetException(i);
+					comments[i] = new CodeCommentStatement(string.Format("Error generating shader:{0}{1} (line: {2} col: {3})", Environment.NewLine, cx.Text, cx.Line, cx.Coloumn));
+				}
 			}
 			else
 			{
-				comment = new CodeCommentStatement(string.Format("Unhandled exception in XenFX:{0}{1}",Environment.NewLine,ex.ToString()));
+				comments[0] = new CodeCommentStatement(string.Format("Unhandled exception in XenFX:{0}{1}", Environment.NewLine, ex.ToString()));
 			}
 			
 			StringBuilder sb = new StringBuilder();
 			using (TextWriter writer = new StringWriter(sb))
 			{
-				codeProvider.GenerateCodeFromStatement(comment, writer, gen);
+				foreach (CodeCommentStatement comment in comments)
+				{
+					codeProvider.GenerateCodeFromStatement(comment, writer, gen);
+				}
 			}
 			return sb.ToString();
 		}

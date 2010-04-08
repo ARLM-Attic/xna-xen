@@ -518,6 +518,10 @@ namespace Xen.Ex.Graphics.Content
 		public Texture2D Texture { get { return textureMap; } }
 		/// <summary></summary>
 		public Texture2D NormalMap { get { return normalMap; } }
+		/// <summary></summary>
+		public string TextureFileName { get { return textureFileName; } }
+		/// <summary></summary>
+		public string NormalMapFileName { get { return normalMapFileName; } }
 
 #if DEBUG && !XBOX360
 
@@ -614,6 +618,7 @@ namespace Xen.Ex.Graphics.Content
 		private readonly GeometryBounds[] boneLocalBounds;
 		internal readonly GeometryBounds[] animationStaticBounds;
 		internal GeometryBounds staticBounds;
+		private readonly int index;
 
 #if DEBUG && !XBOX360
 		readonly private byte[] vertexData;
@@ -621,8 +626,9 @@ namespace Xen.Ex.Graphics.Content
 		readonly private int[] indexData;
 
 		/// <summary></summary>
-		public GeometryData(string name, VertexElement[] elements, byte[] data, int[] indexData, MaterialData material, SkeletonData skeleton, AnimationData[] animations, bool targetXbox)
+		public GeometryData(int index, string name, VertexElement[] elements, byte[] data, int[] indexData, MaterialData material, SkeletonData skeleton, AnimationData[] animations, bool targetXbox)
 		{
+			this.index = index;
 			this.name = name;
 			this.vertexElements = elements;
 			this.vertexData = data;
@@ -1006,11 +1012,16 @@ namespace Xen.Ex.Graphics.Content
 		/// Gets the name of this geometry
 		/// </summary>
 		public string Name { get { return name; } }
+		/// <summary>
+		/// Linear index of this geometry data in the root model data
+		/// </summary>
+		public int Index { get { return index; } }
 
 #if DEBUG && !XBOX360
 
 		internal void Write(BinaryWriter writer)
 		{
+			writer.Write(this.index);
 			writer.Write(name ?? "");
 			writer.Write(vertexElements.Length);
 			for (int i = 0; i < vertexElements.Length; i++)
@@ -1061,6 +1072,7 @@ namespace Xen.Ex.Graphics.Content
 
 		internal GeometryData(ContentReader reader)
 		{
+			this.index = reader.ReadInt32();
 			name = string.Intern(reader.ReadString());
 			int count = reader.ReadInt32();
 			this.vertexElements = new VertexElement[count];

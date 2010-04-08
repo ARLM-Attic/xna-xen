@@ -756,9 +756,12 @@ namespace Xen.Graphics.ShaderSystem.CustomTool.Dom
 			foreach (GlobalAttribute global in globals)
 			{
 				//call state.GetGlobalUniqueID()
-
+				Type type = global.Type;
+				if (global.Register.ArraySize != -1)
+					type = type.MakeArrayType();
+				
 				CodeExpression call = new CodeMethodInvokeExpression(
-					new CodeMethodReferenceExpression(shader.ShaderSystemRef, "GetGlobalUniqueID", new CodeTypeReference(global.Type)),
+					new CodeMethodReferenceExpression(shader.ShaderSystemRef, "GetGlobalUniqueID", new CodeTypeReference(type)),
 					new CodePrimitiveExpression(global.Register.Name));
 
 				CodeStatement assign = new CodeAssignStatement(global.GlobalIdRef, call);

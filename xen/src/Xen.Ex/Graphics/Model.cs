@@ -79,7 +79,7 @@ namespace Xen.Ex.Graphics
 	/// <summary>
 	/// A generic implementation of ModelInstanceShaderProvider, storing an instance of a shader
 	/// </summary>
-	public class ModelInstanceShaderProvider<T> : ModelInstanceShaderProvider where T : IShader
+	public class ModelInstanceShaderProvider<T> : ModelInstanceShaderProvider where T : class, IShader, new()
 	{
 		private readonly T shader;
 
@@ -92,6 +92,14 @@ namespace Xen.Ex.Graphics
 			if (shader == null)
 				throw new ArgumentNullException();
 			this.shader = shader;
+		}
+
+		/// <summary>
+		/// Construct the generic ModelInstanceShaderProvider, the system default shader of the given type will be used
+		/// </summary>
+		public ModelInstanceShaderProvider()
+		{
+			this.shader = null;
 		}
 
 		/// <summary>
@@ -121,6 +129,10 @@ namespace Xen.Ex.Graphics
 		/// <param name="state"></param>
 		public override bool BeginGeometryShaderOverride(DrawState state, GeometryData geometry, MaterialLightCollection lights)
 		{
+			T shader = this.shader;
+			if (shader == null)
+				shader = state.GetShader<T>();
+
 			if (typeof(T) == typeof(MaterialShader))
 				((MaterialShader)(IShader)shader).Lights = lights;
 

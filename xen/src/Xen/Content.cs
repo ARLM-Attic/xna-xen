@@ -87,7 +87,7 @@ namespace Xen
 		/// </summary>
 		/// <param name="application">Application instance</param>
 		/// <param name="manager">XNA ContentManager instatnce</param>
-		internal ContentRegister(Application application, ContentManager manager)
+		public ContentRegister(Application application, ContentManager manager)
 		{
 			if (application == null || manager == null)
 				throw new ArgumentNullException();

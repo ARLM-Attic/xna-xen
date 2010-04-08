@@ -85,7 +85,7 @@ namespace Xen
 			get
 			{
 #if DEBUG
-				ValidateProtected();
+				ValidateRenderState();
 #endif
 				return visibleState; 
 			}
@@ -152,7 +152,7 @@ namespace Xen
 		public void PushRenderState()
 		{
 #if DEBUG
-			ValidateProtected();
+			ValidateRenderState();
 			if (renderStateStackIndex == renderStateStack.Length)
 				throw new StackOverflowException("Render State stack is too small. Set DrawState.RenderStackSize to a larger value");
 #endif
@@ -167,7 +167,7 @@ namespace Xen
 		public void SetRenderState(ref DeviceRenderState state)
 		{
 #if DEBUG
-			ValidateProtected();
+			ValidateRenderState();
 #endif
 			this.visibleState.state = state;
 		}
@@ -179,7 +179,7 @@ namespace Xen
 		public void PushRenderState(ref DeviceRenderState newState)
 		{
 #if DEBUG
-			ValidateProtected();
+			ValidateRenderState();
 #endif
 			PushRenderState();
 			this.visibleState.state = newState;
@@ -191,7 +191,7 @@ namespace Xen
 		public void PopRenderState()
 		{
 #if DEBUG
-			ValidateProtected();
+			ValidateRenderState();
 #endif
 			this.visibleState.state = renderStateStack[checked(--renderStateStackIndex)];
 		}
@@ -206,20 +206,23 @@ namespace Xen
 		/// </remarks>
 		public void ApplyRenderStateChanges()
 		{
+#if DEBUG
+			ValidateRenderState();
+#endif
 			ApplyRenderStateChanges(0);
 		}
 
 		internal void ApplyRenderStateChanges(int vertexCount)
 		{
+#if DEBUG
+			ValidateRenderState();
+#endif
 			if (this.bufferVertexCount != vertexCount)
 			{
 				this.bufferVertexCountChangeIndex++;
 				this.bufferVertexCount = vertexCount;
 			}
 
-#if DEBUG
-			ValidateProtected();
-#endif
 
 			if (internalStateDirty != StateFlag.None)
 			{

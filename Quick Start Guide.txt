@@ -1,7 +1,7 @@
 Xen: Graphics API for XNA
 www.codeplex.com/xen
 
-version 1.7 (XNA 3.1)
+version 1.8 (XNA 3.1)
 
 
 
@@ -12,7 +12,7 @@ version 1.7 (XNA 3.1)
 2.) Open ./xen/Tutorials.sln
 
 
-Tutorials.sln contains 27 small tutorial applications.
+Tutorials.sln contains 28 tutorial applications.
 Reading these will make learning xen a lot easier!
 
 Full Xen projects for PC and Xbox are located in ./xen/src/
@@ -29,7 +29,7 @@ Full Xen projects for PC and Xbox are located in ./xen/src/
 -- Copyright & Contact
 
 
-Xen is Copyright (C) 2008-2009 Graham Aldridge
+Xen is Copyright (C) 2008-2010 Graham Aldridge
 graham.aldridge@gmail.com
 XboxLive: StatusUnknown
 
@@ -37,6 +37,28 @@ XboxLive: StatusUnknown
 
 -----------------------------------------------------------------------------------------------------
 -- Change Log
+
+----------------
+-- 5/APR/10
+-- Version 1.8
+
+This update fixes a number of bugs in several areas of the API and introduces a large new Tutorial.
+
+[Added] L2 Spherical Harmonic class added to Xen.Ex
+[Added] Tutorial 28: HDR Lighting added: This is a massive tutorial, covering many areas of lighting
+[Updated] Simplified the Shadow Mapping tutorial
+[Updated] (Breaking change) The blur filter now requires specifying a blur exponent. A value of 1.0f maintains old behavior
+[Updated] The shader system now supports arrays marked 'GLOBAL'
+[Fixed] Several issues with animation caching behavior
+[Fixed] Several issues with the shader system error reporting
+[Fixed] Rare preshader initializations issues in the shader system
+[Fixed] A subtle bug where the XNA shader compiler for the 360 would sometimes ignore swizzles (and not tell you!)
+
+----------------
+-- 15/JAN/10
+-- Version 1.7.1
+
+[Fixed] A number of small bugs have been fixed
 
 ----------------
 -- 01/NOV/09
@@ -48,9 +70,9 @@ This update is a long time coming. Thanks everyone for your patience during my m
 [Added] Avatar support, using the same animation system as ModelInstance.
 [Added] Two tutorials, Avatars and Threading techniques
 [Added] Shader System support for SM3 boolean constants (preshaders included)
-[Added] XnaGameComponentHost - host a Xen application within an XNA Game Component
+[Added] XnaGameComponentHost - host a Xen application within an XNA Game Component (BETA)
 [Added] XenLogo - An external class that displays an animated Xen Startup Logo
-[Fixed] A large number of bugs, large and small have been fixed in this realease. Especially in the shader system.
+[Fixed] A number of bugs, large and small have been fixed in this realease. Especially in the shader system.
 
 ----------------
 -- 11/JUN/09
@@ -258,7 +280,9 @@ The 'prebuild' batch file registers the plugin and builds the debug xen librarie
 -- Xna Notes:
 
 Xen supports XNA Game Studio 3.1, Windows and the Xbox360.
-Zune support is not planned, unless full 3D support is added.
+
+Currently, support for XNA 4.0 is not planned due XNA 4 removing support for non-FX shaders.
+Zune and Phone support is not planned.
 
 
 

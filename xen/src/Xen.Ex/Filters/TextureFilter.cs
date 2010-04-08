@@ -42,7 +42,7 @@ namespace Xen.Ex.Filters
 		private static Vector2[] offsetsV = new Vector2[16];
 
 		//generates weight and offset value for bell curve filters
-		private static int GenerateFilter(BlurFilterFormat format, bool filtered)
+		private static int GenerateFilter(BlurFilterFormat format, bool filtered, float bellExponent)
 		{
 			int samples = 0;
 			switch (format)
@@ -85,7 +85,7 @@ namespace Xen.Ex.Filters
 					//~ exp(- x^2 )
 					double x = (i / (double)(centre + 1));
 
-					double bell = Math.Exp(-(x * x) * 3);
+					double bell = Math.Exp(-(x * x) * 3 * bellExponent);
 					total += bell * 2;
 
 					offset[centre - i] = -i;
@@ -134,8 +134,8 @@ namespace Xen.Ex.Filters
 						x2 = ((i * 2 + 1) / (double)(actualSamples));
 					}
 
-					double bell1 = Math.Exp(-(x1 * x1) * 3);
-					double bell2 = Math.Exp(-(x2 * x2) * 3);
+					double bell1 = Math.Exp(-(x1 * x1) * 3 * bellExponent);
+					double bell2 = Math.Exp(-(x2 * x2) * 3 * bellExponent);
 
 					if (!isOdd && i == 0)
 						bell1 *= 0.5; //two samples on the centre
@@ -166,11 +166,11 @@ namespace Xen.Ex.Filters
 		}
 
 
-		public static void SetFilter(BlurFilterFormat format, bool xAxis, SinglePassTextureFilter target, bool supportsFiltering)
+		public static void SetFilter(BlurFilterFormat format, bool xAxis, SinglePassTextureFilter target, bool supportsFiltering, float bellExponent)
 		{
 			lock (weights)
 			{
-				int kernel = GenerateFilter(format, supportsFiltering);
+				int kernel = GenerateFilter(format, supportsFiltering, bellExponent);
 
 				Vector2 axis = new Vector2(xAxis ? 1 : 0, xAxis ? 0 : 1);
 
@@ -636,8 +636,13 @@ namespace Xen.Ex.Filters
 		/// <param name="source"></param>
 		/// <param name="filterFormat">format of the blur filter</param>
 		/// <param name="intermediate">draw target to use as a temporary, intermediate target for blurring</param>
-		public BlurFilter(BlurFilterFormat filterFormat, DrawTargetTexture2D source, DrawTargetTexture2D intermediate) : 
-			this(filterFormat,source,intermediate,source)
+		/// <param name="bellCurveExponent">
+		/// <para>A scale value to infulence the bell curve used to generate the filter kernel.</para>
+		/// <para>A value of 1.0 generates a standard blur filter kernels. Larger values will produce a tighter curve, and less blur.</para>
+		/// <para>Smaller values will produce a wider curve, and a larger blur - but may produce a visible edge as the curve more rapidly ends.</para>
+		/// </param>
+		public BlurFilter(BlurFilterFormat filterFormat, float bellCurveExponent, DrawTargetTexture2D source, DrawTargetTexture2D intermediate) :
+			this(filterFormat, bellCurveExponent, source, intermediate, source)
 		{
 		}
 
@@ -648,7 +653,12 @@ namespace Xen.Ex.Filters
 		/// <param name="filterFormat">format of the blur filter</param>
 		/// <param name="intermediate">draw target to use as a temporary, intermediate target for blurring</param>
 		/// <param name="target"></param>
-		public BlurFilter(BlurFilterFormat filterFormat, DrawTargetTexture2D source, DrawTargetTexture2D intermediate, DrawTargetTexture2D target)
+		/// <param name="bellCurveExponent">
+		/// <para>A scale value to infulence the bell curve used to generate the filter kernel.</para>
+		/// <para>A value of 1.0 generates a standard blur filter kernels. Larger values will produce a tighter curve, and less blur.</para>
+		/// <para>Smaller values will produce a wider curve, and a larger blur - but may produce a visible edge as the curve more rapidly ends.</para>
+		/// </param>
+		public BlurFilter(BlurFilterFormat filterFormat, float bellCurveExponent, DrawTargetTexture2D source, DrawTargetTexture2D intermediate, DrawTargetTexture2D target)
 		{
 			if (target == null || source == null)
 				throw new ArgumentNullException();
@@ -677,7 +687,7 @@ namespace Xen.Ex.Filters
 			this.filterH = new SinglePassTextureFilter(intermediate, target);
 #endif
 
-			SetFilterFormat(filterFormat);
+			SetFilterFormat(filterFormat, bellCurveExponent);
 		}
 
 		/// <summary>
@@ -700,7 +710,12 @@ namespace Xen.Ex.Filters
 		/// <para>Note: Some filter formats require the graphics device support texture filtering for the given format</para>
 		/// </summary>
 		/// <param name="filterFormat"></param>
-		public void SetFilterFormat(BlurFilterFormat filterFormat)
+		/// <param name="bellCurveExponent">
+		/// <para>A scale value to infulence the bell curve used to generate the filter kernel.</para>
+		/// <para>A value of 1.0 generates a standard blur filter kernels. Larger values will produce a tighter curve, and less blur.</para>
+		/// <para>Smaller values will produce a wider curve, and a larger blur - but may produce a visible edge as the curve more rapidly ends.</para>
+		/// </param>
+		public void SetFilterFormat(BlurFilterFormat filterFormat, float bellCurveExponent)
 		{
 			//IsFilterFormat
 			bool filteringSupported = DrawTargetTexture2D.SupportsFormatFiltering(source.SurfaceFormat);
@@ -708,8 +723,8 @@ namespace Xen.Ex.Filters
 			if (filteringSupported == false && filterFormat == BlurFilterFormat.ThirtyOneSampleBlur_FilteredTextureFormat)
 				throw new ArgumentException("BlurFilterFormat.ThirtyOneSampleBlurFiltered is not supported, Hardware does not support texture filter for " + source.SurfaceFormat.ToString());
 
-			FilterGenerator.SetFilter(filterFormat, true, this.filterH, filteringSupported);
-			FilterGenerator.SetFilter(filterFormat, false, this.filterV, filteringSupported);
+			FilterGenerator.SetFilter(filterFormat, true, this.filterH, filteringSupported, bellCurveExponent);
+			FilterGenerator.SetFilter(filterFormat, false, this.filterV, filteringSupported, bellCurveExponent);
 		}
 	}
 

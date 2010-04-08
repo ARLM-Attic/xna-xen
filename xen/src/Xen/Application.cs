@@ -1122,6 +1122,14 @@ namespace Xen
 		}
 
 		/// <summary>
+		/// Gets the graphics device Title Safe Area
+		/// </summary>
+		public Rectangle TitleSafeArea
+		{
+			get { return GraphicsDevice.DisplayMode.TitleSafeArea; }
+		}
+
+		/// <summary>
 		/// Gets the width (in pixels) of the render window
 		/// </summary>
 		public int WindowWidth
