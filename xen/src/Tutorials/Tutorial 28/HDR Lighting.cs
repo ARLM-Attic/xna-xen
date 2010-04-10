@@ -606,7 +606,7 @@ namespace Tutorials.Tutorial_28
 
 			//setup common defaults for the scene configs.
 			SceneConfiguration defaultSC = new SceneConfiguration();
-			defaultSC.RgbmImageScale = 125.0f;
+			defaultSC.RgbmImageScale = 20.0f;
 			defaultSC.BloomThreshold = 1.5f;
 			defaultSC.BloomScale = 1.0f;
 			defaultSC.SunSpecularPower = 32.0f;
@@ -616,16 +616,32 @@ namespace Tutorials.Tutorial_28
 
 
 
-			//Load the source cubemap scene textures
-			Texture2D textureDirtroad = manager.Load<Texture2D>("LightProbes/DirtRoadHDR.rgbm");
-			Texture2D textureWaterfront = manager.Load<Texture2D>("LightProbes/WaterfrontHDR.rgbm");
-			Texture2D textureArches = manager.Load<Texture2D>("LightProbes/ArchesHDR.rgbm");
-			Texture2D textureMill = manager.Load<Texture2D>("LightProbes/MillHDR.rgbm");
+			//Load the source cubemap scene textures.
+
+			//Note: To make it easier to view the source images, the RGBM images have been split into two images,
+			//One store the RGB portion, one stores the M portion. This makes it much easier to view the textures
+			//and see how they are stored - but it is also extremely wasteful, using 2x the texture data.
+			
+			//Ideally, the images would be loaded directly as a PNG, however this cannot easily be done on the Xbox.
+
+			//Because these textures are only uses locally as an image data source, they are loaded in a temporary 
+			//content manager, which is disposed at the end of this method.
+			ContentManager localManager = new ContentManager(manager.ServiceProvider, manager.RootDirectory);
+
+			Texture2D textureDirtroad = localManager.Load<Texture2D>("LightProbes/DirtRoadHDR.rgb");
+			Texture2D textureWaterfront = localManager.Load<Texture2D>("LightProbes/WaterfrontHDR.rgb");
+			Texture2D textureArches = localManager.Load<Texture2D>("LightProbes/ArchesHDR.rgb");
+			Texture2D textureMill = localManager.Load<Texture2D>("LightProbes/MillHDR.rgb");
+
+			Texture2D textureDirtroadAlpha = localManager.Load<Texture2D>("LightProbes/DirtRoadHDR.m");
+			Texture2D textureWaterfrontAlpha = localManager.Load<Texture2D>("LightProbes/WaterfrontHDR.m");
+			Texture2D textureArchesAlpha = localManager.Load<Texture2D>("LightProbes/ArchesHDR.m");
+			Texture2D textureMillAlpha = localManager.Load<Texture2D>("LightProbes/MillHDR.m");
 
 
 			//setup DirtRoadHDR specifics
 			this.DirtRoadConfig = defaultSC.Clone();
-			this.DirtRoadConfig.BackgroundScene = new RgbmCubeMap(textureDirtroad, this.DirtRoadConfig.RgbmImageScale);
+			this.DirtRoadConfig.BackgroundScene = new RgbmCubeMap(textureDirtroad, textureDirtroadAlpha, this.DirtRoadConfig.RgbmImageScale);
 			this.DirtRoadConfig.SunColour = new Vector3(1, 0.9f, 0.75f);
 			this.DirtRoadConfig.SunDirection = Vector3.Normalize(new Vector3(0, 0.1f, 1));
 			this.DirtRoadConfig.SunIntensity = 20.0f;
@@ -635,7 +651,7 @@ namespace Tutorials.Tutorial_28
 
 			//setup Arches specifics
 			this.ArchesConfig = defaultSC.Clone();
-			this.ArchesConfig.BackgroundScene = new RgbmCubeMap(textureArches, this.ArchesConfig.RgbmImageScale);
+			this.ArchesConfig.BackgroundScene = new RgbmCubeMap(textureArches, textureArchesAlpha, this.ArchesConfig.RgbmImageScale);
 			this.ArchesConfig.SunColour = new Vector3(1, 1, 1);
 			this.ArchesConfig.SunDirection = Vector3.Normalize(new Vector3(-0.4f, 0.4f, 0.5f));
 			this.ArchesConfig.SunIntensity = 15.0f;
@@ -645,26 +661,28 @@ namespace Tutorials.Tutorial_28
 
 			//setup WaterfrontHDR specifics
 			this.WaterfrontConfig = defaultSC.Clone();
-			this.WaterfrontConfig.BackgroundScene = new RgbmCubeMap(textureWaterfront, this.WaterfrontConfig.RgbmImageScale);
+			this.WaterfrontConfig.BackgroundScene = new RgbmCubeMap(textureWaterfront, textureWaterfrontAlpha, this.WaterfrontConfig.RgbmImageScale);
 			this.WaterfrontConfig.SunColour = new Vector3(0.9f, 0.95f, 1);
 			this.WaterfrontConfig.SunDirection = Vector3.Normalize(new Vector3(-0.2f, 1, 0));
 			this.WaterfrontConfig.SunIntensity = 15.0f;
-			this.WaterfrontConfig.DefaultLensExposure = 0.4f;
+			this.WaterfrontConfig.DefaultLensExposure = 0.35f;
 			this.WaterfrontConfig.DefaultCamPos = new Vector3(5.251021f,5.877438f,-2.74239f);
 			this.WaterfrontConfig.DefaultCamViewPos = new Vector3(4.579107f, 5.783906f, -2.007691f);
 
 			//setup MillHDR specifics
 			this.MillConfig = defaultSC.Clone();
-			this.MillConfig.BackgroundScene = new RgbmCubeMap(textureMill, this.MillConfig.RgbmImageScale);
-			this.MillConfig.SunColour = new Vector3(1, 0.95f, 0.8f);
-			this.MillConfig.SunDirection = Vector3.Normalize(new Vector3(-0.1f, 1, -1));
-			this.MillConfig.SunIntensity = 50.0f;
-			this.MillConfig.DefaultLensExposure = 0.2f;
+			this.MillConfig.BackgroundScene = new RgbmCubeMap(textureMill, textureMillAlpha, this.MillConfig.RgbmImageScale);
+			this.MillConfig.SunColour = new Vector3(1, 0.975f, 0.95f);
+			this.MillConfig.SunDirection = Vector3.Normalize(new Vector3(-1, 1, -1));
+			this.MillConfig.SunIntensity = 25.0f;
+			this.MillConfig.DefaultLensExposure = 0.5f;
+			this.MillConfig.BloomScale = 0.5f;
+			this.MillConfig.BloomThreshold = 1.0f;
 			this.MillConfig.DefaultCamPos = new Vector3(6.087461f,6.132507f,-0.8147218f); 
 			this.MillConfig.DefaultCamViewPos = new Vector3(5.203656f,5.989332f,-0.3693113f);
 
 			//Textures are no longer needed. 
-			//We could dispose them, but XNA doesn't handle this properly if the device resets.
+			localManager.Dispose();
 
 			this.sceneConfig = this.ArchesConfig;
 		}

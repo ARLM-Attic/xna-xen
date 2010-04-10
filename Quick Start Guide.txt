@@ -39,6 +39,12 @@ XboxLive: StatusUnknown
 -- Change Log
 
 ----------------
+-- 10/APR/10
+-- Version 1.8.1
+
+[Fixed] The HDR tutorial now uses Power-of-Two cubemaps that are separated into RGB and M textures
+
+----------------
 -- 5/APR/10
 -- Version 1.8
 

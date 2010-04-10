@@ -249,13 +249,20 @@ namespace Tutorials.Tutorial_28
 		/// <para>Reads in a 2D texture in RGBM format, and extracts the cube faces.</para>
 		/// <para>It also generates a Spherical Harmonic from the input, to approximate indirect lighting</para>
 		/// </summary>
-		public RgbmCubeMap(Texture2D sourceRgbmImage2D, float maxRange)
+		public RgbmCubeMap(Texture2D sourceRgbmImage2D, Texture2D sourceRgbmAlphaImage2D, float maxRange)
 		{
-			if (sourceRgbmImage2D == null)
+			//the two textures represent the RGB and M values of an RGBM texture. They have
+			//been separated to make it easier to view their colour channels. 
+			//This is somewhat wasteful however. Normally it would be wise to combine them into one texture.
+
+			if (sourceRgbmImage2D == null || sourceRgbmAlphaImage2D == null)
 				throw new ArgumentNullException();
-			if (sourceRgbmImage2D.Width != sourceRgbmImage2D.Height * 6)
+			if (sourceRgbmImage2D.Width != sourceRgbmImage2D.Height * 6 ||
+				sourceRgbmAlphaImage2D.Width != sourceRgbmImage2D.Width ||
+				sourceRgbmAlphaImage2D.Height != sourceRgbmImage2D.Height)
 				throw new ArgumentException("Invalid size");	//expected to have 6 cube faces
-			if (sourceRgbmImage2D.Format != SurfaceFormat.Color)
+			if (sourceRgbmImage2D.Format != SurfaceFormat.Color ||
+				sourceRgbmAlphaImage2D.Format != SurfaceFormat.Color)
 				throw new ArgumentException("Unexpected image format");
 
 			if (maxRange <= 0.0f)
@@ -263,11 +270,15 @@ namespace Tutorials.Tutorial_28
 
 			this.MaxRange = maxRange;
 
-			//extract the RGBM pixels
-			Color[] pixelData = new Color[sourceRgbmImage2D.Width* sourceRgbmImage2D.Height];
-			sourceRgbmImage2D.GetData(pixelData);
+			//extract the RGB pixels
+			Color[] pixelDataRGB = new Color[sourceRgbmImage2D.Width* sourceRgbmImage2D.Height];
+			sourceRgbmImage2D.GetData(pixelDataRGB);
 
-			//at this point, the source texture is no longer needed
+			//extract the M pixels
+			Color[] pixelDataM = new Color[sourceRgbmAlphaImage2D.Width * sourceRgbmAlphaImage2D.Height];
+			sourceRgbmAlphaImage2D.GetData(pixelDataM);
+
+			//at this point, the source textures are no longer needed
 
 
 			//extract the faces from the cubemap,
@@ -308,7 +319,11 @@ namespace Tutorials.Tutorial_28
 				{
 					for (int x = 0; x < cubeFaceSize; x++) // each pixel in the line
 					{
-						Color rgbm = pixelData[readIndex + x];
+						Color encodedRgb = pixelDataRGB[readIndex + x];
+						Color encodedM = pixelDataM[readIndex + x];
+
+						//combine to get the RGBM value
+						Color rgbm = new Color(encodedRgb.R, encodedRgb.G, encodedRgb.B, encodedM.R);
 
 						//decode the pixel
 						Vector3 rgb = RgbmTools.DecodeRGBM(rgbm, maxRange);
